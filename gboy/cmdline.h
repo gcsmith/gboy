@@ -34,6 +34,7 @@ typedef struct cmdargs {
     int unlock;         // unlock cpu throttling
     char *rom_path;     // path to rom image
     char *bios_path;    // path to bios directory
+    char *serial_path;  // path to serial log file
 } cmdargs_t;
 
 int cmdline_parse(int argc, char *argv[], cmdargs_t *args);

@@ -228,6 +228,7 @@ typedef struct gbx_context {
     uint16_t next_pc;
     void *userdata;
     uint32_t fb[GBX_LCD_XRES * GBX_LCD_YRES];
+    FILE *serial_log;
 } gbx_context_t;
 
 int  gbx_create_context(gbx_context_t **ctx, int system);
@@ -240,6 +241,7 @@ void gbx_req_interrupt(gbx_context_t *ctx, int interrupt);
 
 void gbx_set_userdata(gbx_context_t *ctx, void *userdata);
 void gbx_set_bios_dir(gbx_context_t *ctx, const char *path);
+void gbx_set_serial_log(gbx_context_t *ctx, const char *path);
 void gbx_set_debugger(gbx_context_t *ctx, int enable);
 void gbx_set_input_state(gbx_context_t *ctx, int input, int pressed);
 

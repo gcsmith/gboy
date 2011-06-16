@@ -349,6 +349,27 @@ void gbx_set_bios_dir(gbx_context_t *ctx, const char *path)
 }
 
 // -----------------------------------------------------------------------------
+void gbx_set_serial_log(gbx_context_t *ctx, const char *path)
+{
+    assert(NULL != ctx);
+
+    if (!strcmp(path, "stdout")) {
+        log_info("Logging serial data to standard output.\n");
+        ctx->serial_log = stdout;
+    }
+    else if (!strcmp(path, "stderr")) {
+        log_info("Logging serial data to standard error.\n");
+        ctx->serial_log = stderr;
+    }
+    else {
+        log_info("Logging serial data to '%s'.\n", path);
+        ctx->serial_log = fopen(path, "w");
+        if (!ctx->serial_log)
+            log_err("Failed to open serial log file for writing.\n");
+    }
+}
+
+// -----------------------------------------------------------------------------
 void gbx_set_debugger(gbx_context_t *ctx, int enable)
 {
     assert(NULL != ctx);

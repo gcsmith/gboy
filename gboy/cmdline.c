@@ -23,12 +23,13 @@
 #include "cmdline.h"
 #include "gbx.h"
 
-#define CMDLINE_VERSION         0x1000
-#define CMDLINE_SYSTEM_GMB      0x1001
-#define CMDLINE_SYSTEM_CGB      0x1002
-#define CMDLINE_SYSTEM_SGB      0x1003
-#define CMDLINE_SYSTEM_SGB2     0x1004
-#define CMDLINE_SYSTEM_GBA      0x1005
+#define CMDLINE_VERSION         1000
+#define CMDLINE_SYSTEM_GMB      1001
+#define CMDLINE_SYSTEM_CGB      1002
+#define CMDLINE_SYSTEM_SGB      1003
+#define CMDLINE_SYSTEM_SGB2     1004
+#define CMDLINE_SYSTEM_GBA      1005
+#define CMDLINE_LOG_SERIAL      1006
 
 const char *gboy_desc  = "gboy - a portable gameboy emulator";
 const char *gboy_usage = "usage: gboy [options] [file]";
@@ -40,21 +41,22 @@ void cmdline_display_usage(void)
 {
     log_info("%s\n%s\n\n", gboy_desc, gboy_usage);
     log_info("Options:\n"
-        "  -b, --bios-dir=PATH  specify where bios files are located\n"
-        "  -d, --debugger       enable debugging interface\n"
-        "  -f, --fullscreen     run in fullscreen mode\n"
-        "  -r, --rom=PATH       path to rom file\n"
-        "  -s, --scale=INT      scale screen resolution\n"
-        "  -S, --stretch        stretch image to fill screen\n"
-        "      --system-gmb     force system type to original game boy\n"
-        "      --system-cgb     force system type to game boy color\n"
-        "      --system-sgb     force system type to super game boy\n"
-        "      --system-sgb2    force system type to super game boy 2\n"
-        "      --system-gba     force system type to game boy advance\n"
-        "  -u, --unlock         unlock cpu throttling (no speed limit)\n"
-        "  -v, --vsync          enable vertical sync\n"
-        "  -h, --help           display this usage message\n"
-        "      --version        display program version\n");
+        "  -b, --bios-dir=PATH      specify where bios files are located\n"
+        "  -d, --debugger           enable debugging interface\n"
+        "  -f, --fullscreen         run in fullscreen mode\n"
+        "      --log-serial=PATH    log serial output to the specified file\n"
+        "  -r, --rom=PATH           path to rom file\n"
+        "  -s, --scale=INT          scale screen resolution\n"
+        "  -S, --stretch            stretch image to fill screen\n"
+        "      --system-gmb         force system type to original game boy\n"
+        "      --system-cgb         force system type to game boy color\n"
+        "      --system-sgb         force system type to super game boy\n"
+        "      --system-sgb2        force system type to super game boy 2\n"
+        "      --system-gba         force system type to game boy advance\n"
+        "  -u, --unlock             unlock cpu throttling (no speed limit)\n"
+        "  -v, --vsync              enable vertical sync\n"
+        "  -h, --help               display this usage message\n"
+        "      --version            display program version\n");
     exit(EXIT_FAILURE);
 }
 
@@ -74,6 +76,7 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
         { "bios-dir",       required_argument,  NULL, 'b' },
         { "debugger",       no_argument,        NULL, 'd' },
         { "fullscreen",     no_argument,        NULL, 'f' },
+        { "log-serial",     required_argument,  NULL, CMDLINE_LOG_SERIAL },
         { "rom",            required_argument,  NULL, 'r' },
         { "scale",          required_argument,  NULL, 's' },
         { "stretch",        no_argument,        NULL, 'S' },
@@ -99,6 +102,7 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
     args->vsync = 0;
     args->rom_path = NULL;
     args->bios_path = NULL;
+    args->serial_path = NULL;
 
     while (-1 != (opt = getopt_long(argc, argv, s_opts, l_opts, &index))) {
         switch (opt) {
@@ -144,6 +148,9 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
         case CMDLINE_VERSION:
             cmdline_display_version();
             break;
+        case CMDLINE_LOG_SERIAL:
+            args->serial_path = strdup(optarg);
+            break;
         case 'h':
         case '?':
             cmdline_display_usage();
@@ -181,6 +188,7 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
 void cmdline_destroy(cmdargs_t *args)
 {
     assert(NULL != args);
+    SAFE_FREE(args->serial_path);
     SAFE_FREE(args->bios_path);
     SAFE_FREE(args->rom_path);
 }

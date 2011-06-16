@@ -994,6 +994,12 @@ INLINE void serial_update_cycles(gbx_context_t *ctx, long cycles)
         ctx->sc_ticks = 0;
         ctx->sc_active = 0;
         ctx->sc &= ~SC_XFER_START;
+
+        // if enabled, write the character data to the serial log file
+        if (ctx->serial_log) {
+            fprintf(ctx->serial_log, "%c", (char)ctx->sb);
+            fflush(ctx->serial_log);
+        }
     }
 }
 
@@ -1034,7 +1040,7 @@ static void perform_cyclic_tasks(gbx_context_t *ctx, long cycle_delta)
 // -----------------------------------------------------------------------------
 static int process_halt_state(gbx_context_t *ctx)
 {
-    if (ctx->int_en & ctx->int_flags) {
+    if (/*ctx->int_en &*/ ctx->int_flags) {
         // leave HALT mode if any interrupt is fired
         ctx->exec_flags &= ~EXEC_HALT;
         return 0;

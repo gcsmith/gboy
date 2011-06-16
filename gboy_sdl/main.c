@@ -103,11 +103,11 @@ static void set_gbx_frequency(gbx_thread_t *gt, int hz)
 void ext_speed_change(void *data, int speed)
 {
     if (speed) {
-        log_info("changing to double speed mode\n");
+        log_dbg("changing to double speed mode\n");
         set_gbx_frequency((gbx_thread_t *)data, CPU_FREQ_CGB);
     }
     else {
-        log_info("changing to normal speed mode\n");
+        log_dbg("changing to normal speed mode\n");
         set_gbx_frequency((gbx_thread_t *)data, CPU_FREQ_GMB);
     }
 }
@@ -178,6 +178,9 @@ gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
 
     gbx_set_userdata(ctx, gt);
     gbx_set_debugger(ctx, gt->debugger);
+
+    if (ca->serial_path)
+        gbx_set_serial_log(ctx, ca->serial_path);
 
     // create and launch the emulator thread
     if (NULL == (gt->thread = SDL_CreateThread(gbx_thread_run, gt))) {
