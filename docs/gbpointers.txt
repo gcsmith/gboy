@@ -1,0 +1,131 @@
+Gameboy Pointer Hacking
+Written by Coolboyman
+
+Gameboy Pointers are really easy to hack. All the answers you need are in
+this doc!
+
+Tools Needed:
+Emulator (duh)
+Gameboy Rom (duh)
+Hex editor
+A brain to understand this simple concept.
+
+NOTE: If you are a newbie and just starting ROM hacking, I recommend you
+do the pointers later, because this could get confusing if you just started out.
+IF you feel you can actually pull this off, read ahead…
+
+Ok so lets say your editing some text, that starts at the location 1AF239. You
+start changing the text, and realize something: You ran out of room of the text
+you want. The answer is to re-point the text to a blank location in the ROM.
+There are 2 kinds of pointers in a Gameboy:
+
+3 byte pointers: These pointers can point anywhere in the ROM. Now lets say
+you want to re-point 1FF017. The first byte is the bank location. For example
+0-3FFF is one bank, 4000-7FFF is another bank. Don’t understand? Well
+this is how it is:
+00 = 0000-3FFF
+01 = 4000-7FFF
+02 = 8000-BFFF
+03 = C000-FFFF
+04 = 10000-13FFF
+05 = 14000-17FFF
+06 = 18000-1BFFF
+07 = 1C000-1FFFF
+08 = 20000-23FFF
+09 = 24000-27FFF
+0A = 28000-2BFFF
+0B = 2C000-2FFFF
+0C = 30000-33FFF
+0D = 34000-37FFF
+0E = 38000-3BFFF
+0F = 3C000-3FFFF
+10 = 40000-43FFF
+11 = 44000-47FFF
+12 = 48000-4BFFF
+13 = 4C000-4FFFF
+14 = 50000-53FFF
+15 = 54000-57FFF
+16 = 58000-5BFFF
+17 = 5C000-5FFFF
+18 = 60000-63FFF
+19 = 64000-67FFF
+1A = 68000-6BFFF
+1B = 6C000-6FFFF
+1C = 70000-73FFF
+1D = 74000-77FFF
+1E = 78000-7BFFF
+1F = 7C000-7FFFF
+20 = 80000-83FFF
+21 = 84000-87FFF
+22 = 88000-8BFFF
+23 = 8C000-8FFFF
+24 = 90000-93FFF
+25 = 94000-97FFF
+26 = 98000-9BFFF
+27 = 9C000-9FFFF
+28 = A0000-A3FFF
+29 = A4000-A7FFF
+2A = A8000-ABFFF
+2B = AC000-AFFFF
+2C = B0000-B3FFF
+2D = B4000-B7FFF
+2E = B8000-BBFFF
+2F = BC000-BFFFF
+30 = C0000-C3FFF
+31 = C4000-C7FFF
+32 = C8000-CBFFF
+33 = CC000-CFFFF
+34 = D0000-D3FFF
+35 = D4000-D7FFF
+36 = D8000-DBFFF
+37 = DC000-DFFFF
+38 = E0000-E3FFF
+39 = E4000-E7FFF
+3A = E8000-EBFFF
+3B = EC000-EFFFF
+3C = F0000-F3FFF
+3D = F4000-F7FFF
+3E = F8000-FBFFF
+3F = FC000-FFFFF
+40 = 100000-13FFFF
+…
+
+And so on, I’m sure you can figure it out from here. Ok, now we figured out
+that the bank location is 6B. The second part is simply the last byte. Since
+where looking to something that points to 1AF239, it will be 39. The third
+byte is the middle byte. So the middle byte is F2. This byte MUST BE between
+40-7F. So since its F2, we shall add 80 to it, making it 72. Simply, if it’s not
+between 40-7F, add or subtract the middle value by 40 or 80 so that it will be
+between 40-7F. I don’t know why it’s like this, don’t ask me. So now that we
+figured out what all the values are, the pointer must be 6B7972. So search
+for it, if you do not find any results, try reading this again. When you find it,
+and know WHERE you want to re-point the pointer, type in the correct values.
+Since we want to re-point it to 1FF017, change the pointer to 7F5770. Enter
+text starting at 1FF017. Try to load up the ROM. Now try to get the text to
+start! Whoo hoo, if you followed my directions correctly, it should of worked.
+MOST of the time other pointers that point to similar data (Like other text
+strings) are right next to each other. But in some cases, you might not find
+what you want, because it might be a 2-byte pointer…
+
+2 Bit Pointers:
+
+2 Bit pointers are the same as 3 bit, but the first value is absent. This is
+usually used to save memory. This is usually only used for pointer that point
+to things that are already in the same bank.
+
+For example:
+
+Text starts at 92832
+A pointer for that text might be located at 91104. The pointer’s values might
+simply be 7268.
+
+Sometimes the pointers are divided, so the first part might be in a completely
+different place in the ROM –cough- Pokemon Red –Cough-. You shouldn’t
+bother with pointers that are divided though, it’s too much of a hassle, but I did
+it for Pokemon Red anyway.
+
+Well that’s all ya need to know. If you have any questions. Email me at
+coolboyman@hotmail.com or on AOL IM as "Cooboyman"
+
+I re-pointed tons of stuff in Pokemon Brown. Check it out
+http://www.coolbm.com/pokemonbrown
