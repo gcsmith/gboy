@@ -967,6 +967,7 @@ INLINE void dma_update_cycles(gbx_context_t *ctx, long cycles)
         ctx->dma.cycle = 0;
     }
     else if (ctx->dma.write_pos < 0x9F) {
+        uint8_t data;
         uint16_t src = ctx->dma.src, dst = 0xFE00;
         int i, write_len = (ctx->dma.cycle - ctx->dma.write_cycle) >> 2;
 
@@ -975,7 +976,7 @@ INLINE void dma_update_cycles(gbx_context_t *ctx, long cycles)
             if (ctx->dma.write_pos > 0x9F)
                 break;
 
-            uint8_t data = gbx_read_byte(ctx, src + ctx->dma.write_pos);
+            data = gbx_read_byte(ctx, src + ctx->dma.write_pos);
             gbx_write_byte(ctx, dst + ctx->dma.write_pos, data);
             ++ctx->dma.write_pos;
         }

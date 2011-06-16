@@ -94,7 +94,7 @@ static void set_gbx_frequency(gbx_thread_t *gt, int hz)
 {
     const float update_period_ms = 16.666667f;
     gt->clock_rate = (float)hz;
-    gt->cycles_per_update = update_period_ms * gt->clock_rate / 1000.0f;
+    gt->cycles_per_update = (int)(update_period_ms * gt->clock_rate / 1000.0f);
     gt->real_period = gt->cycles_per_update * 1000.0f / gt->clock_rate;
 }
 

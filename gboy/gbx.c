@@ -181,14 +181,14 @@ static int alloc_memory_regions(gbx_context_t *ctx, uint8_t *rom, size_t size)
         return -1;
     }
     else if (size < xrom_size) {
-        log_err("ROM size reported in header exceeds file size. Padding.\n");
-        log_err("File size: %d bytes, ROM size: %d bytes\n", size, xrom_size);
-
         // allocate a buffer of the appropriate length and copy the image over
         uint8_t *temp_buffer = calloc(1, xrom_size);
         memcpy(temp_buffer, rom, size);
         free(rom);
         rom = temp_buffer;
+
+        log_err("ROM size reported in header exceeds file size. Padded.\n");
+        log_err("File size: %d bytes, ROM size: %d bytes\n", size, xrom_size);
     }
 
     // allocate each region of memory, keep track of base and banked address

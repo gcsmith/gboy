@@ -39,5 +39,5 @@ if(WIN32)
     include_directories(${GNULIB_DIR})
 endif()
 
-add_library(gboy ${gboy_src})
+add_library(gboy ${gboy_src} ${gboy_hdr})
 

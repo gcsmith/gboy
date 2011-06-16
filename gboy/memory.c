@@ -761,15 +761,19 @@ void gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         mem->wram[addr & WRAM_MASK] = value;
         break;
     case 0xF:
-        if (addr < 0xFE00) {
+        if (addr < 0xFE00)
             mem->wram_bank[addr & WRAM_MASK] = value;
-            return;
-        }
-        if (addr < 0xFEA0) return write_oam_region(ctx, addr, value);
-        if (addr < 0xFF00) return write_bad_region(ctx, addr, value);
-        if (addr < 0xFF80) return write_io_port(ctx, addr, value);
-        if (addr < 0xFFFF) return write_high_ram(ctx, addr, value);
-        else return write_io_port(ctx, addr, value);
+        else if (addr < 0xFEA0)
+            write_oam_region(ctx, addr, value);
+        else if (addr < 0xFF00)
+            write_bad_region(ctx, addr, value);
+        else if (addr < 0xFF80)
+            write_io_port(ctx, addr, value);
+        else if (addr < 0xFFFF)
+            write_high_ram(ctx, addr, value);
+        else
+            write_io_port(ctx, addr, value);
+        break;
     }
 }
 
