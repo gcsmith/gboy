@@ -23,8 +23,8 @@
 #include "config.h"
 
 #define ENABLE_LOG_INFO
-#define ENABLE_LOG_ERR
-#define ENABLE_LOG_DBG
+// #define ENABLE_LOG_ERR
+// #define ENABLE_LOG_DBG
 // #define ENABLE_LOG_SPEW
 
 #define _isset(x, b)    ((x) & (1 << (b)))

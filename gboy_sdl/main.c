@@ -24,20 +24,19 @@
 #include "gbx.h"
 #include "graphics.h"
 
-#define FB_SIZE (4 * GBX_LCD_XRES * GBX_LCD_YRES)
 #define GBOY_EVENT_SYNC 0
 #define GBOY_EVENT_PERF 1
 
 typedef struct gbx_thread {
     gbx_context_t *ctx;         // gbx emulator context
     SDL_Thread *thread;         // handle to this thread
-    uint32_t fb[FB_SIZE];       // video framebuffer
-    int running;
-    int limit_speed;
-    int debugger;
-    float clock_rate;
-    float cycles_per_update;
-    float real_period;
+    int running;                // control thread termination
+    int limit_speed;            // when set, cpu throttling is enabled
+    int debugger;               // when set, debug tracing is enabled
+    int cycles_per_update;      // cycles to execute between each delay
+    float clock_rate;           // keep track of freq (in Hz) for throttling
+    float real_period;          // period considering integer cycle counts
+    uint32_t fb[GFX_FB_SIZE];   // video framebuffer
 } gbx_thread_t;
 
 typedef struct perf_args {
@@ -47,14 +46,15 @@ typedef struct perf_args {
 } perf_args_t;
 
 typedef struct window_state {
-    graphics_t *gfx;
+    graphics_t *gfx;            // handle to graphics back-end
     SDL_Window *wnd;            // handle to SDL window
     SDL_GLContext *glctx;       // handle to OpenGL render context
-    int width, height, fs;      // fullscreen toggle
-    int stretch;
+    int width, height, fs;      // dimensions and full-screen enable/disable
+    int stretch;                // control stretched or aspect correct display
 } window_state_t;
 
 // -----------------------------------------------------------------------------
+// Insert a user-defined event into the SDL event queue.
 INLINE void push_user_event(int code, void *data1, void *data2)
 {
     SDL_Event event;
@@ -62,21 +62,25 @@ INLINE void push_user_event(int code, void *data1, void *data2)
     event.user.code = code;
     event.user.data1 = data1;
     event.user.data2 = data2;
+
+    // PushEvent is a thread-safe operation, so this is ideal for communicating
+    // between the emulator thread and SDL window event thread
     SDL_PushEvent(&event);
 }
 
 // -----------------------------------------------------------------------------
+// Compute the emulator performance in terms of cycles/second.
 uint32_t perf_timer_event(uint32_t interval, void *param)
 {
     perf_args_t *pa = (perf_args_t *)param;
-    float per_ms = (float)(pa->ctx->cycles - pa->last_cycles) / interval;
-    long cycles_per_sec = (long)(per_ms * 1000.0f);
+    float cps = 1000.0f * (pa->ctx->cycles - pa->last_cycles) / interval;
     pa->last_cycles = pa->ctx->cycles;
-    push_user_event(GBOY_EVENT_PERF, (void *)(size_t)cycles_per_sec, NULL);
+    push_user_event(GBOY_EVENT_PERF, (void *)(size_t)cps, NULL);
     return interval;
 }
 
 // -----------------------------------------------------------------------------
+// Callback fired each time the emulator enters the vertical blank period.
 void ext_video_sync(void *data)
 {
     gbx_thread_t *gt = (gbx_thread_t *)data;
@@ -85,41 +89,42 @@ void ext_video_sync(void *data)
 }
 
 // -----------------------------------------------------------------------------
+// Set the desired emulator clock frequency, in Hz.
 static void set_gbx_frequency(gbx_thread_t *gt, int hz)
 {
     const float update_period_ms = 16.666667f;
     gt->clock_rate = (float)hz;
     gt->cycles_per_update = update_period_ms * gt->clock_rate / 1000.0f;
-    gt->real_period = (int)gt->cycles_per_update * 1000.0f / gt->clock_rate;
+    gt->real_period = gt->cycles_per_update * 1000.0f / gt->clock_rate;
 }
 
 // -----------------------------------------------------------------------------
+// Callback fired when the emulator switches between normal/double speed.
 void ext_speed_change(void *data, int speed)
 {
-    gbx_thread_t *gt = (gbx_thread_t *)data;
-
     if (speed) {
         log_info("changing to double speed mode\n");
-        set_gbx_frequency(gt, CPU_FREQ_CGB);
+        set_gbx_frequency((gbx_thread_t *)data, CPU_FREQ_CGB);
     }
     else {
         log_info("changing to normal speed mode\n");
-        set_gbx_frequency(gt, CPU_FREQ_GMB);
+        set_gbx_frequency((gbx_thread_t *)data, CPU_FREQ_GMB);
     }
 }
 
 // -----------------------------------------------------------------------------
+// Callback fired each time the LCD switches between enabled/disabled state.
 void ext_lcd_enabled(void *data, int enabled)
 {
-    gbx_thread_t *gt = (gbx_thread_t *)data;
     if (!enabled) {
         // if LCD disabled, set entire display area to solid white
-        memset(gt->fb, 0xFF, FB_SIZE);
+        memset(((gbx_thread_t *)data)->fb, 0xFF, GFX_FB_SIZE);
         push_user_event(GBOY_EVENT_SYNC, NULL, NULL);
     }
 }
 
 // -----------------------------------------------------------------------------
+// Entry-point for emulator thread. Execute cycles and perform CPU throttling.
 int gbx_thread_run(void *data)
 {
     uint64_t prev, curr;
@@ -127,20 +132,26 @@ int gbx_thread_run(void *data)
     gbx_thread_t *gt = (gbx_thread_t *)data;
     gbx_context_t *ctx = gt->ctx;
 
-    // set emulator to power on state (or post-bios state if necessary)
+    // set emulator to power on state (or post-bios state if no bios present)
     gbx_power_on(ctx);
     set_gbx_frequency(gt, CPU_FREQ_GMB);
 
     // execute instructions until the thread is terminated
     while (gt->running) {
         prev = SDL_GetPerformanceCounter();
-        gbx_execute_cycles(ctx, (int)gt->cycles_per_update);
+        gbx_execute_cycles(ctx, gt->cycles_per_update);
         curr = SDL_GetPerformanceCounter();
 
         if (gt->limit_speed) {
-            elapsed = 1000 * (curr - prev) / (float)SDL_GetPerformanceFrequency();
-            delay_period = MAX(0.0f, gt->real_period - elapsed);
+            elapsed = 1000.0f * (curr - prev) / SDL_GetPerformanceFrequency();
+            delay_period = gt->real_period - elapsed;
+            if (delay_period <= 0) {
+                // delay unnecessary if emulator can't perform at full speed
+                error_accum = 0.0f;
+                continue;
+            }
 
+            // compensate for millisecond precision (XXX: could be better)
             error_accum += (delay_period - (int)delay_period);
             if (error_accum >= 1.0f) {
                 delay_period += (int)error_accum;
@@ -155,6 +166,7 @@ int gbx_thread_run(void *data)
 }
 
 // -----------------------------------------------------------------------------
+// Create, initialize, and launch the emulator thread.
 gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
 {
     // create and initialize the emulator thread structure
@@ -178,6 +190,7 @@ gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
 }
 
 // -----------------------------------------------------------------------------
+// Terminate and destroy the emulator thread. Blocks until thread completes.
 void gbx_thread_destroy(gbx_thread_t *gt)
 {
     if (!gt) return;
@@ -190,6 +203,7 @@ void gbx_thread_destroy(gbx_thread_t *gt)
 }
 
 // -----------------------------------------------------------------------------
+// Initialize SDL, OpenGL, and GLEW. Create and display the main window.
 int create_sdl_window(window_state_t *ws, cmdargs_t *ca)
 {
     int flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
@@ -245,6 +259,7 @@ int create_sdl_window(window_state_t *ws, cmdargs_t *ca)
 }
 
 // -----------------------------------------------------------------------------
+// XXX: Placeholder code -- should allow for configurable control scheme.
 static int keysym_to_joypad(int keysym)
 {
     switch (keysym) {

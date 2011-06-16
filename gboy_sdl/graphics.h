@@ -21,6 +21,8 @@
 #include <GL/glew.h>
 #include "common.h"
 
+#define GFX_FB_SIZE (4 * GBX_LCD_XRES * GBX_LCD_YRES)
+
 typedef struct graphics {
     GLuint pbo, texture;
     int pbo_sz, tex_dim;
