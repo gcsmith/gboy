@@ -404,8 +404,8 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 // -----------------------------------------------------------------------------
 static void hdma_hblank_transfer(gbx_context_t *ctx)
 {
-    log_dbg("begin %d byte hblank dma transfer from %04X to %04X\n",
-            ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
+    log_spew("begin %d byte hblank dma transfer from %04X to %04X\n",
+             ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
 
     ctx->video.hdma_pos = 0;
     ctx->video.hdma_active = 1;
@@ -415,8 +415,8 @@ static void hdma_hblank_transfer(gbx_context_t *ctx)
 static void hdma_general_purpose_transfer(gbx_context_t *ctx)
 {
     int i;
-    log_dbg("begin %d byte general dma transfer from %04X to %04X\n",
-            ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
+    log_spew("begin %d byte general dma transfer from %04X to %04X\n",
+             ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
 
     for (i = 0; i < ctx->video.hdma_len; i++) {
         uint8_t data = gbx_read_byte(ctx, ctx->video.hdma_src + i);

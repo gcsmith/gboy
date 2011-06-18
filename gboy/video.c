@@ -166,21 +166,18 @@ void render_sprites(gbx_context_t *ctx)
 void render_bg_pixel(gbx_context_t *ctx, int x, int y)
 {
     int base_x, base_y, off_x, off_y, mappos, cnum;
+    int wx = ctx->video.wx - 7, wy = ctx->video.wy, mapaddr;
     uint8_t tile, c1, c2, attr;
     uint16_t addr, char_base = 0;
     uint32_t *palette = ctx->video.bgp_rgb;
 
-    if ((ctx->video.lcdc & LCDC_WND_EN) &&
-        (x >= (ctx->video.wx - 7)) && (y >= ctx->video.wy)) {
-        base_x = x - (ctx->video.wx - 7);
-        base_y = y - ctx->video.wy;
+    if ((ctx->video.lcdc & LCDC_WND_EN) && (x >= wx) && (y >= wy)) {
+        base_x = x - wx;
+        base_y = y - wy;
         mappos = ((base_y & 0xF8) << 2) | (base_x >> 3);
 
         // window tile index may be located at either 0x9800 or 0x9C00
-        if (ctx->video.lcdc & LCDC_WND_CODE)
-            tile = ctx->mem.vram[0x1C00 + mappos];
-        else
-            tile = ctx->mem.vram[0x1800 + mappos];
+        mapaddr = mappos + (ctx->video.lcdc & LCDC_WND_CODE ? 0x1C00 : 0x1800);
     }
     else {
         base_x = (x + ctx->video.scx) & 0xFF;
@@ -188,21 +185,16 @@ void render_bg_pixel(gbx_context_t *ctx, int x, int y)
         mappos = ((base_y & 0xF8) << 2) | (base_x >> 3);
 
         // background tile index may be located at either 0x9800 or 0x9C00
-        if (ctx->video.lcdc & LCDC_BG_CODE)
-            tile = ctx->mem.vram[0x1C00 + mappos];
-        else
-            tile = ctx->mem.vram[0x1800 + mappos];
+        mapaddr = mappos + (ctx->video.lcdc & LCDC_BG_CODE ? 0x1C00 : 0x1800);
     }
 
     off_x = 7 - (base_x & 7);
     off_y = base_y & 7;
+    tile = ctx->mem.vram[mapaddr];
 
     if (ctx->cgb_enabled) {
         // read the background map attribute when operating in color mode
-        if (ctx->video.lcdc & LCDC_BG_CODE)
-            attr = ctx->mem.vram[0x1C00 + VRAM_BANK_SIZE + mappos];
-        else
-            attr = ctx->mem.vram[0x1800 + VRAM_BANK_SIZE + mappos];
+        attr = ctx->mem.vram[mapaddr + VRAM_BANK_SIZE];
 
         // determine whether the tile data is located in bank 0 or bank 1
         if (attr & BG_ATTR_BANK)
@@ -285,13 +277,11 @@ static void hdma_transfer_block(gbx_context_t *ctx)
     ctx->video.hdma_len -= copy_length;
     ctx->video.hdma_pos += copy_length;
 
-    if (0 >= ctx->video.hdma_len) {
+    if (0 >= ctx->video.hdma_len)
         ctx->video.hdma_active = 0;
-        log_dbg("HDMA transfer completed\n");
-    }
-    else
-        log_dbg("HDMA copied %02X bytes from %04X to %04X (%02X left)\n",
-                copy_length, src, dst, ctx->video.hdma_len);
+
+    log_spew("HDMA copied %02X bytes from %04X to %04X (%02X left)\n",
+             copy_length, src, dst, ctx->video.hdma_len);
 }
 
 // -----------------------------------------------------------------------------
