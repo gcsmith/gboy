@@ -20,6 +20,8 @@
 
 #include "common.h"
 
+// ROM header fields
+
 #define GBHDR_ENTRY         0x100   // program entry point
 #define GBHDR_LOGO          0x104   // nintendo logo
 #define GBHDR_TITLE         0x134   // uppercase game title
@@ -37,10 +39,16 @@
 #define GBHDR_GLB_CHKSUM    0x14E   // two byte global checksum
 #define GBHDR_LENGTH        0x150   // total length of the cartridge header
 
+// CGB field flags
+
 #define CGB_ENABLE          0x80    // game supports CGB functions
 #define CGB_COLOR_ONLY      0x40    // game works only on CGB
 
+// SGB field flags
+
 #define SGB_ENABLE          0x03    // game supports SGB functions
+
+// cart feature flags (for convenience, do NOT correspond to header field)
 
 #define CART_RAM            0x01    // external RAM present
 #define CART_BATTERY        0x02    // RAM is battery backed
@@ -53,11 +61,13 @@
 #define CART_MBC_MBC3       0x30
 #define CART_MBC_MBC4       0x40
 #define CART_MBC_MBC5       0x50
-#define CART_MBC_MMM01      0x60
-#define CART_MBC_HuC1       0x70
-#define CART_MBC_HuC3       0x80
-#define CART_MBC_CAMERA     0x90
-#define CART_MBC_TAMA5      0xA0
+#define CART_MBC_MBC6       0x60
+#define CART_MBC_MBC7       0x70
+#define CART_MBC_MMM01      0x80
+#define CART_MBC_HuC1       0x90
+#define CART_MBC_HuC3       0xA0
+#define CART_MBC_CAMERA     0xB0
+#define CART_MBC_TAMA5      0xC0
 
 typedef struct rom_header {
     char     title[17];

@@ -18,6 +18,39 @@
 #ifndef GBOY_MEMORY__H
 #define GBOY_MEMORY__H
 
+#include "common.h"
+
+// memory bank sizes (in bytes)
+
+#define XROM_BANK_SIZE  0x4000  // external ROM - 16 KB
+#define XRAM_BANK_SIZE  0x2000  // external RAM - 8 KB
+#define VRAM_BANK_SIZE  0x2000  // internal video RAM - 8 KB
+#define WRAM_BANK_SIZE  0x1000  // internal work RAM - 4 KB
+
+// memory bank masks (all banks sizes are pow 2)
+
+#define XROM_MASK       (XROM_BANK_SIZE - 1)
+#define XRAM_MASK       (XRAM_BANK_SIZE - 1)
+#define VRAM_MASK       (VRAM_BANK_SIZE - 1)
+#define WRAM_MASK       (WRAM_BANK_SIZE - 1)
+
+typedef uint8_t (*mem_rd_fn)(gbx_context_t *, uint16_t);
+typedef void (*mmu_wr_fn)(gbx_context_t *, uint16_t, uint8_t);
+
+typedef struct memory_regions {
+    uint8_t oam[0xA0];          // object attribute memory
+    uint8_t hram[0x100];        // on chip high memory / zero page
+    uint8_t *bios;              // (optional) bios image
+    uint8_t *xrom, *xrom_bank;  // base address and current bank of ext ROM
+    uint8_t *xram, *xram_bank;  // base address and current bank of ext RAM
+    uint8_t *vram, *vram_bank;  // base address and current bank of video RAM
+    uint8_t *wram, *wram_bank;  // base address and current bank of work RAM
+    int xrom_banks, xrom_bnum;
+    int xram_banks, xram_bnum;
+    int vram_banks, vram_bnum;
+    int wram_banks, wram_bnum;
+} memory_regions_t;
+
 uint8_t gbx_read_byte(gbx_context_t *ctx, uint16_t addr);
 void    gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t data);
 
@@ -32,22 +65,6 @@ INLINE void gbx_write_word(gbx_context_t *ctx, uint16_t addr, uint16_t data)
 {
     gbx_write_byte(ctx, addr, data & 0xFF);
     gbx_write_byte(ctx, addr + 1, data >> 8);
-}
-
-// -----------------------------------------------------------------------------
-INLINE uint8_t gbx_next_byte(gbx_context_t *ctx)
-{
-    ++ctx->bytes_read;
-    return gbx_read_byte(ctx, ctx->next_pc++);
-}
-
-// -----------------------------------------------------------------------------
-INLINE uint16_t gbx_next_word(gbx_context_t *ctx)
-{
-    uint16_t data = gbx_read_byte(ctx, ctx->next_pc++);
-    data |= (gbx_read_byte(ctx, ctx->next_pc++) << 8);
-    ctx->bytes_read += 2;
-    return data;
 }
 
 #endif // GBOY_MEMORY__H

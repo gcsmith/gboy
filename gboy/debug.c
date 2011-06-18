@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gbx.h"
-#include "memory.h"
+#include "interp.h"
 
 static const char r8[] = "FACBEDLH";
 static const char *r16[] = { "AF", "BC", "DE", "HL", "SP", "PC" };

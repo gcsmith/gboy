@@ -18,6 +18,25 @@
 #ifndef GBOY_VIDEO__H
 #define GBOY_VIDEO__H
 
+// Gameboy Speed:   4.194304 MHz
+// Horizontal Sync: 9198 Hz (108.719287 us)
+// Vertical Sync:   59.73 Hz (16.7420057 ms)
+
+// Refresh Cycles:  70224 (17556)
+// VBLANK Cycles:   4560 (1140)
+
+// Total Lines:     154 (LY =   0..153)
+// Visible Lines:   144 (LY =   0..143)
+// VBLANK Lines:    10  (LY = 144..153)
+
+// Cycles Per Line: 4560 / 10 = 456 (114)
+// Visible Pixels:  160 (40)
+// Mode 0 Cycles:   204 (51)    reported 201-207
+// Mode 2 Cycles:   80  (20)    reported 77-83
+// Mode 3 Cycles:   172 (43)    reported 169-175
+
+#include "common.h"
+
 // LCD control (LCDC) fields
 
 #define LCDC_BG_EN      0x01    // background display enable
@@ -81,38 +100,25 @@
 
 #define LCD_SCANLINE_COUNT      154
 
-// Gameboy Speed:   4.194304 MHz
-// Horizontal Sync: 9198 Hz (108.719287 us)
-// Vertical Sync:   59.73 Hz (16.7420057 ms)
-
-// Refresh Cycles:  70224 (17556)
-// VBLANK Cycles:   4560 (1140)
-
-// Total Lines:     154 (LY =   0..153)
-// Visible Lines:   144 (LY =   0..143)
-// VBLANK Lines:    10  (LY = 144..153)
-
-// Cycles Per Line: 4560 / 10 = 456 (114)
-// Visible Pixels:  160 (40)
-// Mode 0 Cycles:   204 (51)    reported 201-207
-// Mode 2 Cycles:   80  (20)    reported 77-83
-// Mode 3 Cycles:   172 (43)    reported 169-175
-
-// -----------------------------------------------------------------------------
-// Returns a non-zero value if VRAM is currently accessible by the CPU.
-INLINE int gbx_is_vram_accessible(gbx_context_t *ctx)
-{
-    int mode = ctx->video.stat & STAT_MODE;
-    return (mode < MODE_TRANSFER) ? 1 : 0;
-}
-
-// -----------------------------------------------------------------------------
-// Returns a non-zero value if OAM is currently accessible by the CPU.
-INLINE int gbx_is_oam_accessible(gbx_context_t *ctx)
-{
-    int mode = ctx->video.stat & STAT_MODE;
-    return (mode < MODE_SEARCH) ? 1 : 0;
-}
+typedef struct video_registers {
+    int state, cycle;
+    int lcdc, stat, lyc;
+    int lcd_x, lcd_y;
+    int scy, scx;
+    int wx, wy;
+    int bgp, obp0, obp1;
+    uint32_t bgp_rgb[4];
+    uint32_t obp0_rgb[4];
+    uint32_t obp1_rgb[4];
+    int bcps, ocps;
+    uint8_t bcpd[0x40];
+    uint8_t ocpd[0x40];
+    uint32_t bcpd_rgb[0x20];
+    uint32_t ocpd_rgb[0x20];
+    uint16_t hdma_src, hdma_dst;
+    uint8_t hdma_ctl;
+    int hdma_len, hdma_active, hdma_pos;
+} video_registers_t;
 
 // -----------------------------------------------------------------------------
 INLINE uint16_t gbx_validate_hdma_src(uint16_t addr)

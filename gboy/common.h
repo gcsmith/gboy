@@ -24,7 +24,7 @@
 
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERR
-#define ENABLE_LOG_DBG
+// #define ENABLE_LOG_DBG
 // #define ENABLE_LOG_SPEW
 
 #define _isset(x, b)    ((x) & (1 << (b)))
@@ -129,6 +129,10 @@ INLINE void log_spew(const char *fmt, ...)
     va_end(ap);
 #endif
 }
+
+// forward declare gbx_context and its typedef, as it is used everywhere
+struct gbx_context;
+typedef struct gbx_context gbx_context_t;
 
 #endif // GBOY_COMMON__H
 

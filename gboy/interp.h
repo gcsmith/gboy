@@ -69,5 +69,21 @@
 #define C_TST_P(x)          (((x) > 0xFF) ? FLAG_C : 0)
 #define C_TST_P16(x)        (((x) > 0xFFFF) ? FLAG_C : 0)
 
+// -----------------------------------------------------------------------------
+INLINE uint8_t gbx_next_byte(gbx_context_t *ctx)
+{
+    ++ctx->bytes_read;
+    return gbx_read_byte(ctx, ctx->next_pc++);
+}
+
+// -----------------------------------------------------------------------------
+INLINE uint16_t gbx_next_word(gbx_context_t *ctx)
+{
+    uint16_t data = gbx_read_byte(ctx, ctx->next_pc++);
+    data |= (gbx_read_byte(ctx, ctx->next_pc++) << 8);
+    ctx->bytes_read += 2;
+    return data;
+}
+
 #endif // GBOY_INTERP__H
 

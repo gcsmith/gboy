@@ -240,6 +240,7 @@ static int configure_bank_controllers(gbx_context_t *ctx)
         ctx->have_mbc2 = 1;
         break;
     case CART_MBC_MBC3:
+    case CART_MBC_CAMERA:
         ctx->have_mbc3 = 1;
         break;
     case CART_MBC_MBC4:

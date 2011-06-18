@@ -25,6 +25,22 @@
 // #define PROTECT_VRAM_ACCESS
 
 // -----------------------------------------------------------------------------
+// Returns a non-zero value if VRAM is currently accessible by the CPU.
+INLINE int is_vram_accessible(gbx_context_t *ctx)
+{
+    int mode = ctx->video.stat & STAT_MODE;
+    return (mode < MODE_TRANSFER) ? 1 : 0;
+}
+
+// -----------------------------------------------------------------------------
+// Returns a non-zero value if OAM is currently accessible by the CPU.
+INLINE int is_oam_accessible(gbx_context_t *ctx)
+{
+    int mode = ctx->video.stat & STAT_MODE;
+    return (mode < MODE_SEARCH) ? 1 : 0;
+}
+
+// -----------------------------------------------------------------------------
 static uint8_t read_bios_rom(gbx_context_t *ctx, uint16_t addr)
 {
     switch (ctx->system) {
@@ -60,7 +76,7 @@ static void write_bad_region(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 static uint8_t read_oam_region(gbx_context_t *ctx, uint16_t addr)
 {
 #ifdef PROTECT_OAM_ACCESS
-    if (!gbx_is_oam_accessible(ctx)) {
+    if (!is_oam_accessible(ctx)) {
         log_err("attempted to read OAM when in use by LCD controller\n");
         return 0xFF;
     }
@@ -74,7 +90,7 @@ static uint8_t read_oam_region(gbx_context_t *ctx, uint16_t addr)
 static void write_oam_region(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
 #ifdef PROTECT_OAM_ACCESS
-    if (!gbx_is_oam_accessible(ctx)) {
+    if (!is_oam_accessible(ctx)) {
         log_err("attempted to write OAM when in use by LCD controller\n");
         return;
     }
@@ -427,6 +443,24 @@ static void hdma_general_purpose_transfer(gbx_context_t *ctx)
     ctx->video.hdma_active = 0;
 }
 
+#define IR_WR_DATA      0x01    // write data - enable or disable LED
+#define IR_RD_DATA      0x02    // read data - 0 if receiving, 1 if normal
+#define IR_RD_ENABLE    0xC0    // data read enable - 00 disabled, 11 enabled
+
+// -----------------------------------------------------------------------------
+static void write_infrared_comm_port(gbx_context_t *ctx, uint8_t value)
+{
+    log_dbg("write %02X to IR comm port\n", value);
+    ctx->rp = value & (IR_WR_DATA | IR_RD_ENABLE);
+}
+
+// -----------------------------------------------------------------------------
+static uint8_t read_infrared_comm_port(gbx_context_t *ctx)
+{
+    log_dbg("read %02X from IR comm port\n", 0);
+    return ctx->rp | IR_RD_DATA;
+}
+
 // -----------------------------------------------------------------------------
 static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
 {
@@ -520,7 +554,7 @@ static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
             value = ctx->video.hdma_ctl;
         break;
     case PORT_RP:
-        log_info("read RP = %02x\n", 0);
+        value = read_infrared_comm_port(ctx);
         break;
     case PORT_BCPS:
         return ctx->video.bcps;
@@ -686,7 +720,7 @@ static void write_io_port(gbx_context_t *ctx, uint16_t addr, uint8_t value)
             hdma_general_purpose_transfer(ctx);
         break;
     case PORT_RP:
-        log_info("write RP = %02X\n", value);
+        write_infrared_comm_port(ctx, value);
         break;
     case PORT_BCPS:
         ctx->video.bcps = value & 0xBF;
@@ -754,7 +788,7 @@ uint8_t gbx_read_byte(gbx_context_t *ctx, uint16_t addr)
         return ctx->mem.xrom_bank[addr & XROM_MASK];
     case 0x8: case 0x9:
 #ifdef PROTECT_VRAM_ACCESS
-        if (!gbx_is_vram_accessible(ctx)) {
+        if (!is_vram_accessible(ctx)) {
             log_err("attempted to read VRAM when in use by LCD controller\n");
             return 0xFF;
         }
@@ -794,7 +828,7 @@ void gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 
     switch (addr >> 12) {
     case 0x0: case 0x1:
-        if (ctx->have_mbc1 || ctx->have_mbc2 || ctx->have_mbc3)
+        if (ctx->have_mbc1 || ctx->have_mbc2 || ctx->have_mbc3 || ctx->have_mbc5)
             log_dbg("enable RAM access: %02X\n", value);
         else
             log_err("bad XROM write - addr:%04X val:%02X\n", addr, value);
@@ -837,7 +871,7 @@ void gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         break;
     case 0x8: case 0x9:
 #ifdef PROTECT_VRAM_ACCESS
-        if (!gbx_is_vram_accessible(ctx)) {
+        if (!is_vram_accessible(ctx)) {
             log_err("attempted to write VRAM when in use by LCD controller\n");
             return;
         }

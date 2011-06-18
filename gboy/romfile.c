@@ -277,6 +277,7 @@ static code_table_t cart_type[] = {
     { 0x1C, "MBC5 + RUMBLE" },
     { 0x1D, "MBC5 + RUMBLE + RAM" },
     { 0x1E, "MBC5 + RUMBLE + RAM + BATTERY" },
+    { 0x22, "MBC7" },
     { 0xFC, "POCKET CAMERA" },
     { 0xFD, "BANDAI TAMA5" },
     { 0xFE, "HuC3" },
@@ -432,6 +433,7 @@ int rom_get_cart_features(int carttype)
     case 0x1C: return CART_MBC_MBC5 | CART_RUMBLE;
     case 0x1D: return CART_MBC_MBC5 | CART_RUMBLE | CART_RAM;
     case 0x1E: return CART_MBC_MBC5 | CART_RUMBLE | CART_RAM | CART_BATTERY;
+    case 0x22: return CART_MBC_MBC7;
     case 0xFC: return CART_MBC_CAMERA;
     case 0xFD: return CART_MBC_TAMA5;
     case 0xFE: return CART_MBC_HuC3;
@@ -464,6 +466,7 @@ int xram_size_to_banks(int ram_size)
     case 0x01: return 1;
     case 0x02: return 1;
     case 0x03: return 4;
+    case 0x04: return 16;
     }
     return -1;
 }

@@ -18,8 +18,10 @@
 #ifndef GBOY_GBX__H
 #define GBOY_GBX__H
 
-#include "common.h"
+#include "cpu.h"
+#include "memory.h"
 #include "romfile.h"
+#include "video.h"
 
 // LCD screen resolution, identical for all game boy variants (before GBA)
 
@@ -36,20 +38,6 @@
 #define INPUT_B         5
 #define INPUT_SELECT    6
 #define INPUT_START     7
-
-// memory bank sizes (in bytes)
-
-#define XROM_BANK_SIZE  0x4000  // external ROM - 16 KB
-#define XRAM_BANK_SIZE  0x2000  // external RAM - 8 KB
-#define VRAM_BANK_SIZE  0x2000  // internal video RAM - 8 KB
-#define WRAM_BANK_SIZE  0x1000  // internal work RAM - 4 KB
-
-// memory bank masks (all banks sizes are pow 2)
-
-#define XROM_MASK       (XROM_BANK_SIZE - 1)
-#define XRAM_MASK       (XRAM_BANK_SIZE - 1)
-#define VRAM_MASK       (VRAM_BANK_SIZE - 1)
-#define WRAM_MASK       (WRAM_BANK_SIZE - 1)
 
 // supported system types
 
@@ -70,38 +58,6 @@
 #define CPU_FREQ_SGB2   4194304 // corrected from SGB, same as GMB
 #define CPU_FREQ_GBA    8388608 // operating in GBC mode (max speed mode)
 
-// cpu flags (register F)
-
-#define FLAG_C          0x10    // carry
-#define FLAG_H          0x20    // half-carry
-#define FLAG_N          0x40    // subtract
-#define FLAG_Z          0x80    // zero
-
-// 8-bit register indices
-
-#define REG_F   0
-#define REG_A   1
-#define REG_C   2
-#define REG_B   3
-#define REG_E   4
-#define REG_D   5
-#define REG_L   6
-#define REG_H   7
-
-// 16-bit register pair indices
-
-#define REG_AF  0
-#define REG_BC  1
-#define REG_DE  2
-#define REG_HL  3
-#define REG_SP  4
-#define REG_PC  5
-
-// interrupt master enable flag
-
-#define IME_DISABLE     0x00
-#define IME_ENABLE      0x01
-
 // execution interruption flags
 
 #define EXEC_BREAK      0x01
@@ -109,73 +65,7 @@
 #define EXEC_HALT       0x04
 #define EXEC_STOP       0x08
 
-typedef struct cpu_registers {
-    union {
-        struct {
-            union { uint16_t af; struct { uint8_t f, a; }; };
-            union { uint16_t bc; struct { uint8_t c, b; }; };
-            union { uint16_t de; struct { uint8_t e, d; }; };
-            union { uint16_t hl; struct { uint8_t l, h; }; };
-            uint16_t sp;
-            uint16_t pc;
-        };
-        uint8_t vb[12];
-        uint16_t vw[6];
-    };
-} cpu_registers_t;
-
-typedef struct timer_registers {
-    int div;
-    int tima;
-    int tma;
-    int tac;
-    int div_ticks;
-    int tima_ticks, tima_limit;
-} timer_registers_t;
-
-typedef struct video_registers {
-    int state, cycle;
-    int lcdc, stat, lyc;
-    int lcd_x, lcd_y;
-    int scy, scx;
-    int wx, wy;
-    int bgp, obp0, obp1;
-    uint32_t bgp_rgb[4];
-    uint32_t obp0_rgb[4];
-    uint32_t obp1_rgb[4];
-    int bcps, ocps;
-    uint8_t bcpd[0x40];
-    uint8_t ocpd[0x40];
-    uint32_t bcpd_rgb[0x20];
-    uint32_t ocpd_rgb[0x20];
-    uint16_t hdma_src, hdma_dst;
-    uint8_t hdma_ctl;
-    int hdma_len, hdma_active, hdma_pos;
-} video_registers_t;
-
-typedef struct dma_registers {
-    int src;
-    int active;
-    int cycle;
-    int write_pos;
-    int write_cycle;
-} dma_registers_t;
-
-typedef struct memory_regions {
-    uint8_t oam[0xA0];          // object attribute memory
-    uint8_t hram[0x100];        // on chip high memory / zero page
-    uint8_t *bios;              // (optional) bios image
-    uint8_t *xrom, *xrom_bank;  // base address and current bank of ext ROM
-    uint8_t *xram, *xram_bank;  // base address and current bank of ext RAM
-    uint8_t *vram, *vram_bank;  // base address and current bank of video RAM
-    uint8_t *wram, *wram_bank;  // base address and current bank of work RAM
-    int xrom_banks, xrom_bnum;
-    int xram_banks, xram_bnum;
-    int vram_banks, vram_bnum;
-    int wram_banks, wram_bnum;
-} memory_regions_t;
-
-typedef struct gbx_context {
+struct gbx_context {
     rom_header_t header;
     memory_regions_t mem;
     cpu_registers_t reg;
@@ -199,13 +89,14 @@ typedef struct gbx_context {
     int bytes_read;
     long cycles, cycle_delta;
     int joyp, input_state;
+    uint8_t rp;
     uint8_t opcode1;
     uint8_t opcode2;
     uint16_t next_pc;
     void *userdata;
     uint32_t fb[GBX_LCD_XRES * GBX_LCD_YRES];
     FILE *serial_log;
-} gbx_context_t;
+};
 
 int  gbx_create_context(gbx_context_t **ctx, int system);
 void gbx_destroy_context(gbx_context_t *ctx);
