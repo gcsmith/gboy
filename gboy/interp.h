@@ -39,12 +39,35 @@
 #define rSP     ctx->reg.sp
 #define rPC     ctx->reg.pc
 #define rNextPC ctx->next_pc
+#define rExtCyc ctx->cycle_delta
 
 #define PUSH(x) do { gbx_write_byte(ctx, --rSP, x >> 8);                    \
                      gbx_write_byte(ctx, --rSP, x & 0xFF); } while (0)
 
 #define POP(x)  do { x  = gbx_read_byte(ctx, rSP++);                        \
                      x |= gbx_read_byte(ctx, rSP++) << 8; } while (0)
+
+#define CONDITIONAL_JP(exp, nn, c)                                          \
+    do { if (exp) { rNextPC = nn; rExtCyc = c; } } while(0)
+
+#define CONDITIONAL_JR(exp, n, c)                                           \
+    do { if (exp) { rNextPC += n; rExtCyc = c; } } while(0)
+
+#define CONDITIONAL_RET(exp, c)                                             \
+    do { if (exp) { POP(rNextPC); rExtCyc = c; } } while (0)
+
+#define CONDITIONAL_CALL(exp, nn, c)                                        \
+    do { if (exp) { PUSH(rNextPC); rNextPC = nn; rExtCyc = c; } } while (0)
+
+#define Z_TST(x)            ((x) ? 0 : FLAG_Z)
+#define H_TST(a, b, r)      (((a) ^ (b) ^ (r)) &  0x10 ? FLAG_H : 0)
+#define H_TST_16(a, b, r)   (((a) ^ (b) ^ (r)) & 0x1000 ? FLAG_H : 0)
+#define H_TST_N(x)          (((x) & 0xF) == 0xF ? FLAG_H : 0)
+#define H_TST_P(x)          ((x) & 0xF ? 0 : FLAG_H)
+#define C_TST(a, b, r)      (((a) ^ (b) ^ (r)) & 0x100 ? FLAG_C : 0)
+#define C_TST_N(x)          (((x) < 0) ? FLAG_C : 0)
+#define C_TST_P(x)          (((x) > 0xFF) ? FLAG_C : 0)
+#define C_TST_P16(x)        (((x) > 0xFFFF) ? FLAG_C : 0)
 
 #endif // GBOY_INTERP__H
 

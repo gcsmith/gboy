@@ -46,33 +46,23 @@
 #define PORT_IF         0x0F    // interrupt flag (R/W)
 #define PORT_IE         0xFF    // interrupt enable (R/W)
 
+#define INT_VBLANK      0x01    // vertical blanking
+#define INT_LCDSTAT     0x02    // LCDC stat
+#define INT_TIMER       0x04    // timer overflow
+#define INT_SERIAL      0x08    // serial transfer completion
+#define INT_JOYPAD      0x10    // P10-P13 edge / joypad
+#define INT_MASK        0x1F
+
+#define INT_VEC_VBLANK  0x40    // interrupt address for VBLANK
+#define INT_VEC_LCDSTAT 0x48    // interrupt address for LCDSTAT
+#define INT_VEC_TIMER   0x50    // interrupt address for TIMER
+#define INT_VEC_SERIAL  0x58    // interrupt address for SERIAL
+#define INT_VEC_JOYPAD  0x60    // interrupt address for JOYPAD
+
 // LCD control, position, and scrolling
 
 #define PORT_LCDC       0x40    // LCD control (R/W)
-
-#define LCDC_BG_EN      0x01    // background display enable
-#define LCDC_OBJ_EN     0x02    // object display enable
-#define LCDC_OBJ_SIZE   0x04    // object size
-#define LCDC_BG_CODE    0x08    // background tile map select
-#define LCDC_BG_CHAR    0x10    // background & window title data select
-#define LCDC_WND_EN     0x20    // window display enable
-#define LCDC_WND_CODE   0x40    // window tile map select
-#define LCDC_LCD_EN     0x80    // LCD display enable
-
 #define PORT_STAT       0x41    // LCDC status (R/W)
-
-#define STAT_MODE       0x03    // mode flag (mode 0-3)
-#define STAT_LYC        0x04    // coincidence flag (LYC ?= LY)
-#define STAT_INT_HBLANK 0x08    // mode 0 h-blank interrupt enable
-#define STAT_INT_VBLANK 0x10    // mode 1 v-blank interrupt enable
-#define STAT_INT_OAM    0x20    // mode 2 oam interrupt enable
-#define STAT_INT_LYC    0x40    // coincidence interrupt enable
-
-#define MODE_HBLANK     0x00
-#define MODE_VBLANK     0x01
-#define MODE_SEARCH     0x02
-#define MODE_TRANSFER   0x03
-
 #define PORT_SCY        0x42    // scroll Y (R/W)
 #define PORT_SCX        0x43    // scroll X (R/W)
 #define PORT_LY         0x44    // LCDC Y-coordinate (R)
@@ -83,13 +73,6 @@
 #define PORT_OBP1       0x49    // object palette 1 data (R/W)
 #define PORT_WY         0x4A    // window Y position (R/W)
 #define PORT_WX         0x4B    // window X position minus 7 (R/W)
-
-#define OAM_ATTR_CPAL   0x03    // CGB only, palette number OBP0-7
-#define OAM_ATTR_BANK   0x08    // CGB only, tile VRAM bank
-#define OAM_ATTR_PAL    0x10    // monochrome palette number (non-CGB only)
-#define OAM_ATTR_XFLIP  0x20    // mirror horizontally
-#define OAM_ATTR_YFLIP  0x40    // mirror vertically
-#define OAM_ATTR_PRI    0x80    // OBJ/BG priority
 
 // CGB Registers
 
@@ -133,8 +116,22 @@
 #define PORT_NR32       0x1C    // channel 3 select output level
 #define PORT_NR33       0x1D    // channel 3 frequency lo
 #define PORT_NR34       0x1E    // channel 3 frequency hi
-#define PORT_WAV_BASE   0x30    // channel 3 wave pattern ram (32 bytes)
-#define PORT_WAV(x)     (0x30 + x)
+#define PORT_WAV0       0x30    // channel 3 wave pattern (32 4-bit samples)
+#define PORT_WAV1       (PORT_WAV0 + 1)
+#define PORT_WAV2       (PORT_WAV0 + 2)
+#define PORT_WAV3       (PORT_WAV0 + 3)
+#define PORT_WAV4       (PORT_WAV0 + 4)
+#define PORT_WAV5       (PORT_WAV0 + 5)
+#define PORT_WAV6       (PORT_WAV0 + 6)
+#define PORT_WAV7       (PORT_WAV0 + 7)
+#define PORT_WAV8       (PORT_WAV0 + 8)
+#define PORT_WAV9       (PORT_WAV0 + 9)
+#define PORT_WAVA       (PORT_WAV0 + 10)
+#define PORT_WAVB       (PORT_WAV0 + 11)
+#define PORT_WAVC       (PORT_WAV0 + 12)
+#define PORT_WAVD       (PORT_WAV0 + 13)
+#define PORT_WAVE       (PORT_WAV0 + 14)
+#define PORT_WAVF       (PORT_WAV0 + 15)
 
 // Sound Channel 4 - Noise
 

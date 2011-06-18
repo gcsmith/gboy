@@ -102,22 +102,6 @@
 #define IME_DISABLE     0x00
 #define IME_ENABLE      0x01
 
-// interrupt flags
-
-#define INT_VBLANK      0x01
-#define INT_LCDSTAT     0x02
-#define INT_TIMER       0x04
-#define INT_SERIAL      0x08
-#define INT_JOYPAD      0x10
-
-// interrupt vector addresses
-
-#define INT_VEC_VBLANK  0x40
-#define INT_VEC_LCDSTAT 0x48
-#define INT_VEC_TIMER   0x50
-#define INT_VEC_SERIAL  0x58
-#define INT_VEC_JOYPAD  0x60
-
 // execution interruption flags
 
 #define EXEC_BREAK      0x01
@@ -141,24 +125,13 @@ typedef struct cpu_registers {
 } cpu_registers_t;
 
 typedef struct timer_registers {
-    int div, div_ticks;
-    int tima, tima_ticks, tima_limit;
+    int div;
+    int tima;
     int tma;
     int tac;
+    int div_ticks;
+    int tima_ticks, tima_limit;
 } timer_registers_t;
-
-#define VIDEO_STATE_SEARCH      0
-#define VIDEO_STATE_TRANSFER    1
-#define VIDEO_STATE_HBLANK      2
-#define VIDEO_STATE_VBLANK      3
-
-#define SEARCH_CYCLES           80
-#define TRANSFER_CYCLES         172
-#define HBLANK_CYCLES           204
-#define VBLANK_CYCLES           4560
-#define HORIZONTAL_CYCLES       456
-#define VERTICAL_CYCLES         70224
-#define TOTAL_SCANLINES         154
 
 typedef struct video_registers {
     int state, cycle;
@@ -187,7 +160,7 @@ typedef struct dma_registers {
 
 typedef struct memory_regions {
     uint8_t oam[0xA0];          // object attribute memory
-    uint8_t hram[0x80];         // on chip high memory / zero page
+    uint8_t hram[0x100];        // on chip high memory / zero page
     uint8_t *bios;              // (optional) bios image
     uint8_t *xrom, *xrom_bank;  // base address and current bank of ext ROM
     uint8_t *xram, *xram_bank;  // base address and current bank of ext RAM
@@ -221,7 +194,7 @@ typedef struct gbx_context {
     int bios_enabled;
     int exec_flags;
     int bytes_read;
-    long cycles;
+    long cycles, cycle_delta;
     int joyp, input_state;
     uint8_t opcode1;
     uint8_t opcode2;

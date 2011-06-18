@@ -178,8 +178,9 @@ void gbx_trace_instruction(gbx_context_t *ctx)
     for (i = ctx->bytes_read; i < 3; i++) log_dbg("   ");
 
     log_dbg(" %-20s  ", buffer);
-    log_dbg("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X\n",
-            ctx->reg.a, ctx->reg.f, ctx->reg.b, ctx->reg.c,
-            ctx->reg.d, ctx->reg.e, ctx->reg.h, ctx->reg.l, ctx->reg.sp);
+    log_dbg("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X "
+            "SP:%04X Cy:%08X\n",
+            ctx->reg.a, ctx->reg.f, ctx->reg.b, ctx->reg.c, ctx->reg.d,
+            ctx->reg.e, ctx->reg.h, ctx->reg.l, ctx->reg.sp, ctx->cycles);
 }
 

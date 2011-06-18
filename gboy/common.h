@@ -32,8 +32,8 @@
 #define _rotr8(x, b)    (((x) >> (b)) | ((x) << (8 - (b))))
 #define _rotl_flags(x)  ((((x) & 1) ? FLAG_C : 0) | (!(x) ? FLAG_Z : 0))
 
-#define SAFE_CLOSE(x) if (NULL != x) { fclose(x); x = NULL; }
-#define SAFE_FREE(x) if (NULL != x) { free(x); x = NULL; }
+#define SAFE_CLOSE(x)   if (NULL != x) { fclose(x); x = NULL; }
+#define SAFE_FREE(x)    if (NULL != x) { free(x); x = NULL; }
 
 #ifndef MIN
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))

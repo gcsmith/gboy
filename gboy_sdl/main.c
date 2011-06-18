@@ -329,6 +329,12 @@ int process_window_events(gbx_thread_t *gt, window_state_t *ws)
                     gt->debugger = !gt->debugger;
                     gbx_set_debugger(gt->ctx, gt->debugger);
                 }
+                else if (event.key.keysym.sym == SDLK_u) {
+                    // toggle speed throttling
+                    gt->limit_speed = !gt->limit_speed;
+                    log_info("emulator speed throttling %s\n",
+                             gt->limit_speed ? "enabled" : "disabled");
+                }
 
                 break;
             }

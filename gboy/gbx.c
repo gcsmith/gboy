@@ -22,6 +22,7 @@
 #include "gbx.h"
 #include "memory.h"
 #include "ports.h"
+#include "video.h"
 
 // -----------------------------------------------------------------------------
 int gbx_create_context(gbx_context_t **pctx, int system)
@@ -43,6 +44,7 @@ int gbx_create_context(gbx_context_t **pctx, int system)
     ctx->video.lcd_x = 0;
     ctx->video.lcd_y = GBX_LCD_YRES;
     ctx->video.state = VIDEO_STATE_VBLANK;
+    ctx->video.cycle = VIDEO_CYCLES_TRANSFER;
 
     *pctx = ctx;
     return 0;
@@ -476,6 +478,8 @@ static void simulate_starting_state(gbx_context_t *ctx)
     gbx_write_byte(ctx, 0xFF4A, 0x00); // WY
     gbx_write_byte(ctx, 0xFF4B, 0x00); // WX
     gbx_write_byte(ctx, 0xFFFF, 0x00); // IE
+
+    ctx->cycles = 0x102A4;
 }
 
 // -----------------------------------------------------------------------------

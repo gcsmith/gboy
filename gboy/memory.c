@@ -18,6 +18,7 @@
 #include <assert.h>
 #include "gbx.h"
 #include "ports.h"
+#include "video.h"
 
 // -----------------------------------------------------------------------------
 static uint8_t read_bios_rom(gbx_context_t *ctx, uint16_t addr)
@@ -69,14 +70,14 @@ static void write_oam_region(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 static uint8_t read_high_ram(gbx_context_t *ctx, uint16_t addr)
 {
     log_spew("read_high_ram: addr=%04X\n", addr);
-    return ctx->mem.hram[addr & 0x7F];
+    return ctx->mem.hram[addr & 0xFF];
 }
 
 // -----------------------------------------------------------------------------
 static void write_high_ram(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("write_high_ram: addr=%04X value=%02X\n", addr, value);
-    ctx->mem.hram[addr & 0x7F] = value;
+    ctx->mem.hram[addr & 0xFF] = value;
 }
 
 // -----------------------------------------------------------------------------
@@ -327,12 +328,12 @@ INLINE uint8_t read_video_stat(gbx_context_t *ctx)
     int stat = ctx->video.stat & ~STAT_LYC;
 
     if (!(ctx->video.lcdc & LCDC_LCD_EN)) // XXX
-        return 0;
+        return 0x80;
 
     if (ctx->video.lcd_y == ctx->video.lyc)
         stat |= STAT_LYC;
 
-    return stat;
+    return stat | 0x80;
 }
 
 // -----------------------------------------------------------------------------
@@ -345,6 +346,22 @@ INLINE void write_timer_control(gbx_context_t *ctx, uint8_t value)
     case 3: ctx->timer.tima_limit =  256; break; // 16384 Hz
     }
     ctx->timer.tac = value & 7;
+}
+
+// -----------------------------------------------------------------------------
+INLINE void write_lcdc(gbx_context_t *ctx, uint8_t value)
+{
+    // if the LCD enable/disable state changes, inform the frontend
+    if ((ctx->video.lcdc ^ value) & LCDC_LCD_EN) {
+        ext_lcd_enabled(ctx->userdata, (value & LCDC_LCD_EN) ? 1 : 0);
+        if (!(value & LCDC_LCD_EN)) {
+            ctx->video.lcd_x = 0;
+            ctx->video.lcd_y = 0;
+            ctx->video.state = VIDEO_STATE_SEARCH;
+            ctx->video.cycle = 0;
+        }
+    }
+    ctx->video.lcdc = value;
 }
 
 // -----------------------------------------------------------------------------
@@ -393,10 +410,10 @@ static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
         value = ctx->timer.tac;
         break;
     case PORT_IF:
-        value = ctx->int_flags;
+        value = ctx->int_flags | ~INT_MASK; // set unused bits
         break;
     case PORT_IE:
-        value = ctx->int_en;
+        value = ctx->int_en | ~INT_MASK; // set unused bits
         break;
     case PORT_LCDC:
         value = ctx->video.lcdc;
@@ -445,7 +462,8 @@ static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
     case PORT_HDMA3:
     case PORT_HDMA4:
     case PORT_HDMA5:
-        value = 0xFF; // TODO: implement
+        // TODO: implement
+        value = ctx->mem.hram[addr & 0xFF];
         break;
     case PORT_RP:
         log_info("read RP = %02x\n", 0);
@@ -475,10 +493,10 @@ static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
     case PORT_NR32:
     case PORT_NR33:
     case PORT_NR34:
-    case PORT_WAV( 0): case PORT_WAV( 1): case PORT_WAV( 2): case PORT_WAV( 3):
-    case PORT_WAV( 4): case PORT_WAV( 5): case PORT_WAV( 6): case PORT_WAV( 7):
-    case PORT_WAV( 8): case PORT_WAV( 9): case PORT_WAV(10): case PORT_WAV(11):
-    case PORT_WAV(12): case PORT_WAV(13): case PORT_WAV(14): case PORT_WAV(15):
+    case PORT_WAV0: case PORT_WAV1: case PORT_WAV2: case PORT_WAV3:
+    case PORT_WAV4: case PORT_WAV5: case PORT_WAV6: case PORT_WAV7:
+    case PORT_WAV8: case PORT_WAV9: case PORT_WAVA: case PORT_WAVB:
+    case PORT_WAVC: case PORT_WAVD: case PORT_WAVE: case PORT_WAVF:
     case PORT_NR41:
     case PORT_NR42:
     case PORT_NR43:
@@ -486,7 +504,8 @@ static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
     case PORT_NR50:
     case PORT_NR51:
     case PORT_NR52:
-        value = 0xFF; // TODO: implement
+        // TODO: implement
+        value = ctx->mem.hram[addr & 0xFF];
         break;
     case PORT_BIOS:
         value = ctx->bios_enabled;
@@ -536,16 +555,13 @@ static void write_io_port(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         write_timer_control(ctx, value);
         break;
     case PORT_IF:
-        ctx->int_flags = value;
+        ctx->int_flags = value & INT_MASK;
         break;
     case PORT_IE:
-        ctx->int_en = value;
+        ctx->int_en = value & INT_MASK;
         break;
     case PORT_LCDC:
-        // if the LCD enable/disable state changes, inform the frontend
-        if ((ctx->video.lcdc ^ value) & LCDC_LCD_EN)
-            ext_lcd_enabled(ctx->userdata, (value & LCDC_LCD_EN) ? 1 : 0);
-        ctx->video.lcdc = value;
+        write_lcdc(ctx, value);
         break;
     case PORT_STAT:
         ctx->video.stat = value;
@@ -596,6 +612,7 @@ static void write_io_port(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     case PORT_HDMA4:
     case PORT_HDMA5:
         // TODO: implement
+        ctx->mem.hram[addr & 0xFF] = value;
         break;
     case PORT_RP:
         log_info("write RP = %02X\n", value);
@@ -615,33 +632,34 @@ static void write_io_port(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     case PORT_SVBK:
         cgb_set_wram_bank(ctx, value);
         break;
-    case PORT_NR10: break;
-    case PORT_NR11: break;
-    case PORT_NR12: break;
-    case PORT_NR13: break;
-    case PORT_NR14: break;
-    case PORT_NR21: break;
-    case PORT_NR22: break;
-    case PORT_NR23: break;
-    case PORT_NR24: break;
-    case PORT_NR30: break;
-    case PORT_NR31: break;
-    case PORT_NR32: break;
-    case PORT_NR33: break;
-    case PORT_NR34: break;
-    case PORT_WAV( 0): case PORT_WAV( 1): case PORT_WAV( 2): case PORT_WAV( 3):
-    case PORT_WAV( 4): case PORT_WAV( 5): case PORT_WAV( 6): case PORT_WAV( 7):
-    case PORT_WAV( 8): case PORT_WAV( 9): case PORT_WAV(10): case PORT_WAV(11):
-    case PORT_WAV(12): case PORT_WAV(13): case PORT_WAV(14): case PORT_WAV(15):
+    case PORT_NR10:
+    case PORT_NR11:
+    case PORT_NR12:
+    case PORT_NR13:
+    case PORT_NR14:
+    case PORT_NR21:
+    case PORT_NR22:
+    case PORT_NR23:
+    case PORT_NR24:
+    case PORT_NR30:
+    case PORT_NR31:
+    case PORT_NR32:
+    case PORT_NR33:
+    case PORT_NR34:
+    case PORT_WAV0: case PORT_WAV1: case PORT_WAV2: case PORT_WAV3:
+    case PORT_WAV4: case PORT_WAV5: case PORT_WAV6: case PORT_WAV7:
+    case PORT_WAV8: case PORT_WAV9: case PORT_WAVA: case PORT_WAVB:
+    case PORT_WAVC: case PORT_WAVD: case PORT_WAVE: case PORT_WAVF:
         break;
-    case PORT_NR41: break;
-    case PORT_NR42: break;
-    case PORT_NR43: break;
-    case PORT_NR44: break;
-    case PORT_NR50: break;
-    case PORT_NR51: break;
+    case PORT_NR41:
+    case PORT_NR42:
+    case PORT_NR43:
+    case PORT_NR44:
+    case PORT_NR50:
+    case PORT_NR51:
     case PORT_NR52:
         // TODO: implement
+        ctx->mem.hram[addr & 0xFF] = value;
         break;
     case PORT_BIOS:
         ctx->bios_enabled = 0;

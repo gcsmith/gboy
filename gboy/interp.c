@@ -25,9 +25,7 @@
 // decimal adjust register A
 OP_FUNC op_daa(gbx_context_t *ctx)
 {
-    uint16_t temp = rA;
-    temp |= (rF & (FLAG_C | FLAG_H | FLAG_N)) << 4;
-    rAF = gbx_daa_lut[temp];
+    rAF = gbx_daa_lut[rA | (rF & (FLAG_C | FLAG_H | FLAG_N)) << 4];
 }
 
 // -----------------------------------------------------------------------------
@@ -249,7 +247,7 @@ OP_FUNC op_srai(gbx_context_t *ctx)
 OP_FUNC op_swap(gbx_context_t *ctx, int rd)
 {
     reg8[rd] = ((reg8[rd] & 0xF0) >> 4) | ((reg8[rd] & 0x0F) << 4);
-    rF = reg8[rd] ? 0 : FLAG_Z;
+    rF = Z_TST(reg8[rd]);
 }
 
 // -----------------------------------------------------------------------------
@@ -258,7 +256,7 @@ OP_FUNC op_swapi(gbx_context_t *ctx)
 {
     uint8_t mem = gbx_read_byte(ctx, rHL);
     mem = ((mem & 0xF0) >> 4) | ((mem & 0x0F) << 4);
-    rF = mem ? 0 : FLAG_Z;
+    rF = Z_TST(mem);
     gbx_write_byte(ctx, rHL, mem);
 }
 
@@ -286,7 +284,7 @@ OP_FUNC op_srli(gbx_context_t *ctx)
 // test bit b of 8-bit register
 OP_FUNC op_bit(gbx_context_t *ctx, int b, int rd)
 {
-    rF = (rF & FLAG_C) | FLAG_H | ((reg8[rd] & (1 << b)) ? 0 : FLAG_Z);
+    rF = (rF & FLAG_C) | FLAG_H | Z_TST(reg8[rd] & (1 << b));
 }
 
 // -----------------------------------------------------------------------------
@@ -294,7 +292,7 @@ OP_FUNC op_bit(gbx_context_t *ctx, int b, int rd)
 OP_FUNC op_biti(gbx_context_t *ctx, int b)
 {
     uint8_t mem = gbx_read_byte(ctx, rHL);
-    rF = (rF & FLAG_C) | FLAG_H | ((mem & (1 << b)) ? 0 : FLAG_Z);
+    rF = (rF & FLAG_C) | FLAG_H | Z_TST(mem & (1 << b));
 }
 
 // -----------------------------------------------------------------------------
@@ -402,8 +400,7 @@ OP_FUNC op_ldsp_st(gbx_context_t *ctx, uint16_t nn)
 OP_FUNC op_ldhl(gbx_context_t *ctx, int8_t n)
 {
     int result = rSP + n;
-    rF = ((rSP ^ n ^ result) & 0x100 ? FLAG_C : 0) |
-         ((rSP ^ n ^ result) &  0x10 ? FLAG_H : 0);
+    rF = C_TST(rSP, n, result) | H_TST(rSP, n, result);
     rHL = result & 0xFFFF;
 }
 
@@ -486,16 +483,14 @@ OP_FUNC op_popaf(gbx_context_t *ctx)
 OP_FUNC op_cp(gbx_context_t *ctx, int rs)
 {
     int r = rA - reg8[rs];
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((0 > r) ? FLAG_C : 0) |
-         ((rA ^ reg8[rs] ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, reg8[rs], r);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_cpn(gbx_context_t *ctx, uint8_t n)
 {
     int r = rA - n;
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((0 > r) ? FLAG_C : 0) |
-         ((rA ^ n ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, n, r);
 }
 
 // -----------------------------------------------------------------------------
@@ -503,8 +498,7 @@ OP_FUNC op_cpi(gbx_context_t *ctx, int rs)
 {
     uint8_t mem = gbx_read_byte(ctx, rHL);
     int r = rA - mem;
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((0 > r) ? FLAG_C : 0) |
-         ((rA ^ mem ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, mem, r);
 }
 
 // -----------------------------------------------------------------------------
@@ -532,50 +526,49 @@ OP_FUNC op_andi(gbx_context_t *ctx)
 OP_FUNC op_or(gbx_context_t *ctx, int rs)
 {
     rA |= reg8[rs];
-    rF = rA ? 0 : FLAG_Z;
+    rF = Z_TST(rA);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_orn(gbx_context_t *ctx, uint8_t n)
 {
     rA |= n;
-    rF = rA ? 0 : FLAG_Z;
+    rF = Z_TST(rA);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_ori(gbx_context_t *ctx)
 {
     rA |= gbx_read_byte(ctx, rHL);
-    rF = rA ? 0 : FLAG_Z;
+    rF = Z_TST(rA);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_xor(gbx_context_t *ctx, int rs)
 {
     rA ^= reg8[rs];
-    rF = rA ? 0 : FLAG_Z;
+    rF = Z_TST(rA);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_xorn(gbx_context_t *ctx, uint8_t n)
 {
     rA ^= n;
-    rF = rA ? 0 : FLAG_Z;
+    rF = Z_TST(rA);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_xori(gbx_context_t *ctx)
 {
     rA ^= gbx_read_byte(ctx, rHL);
-    rF = rA ? 0 : FLAG_Z;
+    rF = Z_TST(rA);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_addsp(gbx_context_t *ctx, int8_t n)
 {
     int result = rSP + n;
-    rF = ((rSP ^ n ^ result) & 0x100 ? FLAG_C : 0) |
-         ((rSP ^ n ^ result) & 0x10 ? FLAG_H : 0);
+    rF = C_TST(rSP, n, result) | H_TST(rSP, n, result);
     rSP = result & 0xFFFF;
 }
 
@@ -583,8 +576,7 @@ OP_FUNC op_addsp(gbx_context_t *ctx, int8_t n)
 OP_FUNC op_add(gbx_context_t *ctx, int rs)
 {
     int r = (int)rA + reg8[rs];
-    rF = ((r & 0xFF) ? 0 : FLAG_Z) | ((r > 0xFF) ? FLAG_C : 0) |
-         ((rA ^ reg8[rs] ^ r) & 0x10 ? FLAG_H : 0);
+    rF = Z_TST(r & 0xFF) | C_TST_P(r) | H_TST(rA, reg8[rs], r);
     rA = r & 0xFF;
 }
 
@@ -592,8 +584,7 @@ OP_FUNC op_add(gbx_context_t *ctx, int rs)
 OP_FUNC op_addn(gbx_context_t *ctx, uint8_t n)
 {
     int r = (int)rA + n;
-    rF = ((r & 0xFF) ? 0 : FLAG_Z) | ((r > 0xFF) ? FLAG_C : 0) |
-         ((rA ^ n ^ r) & 0x10 ? FLAG_H : 0);
+    rF = Z_TST(r & 0xFF) | C_TST_P(r) | H_TST(rA, n, r);
     rA = r & 0xFF;
 }
 
@@ -602,8 +593,7 @@ OP_FUNC op_addi(gbx_context_t *ctx)
 {
     uint8_t mem = gbx_read_byte(ctx, rHL);
     int r = (int)rA + mem;
-    rF = ((r & 0xFF) ? 0 : FLAG_Z) | ((r > 0xFF) ? FLAG_C : 0) |
-         ((rA ^ mem ^ r) & 0x10 ? FLAG_H : 0);
+    rF = Z_TST(r & 0xFF) | C_TST_P(r) | H_TST(rA, mem, r);
     rA = r & 0xFF;
 }
 
@@ -611,8 +601,7 @@ OP_FUNC op_addi(gbx_context_t *ctx)
 OP_FUNC op_add_r16(gbx_context_t *ctx, int rs)
 {
     int r = (int)rHL + reg16[rs];
-    rF = (rF & FLAG_Z) | ((r > 0xFFFF) ? FLAG_C : 0) |
-         ((rHL ^ reg16[rs] ^ r) & 0x1000 ? FLAG_H : 0);
+    rF = (rF & FLAG_Z) | C_TST_P16(r) | H_TST_16(rHL, reg16[rs], r);
     rHL = r & 0xFFFF;
 }
 
@@ -620,8 +609,7 @@ OP_FUNC op_add_r16(gbx_context_t *ctx, int rs)
 OP_FUNC op_adc(gbx_context_t *ctx, int rs)
 {
     int r = (int)rA + reg8[rs] + (rF & FLAG_C ? 1 : 0);
-    rF = ((r & 0xFF) ? 0 : FLAG_Z) | ((r > 0xFF) ? FLAG_C : 0) |
-         ((rA ^ reg8[rs] ^ r) & 0x10 ? FLAG_H : 0);
+    rF = Z_TST(r & 0xFF) | C_TST_P(r) | H_TST(rA, reg8[rs], r);
     rA = r & 0xFF;
 }
 
@@ -629,8 +617,7 @@ OP_FUNC op_adc(gbx_context_t *ctx, int rs)
 OP_FUNC op_adcn(gbx_context_t *ctx, uint8_t n)
 {
     int r = (int)rA + n + (rF & FLAG_C ? 1 : 0);
-    rF = ((r & 0xFF) ? 0 : FLAG_Z) | ((r > 0xFF) ? FLAG_C : 0) |
-         ((rA ^ n ^ r) & 0x10 ? FLAG_H : 0);
+    rF = Z_TST(r & 0xFF) | C_TST_P(r) | H_TST(rA, n, r);
     rA = r & 0xFF;
 }
 
@@ -639,8 +626,7 @@ OP_FUNC op_adci(gbx_context_t *ctx)
 {
     uint8_t mem = gbx_read_byte(ctx, rHL);
     int r = (int)rA + mem + (rF & FLAG_C ? 1 : 0);
-    rF = ((r & 0xFF) ? 0 : FLAG_Z) | ((r > 0xFF) ? FLAG_C : 0) |
-         ((rA ^ mem ^ r) & 0x10 ? FLAG_H : 0);
+    rF = Z_TST(r & 0xFF) | C_TST_P(r) | H_TST(rA, mem, r);
     rA = r & 0xFF;
 }
 
@@ -648,8 +634,7 @@ OP_FUNC op_adci(gbx_context_t *ctx)
 OP_FUNC op_sub(gbx_context_t *ctx, int rs)
 {
     int r = (int)rA - reg8[rs];
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((r < 0) ? FLAG_C : 0) |
-         ((rA ^ reg8[rs] ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, reg8[rs], r);
     rA = r & 0xFF;
 }
 
@@ -657,8 +642,7 @@ OP_FUNC op_sub(gbx_context_t *ctx, int rs)
 OP_FUNC op_subn(gbx_context_t *ctx, uint8_t n)
 {
     int r = (int)rA - n;
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((r < 0) ? FLAG_C : 0) |
-         ((rA ^ n ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, n, r);
     rA = r & 0xFF;
 }
 
@@ -667,8 +651,7 @@ OP_FUNC op_subi(gbx_context_t *ctx)
 {
     uint8_t mem = gbx_read_byte(ctx, rHL);
     int r = (int)rA - mem;
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((r < 0) ? FLAG_C : 0) |
-         ((rA ^ mem ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, mem, r);
     rA = r & 0xFF;
 }
 
@@ -676,8 +659,7 @@ OP_FUNC op_subi(gbx_context_t *ctx)
 OP_FUNC op_sbc(gbx_context_t *ctx, int rs)
 {
     int r = (int)rA - reg8[rs] - (rF & FLAG_C ? 1 : 0);
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((r < 0) ? FLAG_C : 0) |
-         ((rA ^ reg8[rs] ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, reg8[rs], r);
     rA = r & 0xFF;
 }
 
@@ -685,8 +667,7 @@ OP_FUNC op_sbc(gbx_context_t *ctx, int rs)
 OP_FUNC op_sbcn(gbx_context_t *ctx, uint8_t n)
 {
     int r = (int)rA - n - (rF & FLAG_C ? 1 : 0);
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((r < 0) ? FLAG_C : 0) |
-         ((rA ^ n ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, n, r);
     rA = r & 0xFF;
 }
 
@@ -695,8 +676,7 @@ OP_FUNC op_sbci(gbx_context_t *ctx, int rs)
 {
     uint8_t mem = gbx_read_byte(ctx, rHL);
     int r = (int)rA - mem - (rF & FLAG_C ? 1 : 0);
-    rF = FLAG_N | ((r & 0xFF) ? 0 : FLAG_Z) | ((r < 0) ? FLAG_C : 0) |
-         ((rA ^ mem ^ r) & 0x10 ? FLAG_H : 0);
+    rF = FLAG_N | Z_TST(r & 0xFF) | C_TST_N(r) | H_TST(rA, mem, r);
     rA = r & 0xFF;
 }
 
@@ -704,15 +684,14 @@ OP_FUNC op_sbci(gbx_context_t *ctx, int rs)
 OP_FUNC op_incb(gbx_context_t *ctx, int rd)
 {
     ++reg8[rd];
-    rF = (rF & FLAG_C) | (reg8[rd] ? 0 : FLAG_Z) |
-         (reg8[rd] & 0x0F ? 0 : FLAG_H);
+    rF = (rF & FLAG_C) | Z_TST(reg8[rd]) | H_TST_P(reg8[rd]);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_inci(gbx_context_t *ctx)
 {
     uint8_t r = gbx_read_byte(ctx, rHL) + 1;
-    rF = (rF & FLAG_C) | (r ? 0 : FLAG_Z) | (r & 0x0F ? 0 : FLAG_H);
+    rF = (rF & FLAG_C) | Z_TST(r) | H_TST_P(r);
     gbx_write_byte(ctx, rHL, r);
 }
 
@@ -726,16 +705,14 @@ OP_FUNC op_incw(gbx_context_t *ctx, int rd)
 OP_FUNC op_decb(gbx_context_t *ctx, int rd)
 {
     --reg8[rd];
-    rF = (rF & FLAG_C) | FLAG_N | (reg8[rd] ? 0 : FLAG_Z) |
-         ((reg8[rd] & 0xF) == 0xF ? FLAG_H : 0);
+    rF = (rF & FLAG_C) | FLAG_N | Z_TST(reg8[rd]) | H_TST_N(reg8[rd]);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_deci(gbx_context_t *ctx)
 {
     uint8_t r = gbx_read_byte(ctx, rHL) - 1;
-    rF = (rF & FLAG_C) | FLAG_N | (r ? 0 : FLAG_Z) |
-         ((r & 0xF) == 0xF ? FLAG_H : 0);
+    rF = (rF & FLAG_C) | FLAG_N | Z_TST(r) | H_TST_N(r);
     gbx_write_byte(ctx, rHL, r);
 }
 
@@ -754,25 +731,25 @@ OP_FUNC op_jp(gbx_context_t *ctx, uint16_t nn)
 // -----------------------------------------------------------------------------
 OP_FUNC op_jpnz(gbx_context_t *ctx, uint16_t nn)
 {
-    if (!(rF & FLAG_Z)) rNextPC = nn;
+    CONDITIONAL_JP(!(rF & FLAG_Z), nn, 1);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_jpz(gbx_context_t *ctx, uint16_t nn)
 {
-    if (rF & FLAG_Z) rNextPC = nn;
+    CONDITIONAL_JP(rF & FLAG_Z, nn, 1);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_jpnc(gbx_context_t *ctx, uint16_t nn)
 {
-    if (!(rF & FLAG_C)) rNextPC = nn;
+    CONDITIONAL_JP(!(rF & FLAG_C), nn, 1);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_jpc(gbx_context_t *ctx, uint16_t nn)
 {
-    if (rF & FLAG_C) rNextPC = nn;
+    CONDITIONAL_JP(rF & FLAG_C, nn, 1);
 }
 
 // -----------------------------------------------------------------------------
@@ -790,25 +767,25 @@ OP_FUNC op_jr(gbx_context_t *ctx, int8_t n)
 // -----------------------------------------------------------------------------
 OP_FUNC op_jrnz(gbx_context_t *ctx, int8_t n)
 {
-    if (!(rF & FLAG_Z)) rNextPC += n;
+    CONDITIONAL_JR(!(rF & FLAG_Z), n, 1);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_jrz(gbx_context_t *ctx, int8_t n)
 {
-    if (rF & FLAG_Z) rNextPC += n;
+    CONDITIONAL_JR(rF & FLAG_Z, n, 1);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_jrnc(gbx_context_t *ctx, int8_t n)
 {
-    if (!(rF & FLAG_C)) rNextPC += n;
+    CONDITIONAL_JR(!(rF & FLAG_C), n, 1);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_jrc(gbx_context_t *ctx, int8_t n)
 {
-    if (rF & FLAG_C) rNextPC += n;
+    CONDITIONAL_JR(rF & FLAG_C, n, 1);
 }
 
 // -----------------------------------------------------------------------------
@@ -821,25 +798,25 @@ OP_FUNC op_call(gbx_context_t *ctx, uint16_t nn)
 // -----------------------------------------------------------------------------
 OP_FUNC op_callnz(gbx_context_t *ctx, uint16_t nn)
 {
-    if (!(rF & FLAG_Z)) op_call(ctx, nn);
+    CONDITIONAL_CALL(!(rF & FLAG_Z), nn, 3);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_callz(gbx_context_t *ctx, uint16_t nn)
 {
-    if (rF & FLAG_Z) op_call(ctx, nn);
+    CONDITIONAL_CALL(rF & FLAG_Z, nn, 3);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_callnc(gbx_context_t *ctx, uint16_t nn)
 {
-    if (!(rF & FLAG_C)) op_call(ctx, nn);
+    CONDITIONAL_CALL(!(rF & FLAG_C), nn, 3);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_callc(gbx_context_t *ctx, uint16_t nn)
 {
-    if (rF & FLAG_C) op_call(ctx, nn);
+    CONDITIONAL_CALL(rF & FLAG_C, nn, 3);
 }
 
 // -----------------------------------------------------------------------------
@@ -851,25 +828,25 @@ OP_FUNC op_ret(gbx_context_t *ctx)
 // -----------------------------------------------------------------------------
 OP_FUNC op_retnz(gbx_context_t *ctx)
 {
-    if (!(rF & FLAG_Z)) POP(rNextPC);
+    CONDITIONAL_RET(!(rF & FLAG_Z), 3);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_retz(gbx_context_t *ctx)
 {
-    if (rF & FLAG_Z) POP(rNextPC);
+    CONDITIONAL_RET(rF & FLAG_Z, 3);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_retnc(gbx_context_t *ctx)
 {
-    if (!(rF & FLAG_C)) POP(rNextPC);
+    CONDITIONAL_RET(!(rF & FLAG_C), 3);
 }
 
 // -----------------------------------------------------------------------------
 OP_FUNC op_retc(gbx_context_t *ctx)
 {
-    if (rF & FLAG_C) POP(rNextPC);
+    CONDITIONAL_RET(rF & FLAG_C, 3);
 }
 
 // -----------------------------------------------------------------------------
@@ -902,6 +879,8 @@ INLINE void interrupt_vector(gbx_context_t *ctx, int src, uint16_t vector)
     // push the current PC to the stack and jump to the interrupt vector
     PUSH(rPC);
     rPC = vector;
+
+    ctx->cycle_delta += 20;
 }
 
 // -----------------------------------------------------------------------------
@@ -935,17 +914,17 @@ INLINE void service_interrupts(gbx_context_t *ctx)
 // -----------------------------------------------------------------------------
 INLINE void timer_update_cycles(gbx_context_t *ctx, long cycles)
 {
-    // clock divider always incremented, even if the main timer is disabled
+    // divider is always incremented, even if the main timer is disabled
     ctx->timer.div_ticks += cycles;
     if (ctx->timer.div_ticks >= 256) {
         ctx->timer.div_ticks -= 256;
-        ++ctx->timer.div;
+        ctx->timer.div = (ctx->timer.div + 1) & 0xFF;
     }
 
     // update the main timer only if it's enabled
     if (!(ctx->timer.tac & TAC_ENABLED))
         return;
-    
+
     ctx->timer.tima_ticks += cycles;
     if (ctx->timer.tima_ticks >= ctx->timer.tima_limit) {
         ctx->timer.tima_ticks -= ctx->timer.tima_limit;
@@ -1004,18 +983,16 @@ INLINE void serial_update_cycles(gbx_context_t *ctx, long cycles)
 }
 
 // -----------------------------------------------------------------------------
-static void perform_cyclic_tasks(gbx_context_t *ctx, long cycle_delta)
+static void perform_cyclic_tasks(gbx_context_t *ctx)
 {
-    ctx->cycles += cycle_delta;
-
     if (ctx->dma.active)
-        dma_update_cycles(ctx, cycle_delta);
+        dma_update_cycles(ctx, ctx->cycle_delta);
 
     if (ctx->sc_active)
-        serial_update_cycles(ctx, cycle_delta);
+        serial_update_cycles(ctx, ctx->cycle_delta);
 
-    timer_update_cycles(ctx, cycle_delta);
-    video_update_cycles(ctx, cycle_delta);
+    timer_update_cycles(ctx, ctx->cycle_delta);
+    video_update_cycles(ctx, ctx->cycle_delta);
 
     // handle interrupts if any are enabled and pending, and IME is set
     if (ctx->ime == IME_ENABLE)
@@ -1032,6 +1009,8 @@ static void perform_cyclic_tasks(gbx_context_t *ctx, long cycle_delta)
         ctx->di_delay = 0;
         ctx->ime = IME_DISABLE;
     }
+
+    ctx->cycles += ctx->cycle_delta;
 }
 
 #define HALT_CYCLES 12
@@ -1040,14 +1019,15 @@ static void perform_cyclic_tasks(gbx_context_t *ctx, long cycle_delta)
 // -----------------------------------------------------------------------------
 static int process_halt_state(gbx_context_t *ctx)
 {
-    if (/*ctx->int_en &*/ ctx->int_flags) {
+    if (ctx->int_en & ctx->int_flags) {
         // leave HALT mode if any interrupt is fired
         ctx->exec_flags &= ~EXEC_HALT;
         return 0;
     }
 
     // remain in HALT mode. drive the rest of the system forward
-    perform_cyclic_tasks(ctx, HALT_CYCLES);
+    ctx->cycle_delta = STOP_CYCLES;
+    perform_cyclic_tasks(ctx);
     return 1;
 }
 
@@ -1068,7 +1048,8 @@ static int process_stop_state(gbx_context_t *ctx)
         return 0;
     }
 
-    perform_cyclic_tasks(ctx, STOP_CYCLES);
+    ctx->cycle_delta = STOP_CYCLES;
+    perform_cyclic_tasks(ctx);
     return 1;
 }
 
@@ -1083,8 +1064,6 @@ static int process_stop_state(gbx_context_t *ctx)
 // -----------------------------------------------------------------------------
 long gbx_execute_cycles(gbx_context_t *ctx, long cycles_left)
 {
-    long cycle_delta;
-
     while (cycles_left > 0) {
         if (ctx->exec_flags) {
             // allow requests to terminate execution
@@ -1110,22 +1089,24 @@ long gbx_execute_cycles(gbx_context_t *ctx, long cycles_left)
         // fetch and store the next opcode
         ctx->next_pc = rPC;
         ctx->opcode1 = gbx_next_byte(ctx);
+        ctx->cycle_delta = 0;
 
         // check prefix and execute the current instruction
         if (ctx->opcode1 == 0xCB) {
             ctx->opcode2 = gbx_next_byte(ctx);
 #           include "decode_cb.inc"
-            cycle_delta = gbx_instruction_cycles_cb[ctx->opcode2] << 2;
+            ctx->cycle_delta += gbx_instruction_cycles_cb[ctx->opcode2];
         }
         else {
 #           include "decode.inc"
-            cycle_delta = gbx_instruction_cycles[ctx->opcode1] << 2;
+            ctx->cycle_delta += gbx_instruction_cycles[ctx->opcode1];
         }
 
         rPC = (ctx->next_pc & 0xFFFF);
 
-        cycles_left -= cycle_delta;
-        perform_cyclic_tasks(ctx, cycle_delta);
+        ctx->cycle_delta <<= 2;
+        perform_cyclic_tasks(ctx);
+        cycles_left -= ctx->cycle_delta;
     }
 
     return 0;

@@ -19,23 +19,7 @@
 #include "gbx.h"
 #include "memory.h"
 #include "ports.h"
-
-// Gameboy Speed:   4.194304 MHz
-// Horizontal Sync: 9198 Hz (108.719287 us)
-// Vertical Sync:   59.73 Hz (16.7420057 ms)
-
-// Refresh Cycles:  70224 (17556)
-// VBLANK Cycles:   4560 (1140)
-
-// Total Lines:     154 (LY =   0..153)
-// Visible Lines:   144 (LY =   0..143)
-// VBLANK Lines:    10  (LY = 144..153)
-
-// Cycles Per Line: 4560 / 10 = 456 (114)
-// Visible Pixels:  160 (40)
-// Mode 0 Cycles:   204 (51)    reported 201-207
-// Mode 2 Cycles:   80  (20)    reported 77-83
-// Mode 3 Cycles:   172 (43)    reported 169-175
+#include "video.h"
 
 // -----------------------------------------------------------------------------
 INLINE void sprite_normal(gbx_context_t *ctx, uint32_t *palette,
@@ -185,9 +169,10 @@ void render_sprites(gbx_context_t *ctx)
 // -----------------------------------------------------------------------------
 void render_bg_pixel(gbx_context_t *ctx, int x, int y)
 {
-    int base_x, base_y, off_x, off_y, bit, mappos, cnum, color;
+    int base_x, base_y, off_x, off_y, mappos, cnum;
     uint8_t tile, c1, c2, attr;
-    uint16_t addr;
+    uint16_t addr, char_base = 0;
+    uint32_t *palette = ctx->video.bgp_rgb;
 
     if ((ctx->video.lcdc & LCDC_WND_EN) &&
         (x >= (ctx->video.wx - 7)) && (y >= ctx->video.wy)) {
@@ -195,56 +180,56 @@ void render_bg_pixel(gbx_context_t *ctx, int x, int y)
         base_y = y - ctx->video.wy;
         mappos = ((base_y & 0xF8) << 2) | (base_x >> 3);
 
-        off_x = base_x & 7;
-        off_y = base_y & 7;
-        bit = 7 - off_x;
-
+        // window tile index may be located at either 0x9800 or 0x9C00
         if (ctx->video.lcdc & LCDC_WND_CODE)
             tile = ctx->mem.vram[0x1C00 + mappos];
         else
             tile = ctx->mem.vram[0x1800 + mappos];
-
-        if (ctx->video.lcdc & LCDC_BG_CHAR)
-            addr = 0x8000 + (tile << 4) + (off_y << 1);
-        else
-            addr = 0x9000 + ((int8_t)tile << 4) + (off_y << 1);
     }
     else {
         base_x = (x + ctx->video.scx) & 0xFF;
         base_y = (y + ctx->video.scy) & 0xFF;
         mappos = ((base_y & 0xF8) << 2) | (base_x >> 3);
 
-        off_x = base_x & 7;
-        off_y = base_y & 7;
-        bit = 7 - off_x;
-
+        // background tile index may be located at either 0x9800 or 0x9C00
         if (ctx->video.lcdc & LCDC_BG_CODE)
-            tile = gbx_read_byte(ctx, 0x9C00 + mappos);
+            tile = ctx->mem.vram[0x1C00 + mappos];
         else
-            tile = gbx_read_byte(ctx, 0x9800 + mappos);
-
-        if (ctx->video.lcdc & LCDC_BG_CHAR)
-            addr = 0x8000 + (tile << 4) + (off_y << 1);
-        else
-            addr = 0x9000 + ((int8_t)tile << 4) + (off_y << 1);
+            tile = ctx->mem.vram[0x1800 + mappos];
     }
 
-    c1 = gbx_read_byte(ctx, addr + 0);
-    c2 = gbx_read_byte(ctx, addr + 1);
+    off_x = 7 - (base_x & 7);
+    off_y = base_y & 7;
 
-    cnum = ((c1 >> bit) & 1) | (((c2 >> bit) << 1) & 2);
     if (ctx->cgb_enabled) {
-        // read the BG map attributes from VRAM bank 1
+        // read the background map attribute when operating in color mode
         if (ctx->video.lcdc & LCDC_BG_CODE)
-            attr = ctx->mem.vram[VRAM_BANK_SIZE + 0x1C00 + mappos];
+            attr = ctx->mem.vram[0x1C00 + VRAM_BANK_SIZE + mappos];
         else
-            attr = ctx->mem.vram[VRAM_BANK_SIZE + 0x1800 + mappos];
-        color = ctx->video.bcpd_rgb[cnum | ((attr & 0x07) << 2)];
-    }
-    else
-        color = ctx->video.bgp_rgb[cnum];
+            attr = ctx->mem.vram[0x1800 + VRAM_BANK_SIZE + mappos];
 
-    ctx->fb[y * GBX_LCD_XRES + x] = color;
+        // determine whether the tile data is located in bank 0 or bank 1
+        if (attr & BG_ATTR_BANK)
+            char_base = VRAM_BANK_SIZE;
+
+        // check if we need to flip the tile in either the x or y direction
+        if (attr & BG_ATTR_XFLIP) off_x = 7 - off_x;
+        if (attr & BG_ATTR_YFLIP) off_y = 7 - off_y;
+
+        palette = &ctx->video.bcpd_rgb[(attr & BG_ATTR_PAL) << 2];
+    }
+
+    // tile character data may be located at either 0x8000 or 0x8800
+    if (ctx->video.lcdc & LCDC_BG_CHAR)
+        addr = char_base + (tile << 4) + (off_y << 1);
+    else
+        addr = char_base + 0x1000 + ((int8_t)tile << 4) + (off_y << 1);
+
+    // compute the color and store it in the framebuffer
+    c1 = ctx->mem.vram[addr + 0];
+    c2 = ctx->mem.vram[addr + 1];
+    cnum = ((c1 >> off_x) & 1) | (((c2 >> off_x) << 1) & 2);
+    ctx->fb[y * GBX_LCD_XRES + x] = palette[cnum];
 }
 
 // -----------------------------------------------------------------------------
@@ -335,7 +320,7 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
         switch (ctx->video.state) {
         case VIDEO_STATE_SEARCH:
             // check for OAM search completion, transition to data transfer
-            if (++ctx->video.cycle >= SEARCH_CYCLES)
+            if (++ctx->video.cycle >= VIDEO_CYCLES_SEARCH)
                 transition_to_transfer(ctx);
             break;
         case VIDEO_STATE_TRANSFER:
@@ -346,12 +331,12 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
             }
 
             // check for data transfer completion, transition to h-blank
-            if (++ctx->video.cycle >= TRANSFER_CYCLES)
+            if (++ctx->video.cycle >= VIDEO_CYCLES_TRANSFER)
                 transition_to_hblank(ctx);
             break;
         case VIDEO_STATE_HBLANK:
             // check for h-blank completion, transition to v-blank or search
-            if (++ctx->video.cycle >= HBLANK_CYCLES) {
+            if (++ctx->video.cycle >= VIDEO_CYCLES_HBLANK) {
                 if (++ctx->video.lcd_y >= GBX_LCD_YRES)
                     transition_to_vblank(ctx);
                 else
@@ -363,8 +348,8 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
             break;
         case VIDEO_STATE_VBLANK:
             // check for v-blank completion, transition to oam search
-            if (++ctx->video.cycle >= HORIZONTAL_CYCLES) {
-                if (++ctx->video.lcd_y >= TOTAL_SCANLINES) {
+            if (++ctx->video.cycle >= VIDEO_CYCLES_SCANLINE) {
+                if (++ctx->video.lcd_y >= LCD_SCANLINE_COUNT) {
                     transition_to_search(ctx);
                     ctx->video.lcd_y = 0;
                 }
