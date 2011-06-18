@@ -43,6 +43,11 @@
 #define MODE_SEARCH     0x02
 #define MODE_TRANSFER   0x03
 
+// HDMA control fields
+
+#define HDMA_LENGTH     0x7F    // DMA transfer length
+#define HDMA_TYPE       0x80    // DMA type (general purpose or h-blank)
+
 // OAM attribute fields
 
 #define OAM_ATTR_CPAL   0x07    // CGB only, palette number OBP0-7
@@ -92,6 +97,46 @@
 // Mode 0 Cycles:   204 (51)    reported 201-207
 // Mode 2 Cycles:   80  (20)    reported 77-83
 // Mode 3 Cycles:   172 (43)    reported 169-175
+
+// -----------------------------------------------------------------------------
+// Returns a non-zero value if VRAM is currently accessible by the CPU.
+INLINE int gbx_is_vram_accessible(gbx_context_t *ctx)
+{
+    int mode = ctx->video.stat & STAT_MODE;
+    return (mode < MODE_TRANSFER) ? 1 : 0;
+}
+
+// -----------------------------------------------------------------------------
+// Returns a non-zero value if OAM is currently accessible by the CPU.
+INLINE int gbx_is_oam_accessible(gbx_context_t *ctx)
+{
+    int mode = ctx->video.stat & STAT_MODE;
+    return (mode < MODE_SEARCH) ? 1 : 0;
+}
+
+// -----------------------------------------------------------------------------
+INLINE uint16_t gbx_validate_hdma_src(uint16_t addr)
+{
+    addr &= 0xFFF0;
+    if (addr <= 0x7FF0 || (addr >= 0xA000 && addr <= 0xDFF0))
+        return addr;
+
+    // not sure how to handle this case, so set to 0000 and report error
+    log_err("invalid HDMA source address %04X specified. set to 0000\n");
+    return 0;
+}
+
+// -----------------------------------------------------------------------------
+INLINE uint16_t gbx_validate_hdma_dst(uint16_t addr)
+{
+    addr = (addr & 0x1FF0) | 0x8000;
+    if (addr >= 0x8000 && addr <= 0x9FF0)
+        return addr;
+
+    // not sure how to handle this case, so set to 0000 and report error
+    log_err("invalid HDMA destination address %04X specified. set to 0000\n");
+    return 0;
+}
 
 #endif // GBOY_VIDEO__H
 

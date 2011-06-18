@@ -148,6 +148,9 @@ typedef struct video_registers {
     uint8_t ocpd[0x40];
     uint32_t bcpd_rgb[0x20];
     uint32_t ocpd_rgb[0x20];
+    uint16_t hdma_src, hdma_dst;
+    uint8_t hdma_ctl;
+    int hdma_len, hdma_active, hdma_pos;
 } video_registers_t;
 
 typedef struct dma_registers {

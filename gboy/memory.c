@@ -17,8 +17,12 @@
 
 #include <assert.h>
 #include "gbx.h"
+#include "memory.h"
 #include "ports.h"
 #include "video.h"
+
+// #define PROTECT_OAM_ACCESS
+// #define PROTECT_VRAM_ACCESS
 
 // -----------------------------------------------------------------------------
 static uint8_t read_bios_rom(gbx_context_t *ctx, uint16_t addr)
@@ -55,6 +59,13 @@ static void write_bad_region(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 // -----------------------------------------------------------------------------
 static uint8_t read_oam_region(gbx_context_t *ctx, uint16_t addr)
 {
+#ifdef PROTECT_OAM_ACCESS
+    if (!gbx_is_oam_accessible(ctx)) {
+        log_err("attempted to read OAM when in use by LCD controller\n");
+        return 0xFF;
+    }
+#endif
+
     log_spew("read_oam_region: addr=%04X\n", addr);
     return ctx->mem.oam[addr & 0xFF];
 }
@@ -62,6 +73,13 @@ static uint8_t read_oam_region(gbx_context_t *ctx, uint16_t addr)
 // -----------------------------------------------------------------------------
 static void write_oam_region(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
+#ifdef PROTECT_OAM_ACCESS
+    if (!gbx_is_oam_accessible(ctx)) {
+        log_err("attempted to write OAM when in use by LCD controller\n");
+        return;
+    }
+#endif
+
     log_spew("write_oam_region: addr=%04X value=%02X\n", addr, value);
     ctx->mem.oam[addr & 0xFF] = value;
 }
@@ -235,7 +253,7 @@ void cgb_set_vram_bank(gbx_context_t *ctx, uint8_t value)
 {
     int bank = value & 1;
     if (!ctx->cgb_enabled) {
-        log_err("cannot system VRAM bank when not in CGB mode\n");
+        log_err("cannot set VRAM bank when not in CGB mode\n");
         return;
     }
 
@@ -249,7 +267,7 @@ void cgb_set_wram_bank(gbx_context_t *ctx, uint8_t value)
 {
     int bank = (value & 3) ? (value & 3) : 1;
     if (!ctx->cgb_enabled) {
-        log_err("cannot system WRAM bank when not in CGB mode\n");
+        log_err("cannot set WRAM bank when not in CGB mode\n");
         return;
     }
 
@@ -384,6 +402,32 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 }
 
 // -----------------------------------------------------------------------------
+static void hdma_hblank_transfer(gbx_context_t *ctx)
+{
+    log_dbg("begin %d byte hblank dma transfer from %04X to %04X\n",
+            ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
+
+    ctx->video.hdma_pos = 0;
+    ctx->video.hdma_active = 1;
+}
+
+// -----------------------------------------------------------------------------
+static void hdma_general_purpose_transfer(gbx_context_t *ctx)
+{
+    int i;
+    log_dbg("begin %d byte general dma transfer from %04X to %04X\n",
+            ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
+
+    for (i = 0; i < ctx->video.hdma_len; i++) {
+        uint8_t data = gbx_read_byte(ctx, ctx->video.hdma_src + i);
+        gbx_write_byte(ctx, ctx->video.hdma_dst + i, data);
+    }
+
+    ctx->video.hdma_ctl = 0xFF;
+    ctx->video.hdma_active = 0;
+}
+
+// -----------------------------------------------------------------------------
 static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = 0;
@@ -458,12 +502,22 @@ static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
         value = ctx->mem.vram_bnum;
         break;
     case PORT_HDMA1:
+        value = ctx->video.hdma_src >> 8;
+        break;
     case PORT_HDMA2:
+        value = ctx->video.hdma_src & 0xFF;
+        break;
     case PORT_HDMA3:
+        value = ctx->video.hdma_dst >> 8;
+        break;
     case PORT_HDMA4:
+        value = ctx->video.hdma_dst & 0xFF;
+        break;
     case PORT_HDMA5:
-        // TODO: implement
-        value = ctx->mem.hram[addr & 0xFF];
+        if (ctx->video.hdma_active)
+            value = 0x80 | ((ctx->video.hdma_len >> 4) - 1);
+        else
+            value = ctx->video.hdma_ctl;
         break;
     case PORT_RP:
         log_info("read RP = %02x\n", 0);
@@ -523,6 +577,7 @@ static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
 // -----------------------------------------------------------------------------
 static void write_io_port(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
+    uint16_t dma_addr;
     log_spew("write_io_port: port=%s addr=%04X value=%02X\n",
              gbx_port_names[addr & 0xFF], addr, value);
 
@@ -607,12 +662,28 @@ static void write_io_port(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         cgb_set_vram_bank(ctx, value);
         break;
     case PORT_HDMA1:
+        dma_addr = (ctx->video.hdma_src & 0x00FF) | (value << 8);
+        ctx->video.hdma_src = gbx_validate_hdma_src(dma_addr);
+        break;
     case PORT_HDMA2:
+        dma_addr = (ctx->video.hdma_src & 0xFF00) | value;
+        ctx->video.hdma_src = gbx_validate_hdma_src(dma_addr);
+        break;
     case PORT_HDMA3:
+        dma_addr = (ctx->video.hdma_dst & 0x00FF) | (value << 8);
+        ctx->video.hdma_dst = gbx_validate_hdma_dst(dma_addr);
+        break;
     case PORT_HDMA4:
+        dma_addr = (ctx->video.hdma_dst & 0xFF00) | value;
+        ctx->video.hdma_dst = gbx_validate_hdma_dst(dma_addr);
+        break;
     case PORT_HDMA5:
-        // TODO: implement
-        ctx->mem.hram[addr & 0xFF] = value;
+        ctx->video.hdma_ctl = value;
+        ctx->video.hdma_len = ((value & HDMA_LENGTH) + 1) << 4;
+        if (value & HDMA_TYPE)
+            hdma_hblank_transfer(ctx);
+        else
+            hdma_general_purpose_transfer(ctx);
         break;
     case PORT_RP:
         log_info("write RP = %02X\n", value);
@@ -682,6 +753,12 @@ uint8_t gbx_read_byte(gbx_context_t *ctx, uint16_t addr)
     case 0x4: case 0x5: case 0x6: case 0x7:
         return ctx->mem.xrom_bank[addr & XROM_MASK];
     case 0x8: case 0x9:
+#ifdef PROTECT_VRAM_ACCESS
+        if (!gbx_is_vram_accessible(ctx)) {
+            log_err("attempted to read VRAM when in use by LCD controller\n");
+            return 0xFF;
+        }
+#endif
         return ctx->mem.vram_bank[addr & VRAM_MASK];
     case 0xA: case 0xB:
         if (ctx->have_mbc2)
@@ -759,6 +836,12 @@ void gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t value)
             log_err("bad XROM write - addr:%04X val:%02X\n", addr, value);
         break;
     case 0x8: case 0x9:
+#ifdef PROTECT_VRAM_ACCESS
+        if (!gbx_is_vram_accessible(ctx)) {
+            log_err("attempted to write VRAM when in use by LCD controller\n");
+            return;
+        }
+#endif
         mem->vram_bank[addr & VRAM_MASK] = value;
         break;
     case 0xA: case 0xB:

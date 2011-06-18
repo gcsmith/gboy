@@ -93,28 +93,27 @@ INLINE void sprite_xyflip(gbx_context_t *ctx, uint32_t *palette,
 void render_sprites(gbx_context_t *ctx)
 {
     int i, xpos, ypos, w0, h0, w1, h1, type;
-    uint8_t pnum, attr;
+    uint8_t pnum, attr, *tile;
     uint16_t oam_addr = 0xFE00;
     uint32_t *palette;
-    uint8_t *tile;
 
     // check for 8x8 or 8x16 sprite, for 8x16 pattern LSB is ignored
     int SH = (ctx->video.lcdc & LCDC_OBJ_SIZE) ? 16 : 8;
     uint8_t pnum_mask = (ctx->video.lcdc & LCDC_OBJ_SIZE) ? 0xFE : 0xFF;
 
     for (i = 0; i < 40; ++i) {
-        ypos = gbx_read_byte(ctx, oam_addr++);
-        xpos = gbx_read_byte(ctx, oam_addr++);
+        ypos = gbx_read_byte(ctx, oam_addr++) - 16;
+        xpos = gbx_read_byte(ctx, oam_addr++) - 8;
         pnum = gbx_read_byte(ctx, oam_addr++) & pnum_mask;
         attr = gbx_read_byte(ctx, oam_addr++);
-        if (!xpos && !ypos) continue;
-        //if (!ypos || (ypos >= GBX_LCD_YRES)) continue;
-        //if (!xpos || (xpos >= GBX_LCD_XRES)) continue; //XXX: alter sorting?
+
+        if (ypos == -16 || ypos >= GBX_LCD_YRES ||
+            xpos ==  -8 || xpos >= GBX_LCD_XRES)
+            continue;
 
         // determine the orientation (normal, xflip, yflip, xflip & yflip)
         type = ((attr & OAM_ATTR_XFLIP) >> 5) | ((attr & OAM_ATTR_YFLIP) >> 5);
 
-        // determine which color palette and VRAM bank we're indexing into
         if (ctx->cgb_enabled) {
             // select the palette base address (OBP0-7)
             palette = &ctx->video.ocpd_rgb[(attr & OAM_ATTR_CPAL) << 2];
@@ -135,9 +134,6 @@ void render_sprites(gbx_context_t *ctx)
             // tile data located in the first (and only) VRAM bank
             tile = &ctx->mem.vram[pnum << 4];
         }
-
-        xpos -= 8;
-        ypos -= 16;
 
         w0 = (xpos >= 0) ? 0 : -xpos;
         h0 = (ypos >= 0) ? 0 : -ypos;
@@ -275,10 +271,38 @@ INLINE void transition_to_transfer(gbx_context_t *ctx)
 }
 
 // -----------------------------------------------------------------------------
+static void hdma_transfer_block(gbx_context_t *ctx)
+{
+    uint16_t src = ctx->video.hdma_src + ctx->video.hdma_pos;
+    uint16_t dst = ctx->video.hdma_dst + ctx->video.hdma_pos;
+    int i, copy_length = MIN(0x10, ctx->video.hdma_len);
+
+    for (i = 0; i < copy_length; i++) {
+        uint8_t data = gbx_read_byte(ctx, src + i);
+        gbx_write_byte(ctx, dst + i, data);
+    }
+
+    ctx->video.hdma_len -= copy_length;
+    ctx->video.hdma_pos += copy_length;
+
+    if (0 >= ctx->video.hdma_len) {
+        ctx->video.hdma_active = 0;
+        log_dbg("HDMA transfer completed\n");
+    }
+    else
+        log_dbg("HDMA copied %02X bytes from %04X to %04X (%02X left)\n",
+                copy_length, src, dst, ctx->video.hdma_len);
+}
+
+// -----------------------------------------------------------------------------
 INLINE void transition_to_hblank(gbx_context_t *ctx)
 {
     ctx->video.state = VIDEO_STATE_HBLANK;
     ctx->video.cycle = 0;
+
+    // if there is an HBLANK DMA pending, perform a 16 byte transfer
+    if (ctx->video.hdma_active)
+        hdma_transfer_block(ctx);
 
     // check for HBLANK STAT interrupt
     set_stat_mode(ctx, MODE_HBLANK);
