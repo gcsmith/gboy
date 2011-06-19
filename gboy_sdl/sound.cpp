@@ -39,12 +39,12 @@ sound_t *sound_init(int sample_rate, int buff_size)
 
     const char *err;
     if (NULL != (err = psnd->buf.set_sample_rate(sample_rate)))
-        log_spew("error in APU: %s\n", err);
+        log_err("error in APU: %s\n", err);
 
     psnd->apu.output(psnd->buf.center(), psnd->buf.left(), psnd->buf.right());
 
     if (NULL != (err = psnd->queue.start(sample_rate, 2)))
-        log_spew("error in APU: %s\n", err);
+        log_err("error in APU: %s\n", err);
 
     return (sound_t *)psnd;
 }
@@ -60,21 +60,24 @@ void sound_set_freq(sound_t *snd, int hz)
 void sound_write(sound_t *snd, int cycle, uint16_t addr, uint8_t value)
 {
     blargg_sound *psnd = (blargg_sound *)snd;
-    if (addr >= psnd->apu.start_addr && addr <= psnd->apu.end_addr)
-        psnd->apu.write_register(cycle, addr, value);
+    if (addr < psnd->apu.start_addr || addr > psnd->apu.end_addr) {
+        log_err("APU write error: address %04X out of range\n", addr);
+        return;
+    }
 
-    log_spew("APU write error: address %04X out of range\n", addr);
+    psnd->apu.write_register(cycle, addr, value);
 }
 
 // -----------------------------------------------------------------------------
 uint8_t sound_read(sound_t *snd, int cycle, uint16_t addr)
 {
     blargg_sound *psnd = (blargg_sound *)snd;
-    if (addr >= psnd->apu.start_addr && addr <= psnd->apu.end_addr)
-        return psnd->apu.read_register(cycle, addr);
+    if (addr < psnd->apu.start_addr || addr > psnd->apu.end_addr) {
+        log_err("APU read error: address %04X out of range\n", addr);
+        return 0xFF;
+    }
 
-    log_spew("APU read error: address %04X out of range\n", addr);
-    return 0xFF;
+    return psnd->apu.read_register(cycle, addr);
 }
 
 // -----------------------------------------------------------------------------
