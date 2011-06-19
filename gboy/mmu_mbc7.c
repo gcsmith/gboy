@@ -33,7 +33,7 @@
 // -----------------------------------------------------------------------------
 void mmu_wr_mbc7_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
-    log_dbg("MBC7 set RAM enable, addr:%04X data:%02X\n", addr, value);
+    log_spew("MBC7 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
 // -----------------------------------------------------------------------------
@@ -41,7 +41,7 @@ void mmu_wr_mbc7_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     // specify 7-bit ROM bank index, but 0 always maps to 1
     int bank = set_xrom_bank(ctx, (value & 0x7F) ? (value & 0x7F) : 1);
-    log_dbg("MBC7 set XROM bank %02X (set bits %02X)\n", bank, value);
+    log_spew("MBC7 set XROM bank %02X (set bits %02X)\n", bank, value);
 }
 
 // -----------------------------------------------------------------------------
@@ -49,10 +49,10 @@ void mmu_wr_mbc7_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     if (ctx->mem.xram_banks) {
         int bank = set_xram_bank(ctx, value & 0x03);
-        log_dbg("MBC7 set XRAM bank %02X (set bits %02X)\n", bank,  value);
+        log_spew("MBC7 set XRAM bank %02X (set bits %02X)\n", bank,  value);
     }
     else
-        log_err("MBC7 set XRAM bank %02X, but no XRAM present\n", value);
+        log_warn("MBC7 set XRAM bank %02X, but no XRAM present\n", value);
 }
 
 // -----------------------------------------------------------------------------

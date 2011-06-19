@@ -25,14 +25,14 @@
 // -----------------------------------------------------------------------------
 uint8_t mmu_rd_invalid(gbx_context_t *ctx, uint16_t addr)
 {
-    log_err("reading from unmapped page: addr=%04X value=FF\n", addr);
+    log_warn("reading from unmapped page: addr=%04X value=FF\n", addr);
     return 0xFF;
 }
 
 // -----------------------------------------------------------------------------
 void mmu_wr_invalid(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
-    log_err("writing to unmapped page: addr=%04X value=%02X\n", addr, value);
+    log_warn("writing to unmapped page: addr=%04X value=%02X\n", addr, value);
 }
 
 // -----------------------------------------------------------------------------
@@ -80,7 +80,7 @@ uint8_t mmu_rd_vram_bank(gbx_context_t *ctx, uint16_t addr)
     uint8_t value = ctx->mem.vram_bank[addr & VRAM_MASK];
 #ifdef PROTECT_VRAM_ACCESS
     if (!is_vram_accessible(ctx)) {
-        log_err("attempted to read VRAM when in use by LCD controller\n");
+        log_warn("attempted to read VRAM when in use by LCD controller\n");
         return 0xFF;
     }
 #endif
@@ -94,7 +94,7 @@ void mmu_wr_vram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
 #ifdef PROTECT_VRAM_ACCESS
     if (!is_vram_accessible(ctx)) {
-        log_err("attempted to write VRAM when in use by LCD controller\n");
+        log_warn("attempted to write VRAM when in use by LCD controller\n");
         return;
     }
 #endif
@@ -138,12 +138,12 @@ uint8_t mmu_rd_oam(gbx_context_t *ctx, uint16_t addr)
 {
 #ifdef PROTECT_OAM_ACCESS
     if (!is_oam_accessible(ctx)) {
-        log_err("attempted to read OAM when in use by LCD controller\n");
+        log_warn("attempted to read OAM when in use by LCD controller\n");
         return 0xFF;
     }
 
     if (addr > 0xFE9F) {
-        log_err("attempting to read unusable memory region (%04X)\n", addr);
+        log_warn("attempting to read unusable memory region (%04X)\n", addr);
         return 0xFF;
     }
 #endif
@@ -157,12 +157,12 @@ void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
 #ifdef PROTECT_OAM_ACCESS
     if (!is_oam_accessible(ctx)) {
-        log_err("attempted to write OAM when in use by LCD controller\n");
+        log_warn("attempted to write OAM when in use by LCD controller\n");
         return;
     }
 
     if (addr > 0xFE9F) {
-        log_err("attempting to write unusable memory region (%04X)\n", addr);
+        log_warn("attempting to write unusable memory region (%04X)\n", addr);
         return;
     }
 #endif
@@ -176,7 +176,7 @@ void cgb_set_vram_bank(gbx_context_t *ctx, uint8_t value)
 {
     int bank = value & 1;
     if (!ctx->color_enabled) {
-        log_err("cannot set VRAM bank when not in CGB mode\n");
+        log_warn("cannot set VRAM bank when not in CGB mode\n");
         return;
     }
 
@@ -190,7 +190,7 @@ void cgb_set_wram_bank(gbx_context_t *ctx, uint8_t value)
 {
     int bank = (value & 3) ? (value & 3) : 1;
     if (!ctx->color_enabled) {
-        log_err("cannot set WRAM bank when not in CGB mode\n");
+        log_warn("cannot set WRAM bank when not in CGB mode\n");
         return;
     }
 
@@ -219,7 +219,7 @@ INLINE void write_bcpd_color_palette(gbx_context_t *ctx, uint8_t value)
 {
     int color, index = ctx->video.bcps & 0x3F;
     if (!ctx->color_enabled) {
-        log_err("cannot write BG color palette when not in CGB mode\n");
+        log_warn("cannot write BG color palette when not in CGB mode\n");
         return;
     }
 
@@ -238,7 +238,7 @@ INLINE void write_ocpd_color_palette(gbx_context_t *ctx, uint8_t value)
     int index = ctx->video.ocps & 0x3F;
     uint16_t color;
     if (!ctx->color_enabled) {
-        log_err("cannot write OBJ color palette when not in CGB mode\n");
+        log_warn("cannot write OBJ color palette when not in CGB mode\n");
         return;
     }
 
@@ -309,11 +309,11 @@ INLINE void write_lcdc(gbx_context_t *ctx, uint8_t value)
 INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 {
     if (ctx->dma.active) {
-        log_err("attempting to start new DMA transfer with DMA active\n");
+        log_warn("attempting to start new DMA transfer with DMA active\n");
     }
 
     if (value > 0xF1) {
-        log_err("specified DMA source address above F19F (%02X00)\n", value);
+        log_warn("specified DMA source address above F19F (%02X00)\n", value);
         value = 0xF1;
     }
 
@@ -416,7 +416,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
     case PORT_LYC:
         value = ctx->video.lyc;
     case PORT_DMA:
-        log_err("attempting to read write-only DMA port\n");
+        log_warn("attempting to read write-only DMA port\n");
         value = ctx->dma.src; // ???
         break;
     case PORT_BGP:
@@ -505,7 +505,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
         break;
     default:
         if (offset < 0x80)
-            log_err("attempting to read invalid io port (%04X)\n", addr);
+            log_warn("attempting to read invalid io port (%04X)\n", addr);
         value = ctx->mem.hram[offset];
         break;
     }
@@ -571,7 +571,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         ctx->video.scx = value;
         break;
     case PORT_LY:
-        log_err("attempting to write read-only PORT_LY (%02X)\n", value);
+        log_warn("attempting to write read-only PORT_LY (%02X)\n", value);
         break;
     case PORT_LYC:
         ctx->video.lyc = value;
@@ -687,7 +687,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         break;
     default:
         if (offset < 0x80)
-            log_err("write to invalid io port (%04X) <- %02X\n", addr, value);
+            log_warn("write to invalid io port (%04X) <- %02X\n", addr, value);
         ctx->mem.hram[offset] = value;
         return;
     }

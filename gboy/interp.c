@@ -866,7 +866,7 @@ OP_FUNC op_rst(gbx_context_t *ctx, uint8_t n)
 // -----------------------------------------------------------------------------
 OP_FUNC op_reserved(gbx_context_t *ctx)
 {
-    log_err("attempting to execute invalid opcode\n");
+    log_warn("attempting to execute invalid opcode\n");
 }
 
 // -----------------------------------------------------------------------------

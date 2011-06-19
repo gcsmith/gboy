@@ -22,7 +22,7 @@
 // -----------------------------------------------------------------------------
 void mmu_wr_mbc1_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
-    log_dbg("MBC1 set RAM enable, addr:%04X data:%02X\n", addr, value);
+    log_spew("MBC1 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
 // -----------------------------------------------------------------------------
@@ -30,13 +30,13 @@ void mmu_wr_mbc1_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     if (ctx->mbc1_mode) {
         int bank = set_xrom_bank(ctx, (value & 0x1F) ? (value & 0x1F) : 1);
-        log_dbg("MBC1 set XROM bank %02X (set bits %02X)\n", bank, value);
+        log_spew("MBC1 set XROM bank %02X (set bits %02X)\n", bank, value);
     }
     else {
         // cannot map bank 0 to programmable region (0x00, 0x20, 0x40, 0x60)
         int bank_lo = (value & 0x1F) ? (value & 0x1F) : 1;
         int bank = set_xrom_bank(ctx, (ctx->mem.xrom_bnum & 0xE0) | bank_lo);
-        log_dbg("MBC1 set XROM bank %02X (set lo bits %02X)\n", bank, value);
+        log_spew("MBC1 set XROM bank %02X (set lo bits %02X)\n", bank, value);
     }
 }
 
@@ -47,17 +47,17 @@ void mmu_wr_mbc1_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         // set the two bit RAM address, assuming XRAM is actually present
         if (ctx->mem.xram_banks) {
             int bank = set_xram_bank(ctx, value & 3);
-            log_dbg("MBC1 set XRAM bank %02X (set bits %02X)\n", bank, value);
+            log_spew("MBC1 set XRAM bank %02X (set bits %02X)\n", bank, value);
         }
         else
-            log_err("MBC1 set XRAM bank %02X, but no XRAM present\n", value);
+            log_spew("MBC1 set XRAM bank %02X, but no XRAM present\n", value);
     }
     else {
         // set bits 5 and 6 of the XROM bank index when in mode 00
         int bank_hi = (value & 3) << 5;
         int bank = set_xrom_bank(ctx, (ctx->mem.xrom_bnum & 0x1F) | bank_hi);
         assert(ctx->mem.xrom_bnum & 0x1F);
-        log_dbg("MBC1 set XROM bank %02X (set hi bits %02X)\n", bank, value);
+        log_spew("MBC1 set XROM bank %02X (set hi bits %02X)\n", bank, value);
     }
 }
 
@@ -72,7 +72,7 @@ void mmu_wr_mbc1_mode(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         // ROM banking mode (16 Mb ROM / 8 KB RAM)
         ctx->mbc1_mode = 0;
     }
-    log_dbg("MBC1 set memory model to %d\n", ctx->mbc1_mode);
+    log_spew("MBC1 set memory model to %d\n", ctx->mbc1_mode);
 }
 
 // -----------------------------------------------------------------------------

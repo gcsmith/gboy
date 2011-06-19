@@ -24,6 +24,7 @@
 
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERR
+// #define ENABLE_LOG_WARN
 // #define ENABLE_LOG_DBG
 // #define ENABLE_LOG_SPEW
 
@@ -113,6 +114,16 @@ INLINE void log_dbg(const char *fmt, ...)
 INLINE void log_err(const char *fmt, ...)
 {
 #ifdef ENABLE_LOG_ERR
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+#endif
+}
+
+INLINE void log_warn(const char *fmt, ...)
+{
+#ifdef ENABLE_LOG_WARN
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);

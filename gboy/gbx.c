@@ -234,12 +234,7 @@ void optionally_load_bios(gbx_context_t *ctx)
     switch (ctx->system) {
     case SYSTEM_GMB: bios_file = "gmb_bios.bin"; break;
     case SYSTEM_SGB: bios_file = "sgb_bios.bin"; break;
-    case SYSTEM_CGB:
-        // color support must be enabled to execute the bios correctly
-        // if game is monochrome, this will be reset when bios is disabled
-        ctx->color_enabled = 1;
-        bios_file = "cgb_bios.bin";
-        break;
+    case SYSTEM_CGB: bios_file = "cgb_bios.bin"; break;
     default: return;
     }
 
@@ -254,6 +249,12 @@ void optionally_load_bios(gbx_context_t *ctx)
     else {
         ctx->mem.bios = buffer;
         ctx->bios_enabled = 1;
+
+        if (ctx->system == SYSTEM_CGB) {
+            // color support must be enabled to execute the bios correctly
+            // if game is monochrome, this will be reset when bios is disabled
+            ctx->color_enabled = 1;
+        }
     }
 
     SAFE_FREE(path);
@@ -352,7 +353,7 @@ void gbx_set_debugger(gbx_context_t *ctx, int enable)
     else
         ctx->exec_flags &= ~EXEC_TRACE;
 
-    log_dbg("debug mode %s\n", enable ? "enabled" : "disabled");
+    log_spew("debug mode %s\n", enable ? "enabled" : "disabled");
 }
 
 // -----------------------------------------------------------------------------
@@ -368,7 +369,7 @@ void gbx_set_input_state(gbx_context_t *ctx, int key, int pressed)
         ctx->input_state |= (1 << key);
 
     gbx_req_interrupt(ctx, INT_JOYPAD);
-    log_dbg("input index %d set to %s\n", key, pressed ? "down" : "up");
+    log_spew("input index %d set to %s\n", key, pressed ? "down" : "up");
 }
 
 // -----------------------------------------------------------------------------
