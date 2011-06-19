@@ -1011,6 +1011,7 @@ static void perform_cyclic_tasks(gbx_context_t *ctx)
     }
 
     ctx->cycles += ctx->cycle_delta;
+    ctx->frame_cycles += ctx->cycle_delta;
 }
 
 #define HALT_CYCLES 12

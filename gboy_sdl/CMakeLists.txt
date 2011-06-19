@@ -10,10 +10,25 @@ find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(SDL REQUIRED)
 
+set(SNDLIB ${CMAKE_SOURCE_DIR}/snd_blargg)
+set(SNDLIB_INCLUDE_DIR
+    ${CMAKE_SOURCE_DIR}/snd_blargg
+    ${CMAKE_SOURCE_DIR}/snd_blargg/gb_apu
+)
+set(blargg_src
+    ${SNDLIB}/gb_apu/Blip_Buffer.cpp
+    ${SNDLIB}/gb_apu/Gb_Apu.cpp
+    ${SNDLIB}/gb_apu/Gb_Oscs.cpp
+    ${SNDLIB}/gb_apu/Multi_Buffer.cpp
+    ${SNDLIB}/Basic_Gb_Apu.cpp
+    ${SNDLIB}/Sound_Queue.cpp
+)
+
 include_directories(
     ${GLEW_INCLUDE_DIR}
     ${OPENGL_INCLUDE_DIR}
     ${SDL_INCLUDE_DIR}
+    ${SNDLIB_INCLUDE_DIR}
 )
 
 add_definitions(
@@ -22,11 +37,13 @@ add_definitions(
 
 set(gboy_sdl_hdr
     graphics.h
+    sound.h
 )
 
 set(gboy_sdl_src
     graphics.c
     main.c
+    sound.cpp
 )
 
 set(gboy_sdl_lib
@@ -36,6 +53,6 @@ set(gboy_sdl_lib
     gboy
 )
 
-add_executable(gboy_sdl ${MKPROP} ${gboy_sdl_src} ${gboy_sdl_hdr})
+add_executable(gboy_sdl ${MKPROP} ${gboy_sdl_src} ${blargg_src} ${gboy_sdl_hdr})
 target_link_libraries(gboy_sdl ${gboy_sdl_lib})
 

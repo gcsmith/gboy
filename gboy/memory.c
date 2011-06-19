@@ -172,34 +172,6 @@ void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 }
 
 // -----------------------------------------------------------------------------
-void cgb_set_vram_bank(gbx_context_t *ctx, uint8_t value)
-{
-    int bank = value & 1;
-    if (!ctx->color_enabled) {
-        log_warn("cannot set VRAM bank when not in CGB mode\n");
-        return;
-    }
-
-    ctx->mem.vram_bank = ctx->mem.vram + bank * VRAM_BANK_SIZE;
-    ctx->mem.vram_bnum = bank;
-    log_dbg("CGB set VRAM bank %02X (set bits %02X)\n", bank,  value);
-}
-
-// -----------------------------------------------------------------------------
-void cgb_set_wram_bank(gbx_context_t *ctx, uint8_t value)
-{
-    int bank = (value & 3) ? (value & 3) : 1;
-    if (!ctx->color_enabled) {
-        log_warn("cannot set WRAM bank when not in CGB mode\n");
-        return;
-    }
-
-    ctx->mem.wram_bank = ctx->mem.wram + bank * WRAM_BANK_SIZE;
-    ctx->mem.wram_bnum = bank;
-    log_dbg("CGB set WRAM bank %02X (set bits %02X)\n", bank,  value);
-}
-
-// -----------------------------------------------------------------------------
 INLINE void write_monochrome_palette(uint32_t *dest, uint8_t value)
 {
     dest[0] = gbx_monochrome_colors[(value >> 0) & 3];
@@ -497,8 +469,8 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
     case PORT_NR50:
     case PORT_NR51:
     case PORT_NR52:
-        // TODO: implement
-        value = ctx->mem.hram[offset];
+    case PORT_NR_UNK:
+        ext_sound_read(ctx->userdata, addr, &value);
         break;
     case PORT_BIOS:
         value = ctx->bios_enabled;
@@ -602,7 +574,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         ctx->key1 = (ctx->key1 & ~KEY1_PREP) | (value & KEY1_PREP);
         break;
     case PORT_VBK:
-        cgb_set_vram_bank(ctx, value);
+        set_vram_bank(ctx, value);
         break;
     case PORT_HDMA1:
         dma_addr = (ctx->video.hdma_src & 0x00FF) | (value << 8);
@@ -644,7 +616,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         write_ocpd_color_palette(ctx, value);
         break;
     case PORT_SVBK:
-        cgb_set_wram_bank(ctx, value);
+        set_wram_bank(ctx, value);
         break;
     case PORT_NR10:
     case PORT_NR11:
@@ -664,7 +636,6 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     case PORT_WAV4: case PORT_WAV5: case PORT_WAV6: case PORT_WAV7:
     case PORT_WAV8: case PORT_WAV9: case PORT_WAVA: case PORT_WAVB:
     case PORT_WAVC: case PORT_WAVD: case PORT_WAVE: case PORT_WAVF:
-        break;
     case PORT_NR41:
     case PORT_NR42:
     case PORT_NR43:
@@ -672,8 +643,8 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     case PORT_NR50:
     case PORT_NR51:
     case PORT_NR52:
-        // TODO: implement
-        ctx->mem.hram[offset] = value;
+    case PORT_NR_UNK:
+        ext_sound_write(ctx->userdata, addr, value);
         break;
     case PORT_BIOS:
         if (ctx->bios_enabled) {

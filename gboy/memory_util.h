@@ -70,5 +70,33 @@ INLINE int set_xram_bank(gbx_context_t *ctx, int bank)
     return bank;
 }
 
+// -----------------------------------------------------------------------------
+INLINE void set_vram_bank(gbx_context_t *ctx, uint8_t value)
+{
+    int bank = value & 1;
+    if (!ctx->color_enabled) {
+        log_warn("cannot set VRAM bank when not in CGB mode\n");
+        return;
+    }
+
+    ctx->mem.vram_bank = ctx->mem.vram + bank * VRAM_BANK_SIZE;
+    ctx->mem.vram_bnum = bank;
+    log_dbg("CGB set VRAM bank %02X (set bits %02X)\n", bank,  value);
+}
+
+// -----------------------------------------------------------------------------
+INLINE void set_wram_bank(gbx_context_t *ctx, uint8_t value)
+{
+    int bank = (value & 7) ? (value & 7) : 1;
+    if (!ctx->color_enabled) {
+        log_warn("cannot set WRAM bank when not in CGB mode\n");
+        return;
+    }
+
+    ctx->mem.wram_bank = ctx->mem.wram + bank * WRAM_BANK_SIZE;
+    ctx->mem.wram_bnum = bank;
+    log_dbg("CGB set WRAM bank %02X (set bits %02X)\n", bank,  value);
+}
+
 #endif // GBOY_MEMORY_UTIL__H
 

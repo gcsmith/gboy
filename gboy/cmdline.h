@@ -32,6 +32,7 @@ typedef struct cmdargs {
     int vsync;          // enable vertical sync
     int stretch;        // stretch image to fill screen
     int unlock;         // unlock cpu throttling
+    int enable_sound;   // enable or disable sound playback
     char *rom_path;     // path to rom image
     char *bios_path;    // path to bios directory
     char *serial_path;  // path to serial log file

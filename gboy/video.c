@@ -314,6 +314,8 @@ INLINE void transition_to_vblank(gbx_context_t *ctx)
     set_stat_mode(ctx, MODE_VBLANK);
     if (ctx->video.stat & STAT_INT_VBLANK)
         gbx_req_interrupt(ctx, INT_LCDSTAT);
+
+    ctx->frame_cycles = 0;
 }
 
 // -----------------------------------------------------------------------------

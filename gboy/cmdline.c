@@ -30,6 +30,7 @@
 #define CMDLINE_SYSTEM_SGB2     1004
 #define CMDLINE_SYSTEM_GBA      1005
 #define CMDLINE_LOG_SERIAL      1006
+#define CMDLINE_NO_SOUND        1007
 
 const char *gboy_desc  = "gboy - a portable gameboy emulator";
 const char *gboy_usage = "usage: gboy [options] [file]";
@@ -45,6 +46,7 @@ void cmdline_display_usage(void)
         "  -d, --debugger           enable debugging interface\n"
         "  -f, --fullscreen         run in fullscreen mode\n"
         "      --log-serial=PATH    log serial output to the specified file\n"
+        "      --no-sound           disable sound playback\n"
         "  -r, --rom=PATH           path to rom file\n"
         "  -s, --scale=INT          scale screen resolution\n"
         "  -S, --stretch            stretch image to fill screen\n"
@@ -77,6 +79,7 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
         { "debugger",       no_argument,        NULL, 'd' },
         { "fullscreen",     no_argument,        NULL, 'f' },
         { "log-serial",     required_argument,  NULL, CMDLINE_LOG_SERIAL },
+        { "no-sound",       no_argument,        NULL, CMDLINE_NO_SOUND },
         { "rom",            required_argument,  NULL, 'r' },
         { "scale",          required_argument,  NULL, 's' },
         { "stretch",        no_argument,        NULL, 'S' },
@@ -100,6 +103,7 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
     args->stretch = 0;
     args->unlock = 0;
     args->vsync = 0;
+    args->enable_sound = 1;
     args->rom_path = NULL;
     args->bios_path = NULL;
     args->serial_path = NULL;
@@ -150,6 +154,9 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
             break;
         case CMDLINE_LOG_SERIAL:
             args->serial_path = strdup(optarg);
+            break;
+        case CMDLINE_NO_SOUND:
+            args->enable_sound = 0;
             break;
         case 'h':
         case '?':

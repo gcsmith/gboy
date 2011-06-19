@@ -23,6 +23,7 @@
 #include "SDL_thread.h"
 #include "gbx.h"
 #include "graphics.h"
+#include "sound.h"
 
 #define GBOY_EVENT_SYNC 0
 #define GBOY_EVENT_PERF 1
@@ -32,11 +33,13 @@ typedef struct gbx_thread {
     SDL_Thread *thread;         // handle to this thread
     int running;                // control thread termination
     int limit_speed;            // when set, cpu throttling is enabled
+    int enable_sound;           // enable or disable sound playback
     int debugger;               // when set, debug tracing is enabled
     int cycles_per_update;      // cycles to execute between each delay
     float clock_rate;           // keep track of freq (in Hz) for throttling
     float real_period;          // period considering integer cycle counts
     uint32_t fb[GFX_FB_SIZE];   // video framebuffer
+    sound_t *snd;
 } gbx_thread_t;
 
 typedef struct perf_args {
@@ -80,15 +83,6 @@ uint32_t perf_timer_event(uint32_t interval, void *param)
 }
 
 // -----------------------------------------------------------------------------
-// Callback fired each time the emulator enters the vertical blank period.
-void ext_video_sync(void *data)
-{
-    gbx_thread_t *gt = (gbx_thread_t *)data;
-    gbx_get_framebuffer(gt->ctx, gt->fb);
-    push_user_event(GBOY_EVENT_SYNC, NULL, NULL);
-}
-
-// -----------------------------------------------------------------------------
 // Set the desired emulator clock frequency, in Hz.
 static void set_gbx_frequency(gbx_thread_t *gt, int hz)
 {
@@ -96,6 +90,18 @@ static void set_gbx_frequency(gbx_thread_t *gt, int hz)
     gt->clock_rate = (float)hz;
     gt->cycles_per_update = (int)(update_period_ms * gt->clock_rate / 1000.0f);
     gt->real_period = gt->cycles_per_update * 1000.0f / gt->clock_rate;
+}
+
+// -----------------------------------------------------------------------------
+// Callback fired each time the emulator enters the vertical blank period.
+void ext_video_sync(void *data)
+{
+    gbx_thread_t *gt = (gbx_thread_t *)data;
+    gbx_get_framebuffer(gt->ctx, gt->fb);
+    push_user_event(GBOY_EVENT_SYNC, NULL, NULL);
+
+    if (gt->enable_sound)
+        sound_render(gt->snd, gt->ctx->frame_cycles);
 }
 
 // -----------------------------------------------------------------------------
@@ -121,6 +127,22 @@ void ext_lcd_enabled(void *data, int enabled)
         memset(((gbx_thread_t *)data)->fb, 0xFF, GFX_FB_SIZE);
         push_user_event(GBOY_EVENT_SYNC, NULL, NULL);
     }
+}
+
+// -----------------------------------------------------------------------------
+void ext_sound_write(void *data, uint16_t addr, uint8_t value)
+{
+    gbx_thread_t *gt = (gbx_thread_t *)data;
+    if (gt->enable_sound)
+        sound_write(gt->snd, gt->ctx->frame_cycles, addr, value);
+}
+
+// -----------------------------------------------------------------------------
+void ext_sound_read(void *data, uint16_t addr, uint8_t *value)
+{
+    gbx_thread_t *gt = (gbx_thread_t *)data;
+    if (gt->enable_sound)
+        *value = sound_read(gt->snd, gt->ctx->frame_cycles, addr);
 }
 
 // -----------------------------------------------------------------------------
@@ -175,12 +197,20 @@ gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
     gt->debugger = ca->debugger;
     gt->running = 1;
     gt->limit_speed = !ca->unlock;
+    gt->enable_sound = ca->enable_sound;
 
     gbx_set_userdata(ctx, gt);
     gbx_set_debugger(ctx, gt->debugger);
 
     if (ca->serial_path)
         gbx_set_serial_log(ctx, ca->serial_path);
+
+    // initialize sound library
+    if (gt->enable_sound) {
+        log_info("Initializing APU library...\n");
+        gt->snd = sound_init(44100, 4096);
+        sound_set_freq(gt->snd, CPU_FREQ_GMB);
+    }
 
     // create and launch the emulator thread
     if (NULL == (gt->thread = SDL_CreateThread(gbx_thread_run, gt))) {
@@ -201,6 +231,9 @@ void gbx_thread_destroy(gbx_thread_t *gt)
     // signal thread to terminate and block until it does
     gt->running = 0;
     SDL_WaitThread(gt->thread, NULL);
+
+    log_info("Shutting down APU library...\n");
+    sound_shutdown(gt->snd);
 
     SAFE_FREE(gt);
 }

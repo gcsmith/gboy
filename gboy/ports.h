@@ -107,6 +107,7 @@
 #define PORT_NR12       0x12    // channel 1 volume envelope
 #define PORT_NR13       0x13    // channel 1 frequency lo
 #define PORT_NR14       0x14    // channel 1 frequency hi
+#define PORT_NR_UNK     0x15
 
 // Sound Channel 2 - Tone
 

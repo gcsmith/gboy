@@ -86,7 +86,7 @@ struct gbx_context {
     int bios_enabled;
     int exec_flags;
     int bytes_read;
-    long cycles, cycle_delta;
+    long cycles, cycle_delta, frame_cycles;
     int joyp, input_state;
     uint8_t rp;
     uint8_t opcode1;
@@ -130,6 +130,8 @@ extern const char *gbx_port_names[0x100];
 extern void ext_video_sync(void *data);
 extern void ext_speed_change(void *data, int speed);
 extern void ext_lcd_enabled(void *data, int enabled);
+extern void ext_sound_write(void *data, uint16_t addr, uint8_t value);
+extern void ext_sound_read(void *data, uint16_t addr, uint8_t *value);
 
 #endif // GBOY_GBX__H
 
