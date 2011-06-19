@@ -137,9 +137,7 @@ static int process_header_fields(gbx_context_t *ctx, rom_header_t *header)
 
     // enable CGB features only if game supports color AND system is CGB
     if ((header->cgb_flag & CGB_ENABLE) && (ctx->system == SYSTEM_CGB))
-        ctx->cgb_enabled = 1;
-    else
-        ctx->cgb_enabled = 0;
+        ctx->color_enabled = ctx->color_game = 1;
 
     // game supports SGB functionality, but current mode doesn't support it
     if ((header->sgb_flag & SGB_ENABLE) &&
@@ -235,8 +233,13 @@ void optionally_load_bios(gbx_context_t *ctx)
     // determine which bios to load based on the system type (if supported)
     switch (ctx->system) {
     case SYSTEM_GMB: bios_file = "gmb_bios.bin"; break;
-    case SYSTEM_CGB: bios_file = "cgb_bios.bin"; break;
     case SYSTEM_SGB: bios_file = "sgb_bios.bin"; break;
+    case SYSTEM_CGB:
+        // color support must be enabled to execute the bios correctly
+        // if game is monochrome, this will be reset when bios is disabled
+        ctx->color_enabled = 1;
+        bios_file = "cgb_bios.bin";
+        break;
     default: return;
     }
 

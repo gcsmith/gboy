@@ -175,7 +175,7 @@ void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 void cgb_set_vram_bank(gbx_context_t *ctx, uint8_t value)
 {
     int bank = value & 1;
-    if (!ctx->cgb_enabled) {
+    if (!ctx->color_enabled) {
         log_err("cannot set VRAM bank when not in CGB mode\n");
         return;
     }
@@ -189,7 +189,7 @@ void cgb_set_vram_bank(gbx_context_t *ctx, uint8_t value)
 void cgb_set_wram_bank(gbx_context_t *ctx, uint8_t value)
 {
     int bank = (value & 3) ? (value & 3) : 1;
-    if (!ctx->cgb_enabled) {
+    if (!ctx->color_enabled) {
         log_err("cannot set WRAM bank when not in CGB mode\n");
         return;
     }
@@ -218,7 +218,7 @@ INLINE uint32_t cgb_color_to_rgb(uint16_t c)
 INLINE void write_bcpd_color_palette(gbx_context_t *ctx, uint8_t value)
 {
     int color, index = ctx->video.bcps & 0x3F;
-    if (!ctx->cgb_enabled) {
+    if (!ctx->color_enabled) {
         log_err("cannot write BG color palette when not in CGB mode\n");
         return;
     }
@@ -237,7 +237,7 @@ INLINE void write_ocpd_color_palette(gbx_context_t *ctx, uint8_t value)
 {
     int index = ctx->video.ocps & 0x3F;
     uint16_t color;
-    if (!ctx->cgb_enabled) {
+    if (!ctx->color_enabled) {
         log_err("cannot write OBJ color palette when not in CGB mode\n");
         return;
     }
@@ -677,8 +677,12 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         break;
     case PORT_BIOS:
         if (ctx->bios_enabled) {
-            ctx->bios_enabled = 0;
+            // unmap the bios page(s) permanently
             mmu_map_bios(ctx, BIOS_UNMAP);
+            ctx->bios_enabled = 0;
+
+            // if running monochrome game on CGB, disable color post-bios
+            ctx->color_enabled = ctx->color_game;
         }
         break;
     default:
@@ -694,7 +698,7 @@ void mmu_map_bios(gbx_context_t *ctx, int setting)
 {
     mmu_rd_fn fn = (setting == BIOS_MAP) ? mmu_rd_bios : mmu_rd_xrom;
 
-    if (ctx->cgb_enabled) {
+    if (ctx->system == SYSTEM_CGB) {
         // for the CGB, the bios image is mapped to 0000-00FF and 0200-08FF
         mmu_map_ro(ctx, 0x00, 1, fn);
         mmu_map_ro(ctx, 0x02, 7, fn);

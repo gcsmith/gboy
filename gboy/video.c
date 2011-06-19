@@ -114,7 +114,7 @@ void render_sprites(gbx_context_t *ctx)
         // determine the orientation (normal, xflip, yflip, xflip & yflip)
         type = ((attr & OAM_ATTR_XFLIP) >> 5) | ((attr & OAM_ATTR_YFLIP) >> 5);
 
-        if (ctx->cgb_enabled) {
+        if (ctx->color_enabled) {
             // select the palette base address (OBP0-7)
             palette = &ctx->video.ocpd_rgb[(attr & OAM_ATTR_CPAL) << 2];
 
@@ -192,7 +192,7 @@ void render_bg_pixel(gbx_context_t *ctx, int x, int y)
     off_y = base_y & 7;
     tile = ctx->mem.vram[mapaddr];
 
-    if (ctx->cgb_enabled) {
+    if (ctx->color_enabled) {
         // read the background map attribute when operating in color mode
         attr = ctx->mem.vram[mapaddr + VRAM_BANK_SIZE];
 

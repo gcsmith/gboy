@@ -78,7 +78,8 @@ struct gbx_context {
     int system;
     int key1;
     int cart_features;
-    int cgb_enabled;
+    int color_enabled;
+    int color_game;
     int sb, sc, sc_active, sc_ticks;
     int mbc1_mode;
     int cpu_speed;
