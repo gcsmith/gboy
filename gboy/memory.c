@@ -18,6 +18,7 @@
 #include <assert.h>
 #include "gbx.h"
 #include "memory.h"
+#include "memory_util.h"
 #include "ports.h"
 #include "video.h"
 
@@ -25,55 +26,104 @@
 // #define PROTECT_VRAM_ACCESS
 
 // -----------------------------------------------------------------------------
-// Returns a non-zero value if VRAM is currently accessible by the CPU.
-INLINE int is_vram_accessible(gbx_context_t *ctx)
+uint8_t mmu_rd_nop(gbx_context_t *ctx, uint16_t addr)
 {
-    int mode = ctx->video.stat & STAT_MODE;
-    return (mode < MODE_TRANSFER) ? 1 : 0;
+    log_err("reading from unmapped page: addr=%04X value=FF\n", addr);
+    return 0xFF;
 }
 
 // -----------------------------------------------------------------------------
-// Returns a non-zero value if OAM is currently accessible by the CPU.
-INLINE int is_oam_accessible(gbx_context_t *ctx)
+void mmu_wr_nop(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
-    int mode = ctx->video.stat & STAT_MODE;
-    return (mode < MODE_SEARCH) ? 1 : 0;
+    log_err("writing to unmapped page: addr=%04X value=%02X\n", addr, value);
 }
 
 // -----------------------------------------------------------------------------
-static uint8_t read_bios_rom(gbx_context_t *ctx, uint16_t addr)
+uint8_t mmu_rd_bios(gbx_context_t *ctx, uint16_t addr)
 {
-    switch (ctx->system) {
-    case SYSTEM_GMB:
-    case SYSTEM_SGB:
-        if (addr < 0x100)
-            return ctx->mem.bios[addr];
-        break;
-    case SYSTEM_CGB:
-        if (addr < 0x100 || (addr >= 0x200 && addr < 0x900))
-            return ctx->mem.bios[addr];
-        break;
-    }
-
-    // otherwise, not a bios page, so read the XROM as we would normally
-    return ctx->mem.xrom[addr & XROM_MASK];
+    uint8_t value = ctx->mem.bios[addr];
+    log_spew("mmu_rd_bios: addr=%04X value=%02X\n", addr, value);
+    return value;
 }
 
 // -----------------------------------------------------------------------------
-static uint8_t read_bad_region(gbx_context_t *ctx, uint16_t addr)
+uint8_t mmu_rd_xrom(gbx_context_t *ctx, uint16_t addr)
 {
-    log_err("read_bad_region: addr=%04X\n", addr);
-    return 0;
+    uint8_t value = ctx->mem.xrom[addr & XROM_MASK];
+    log_spew("mmu_rd_xrom: addr=%04X value=%02X\n", addr, value);
+    return value;
 }
 
 // -----------------------------------------------------------------------------
-static void write_bad_region(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+uint8_t mmu_rd_xrom_bank(gbx_context_t *ctx, uint16_t addr)
 {
-    log_err("write_bad_region: addr=%04X value=%02X\n", addr, value);
+    uint8_t value = ctx->mem.xrom_bank[addr & XROM_MASK];
+    log_spew("mmu_rd_xrom_bank: addr=%04X value=%02X\n", addr, value);
+    return value;
 }
 
 // -----------------------------------------------------------------------------
-static uint8_t read_oam_region(gbx_context_t *ctx, uint16_t addr)
+uint8_t mmu_rd_xram_bank(gbx_context_t *ctx, uint16_t addr)
+{
+    uint8_t value = ctx->mem.xram_bank[addr & XRAM_MASK];
+    log_spew("mmu_rd_xram_bank: addr=%04X value=%02X\n", addr, value);
+    return value;
+}
+
+// -----------------------------------------------------------------------------
+void mmu_wr_xram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+{
+    log_spew("mmu_wr_xram_bank: addr=%04X value=%02X\n", addr, value);
+    ctx->mem.xram_bank[addr & XRAM_MASK] = value;
+}
+
+// -----------------------------------------------------------------------------
+uint8_t mmu_rd_vram_bank(gbx_context_t *ctx, uint16_t addr)
+{
+    uint8_t value = ctx->mem.vram_bank[addr & VRAM_MASK];
+    log_spew("mmu_rd_vram_bank: addr=%04X value=%02X\n", addr, value);
+    return value;
+}
+
+// -----------------------------------------------------------------------------
+void mmu_wr_vram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+{
+    log_spew("mmu_wr_vram_bank: addr=%04X value=%02X\n", addr, value);
+    ctx->mem.vram_bank[addr & VRAM_MASK] = value;
+}
+
+// -----------------------------------------------------------------------------
+uint8_t mmu_rd_wram(gbx_context_t *ctx, uint16_t addr)
+{
+    uint8_t value = ctx->mem.wram[addr & WRAM_MASK];
+    log_spew("mmu_rd_wram: addr=%04X value=%02X\n", addr, value);
+    return value;
+}
+
+// -----------------------------------------------------------------------------
+void mmu_wr_wram(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+{
+    log_spew("mmu_wr_wram: addr=%04X value=%02X\n", addr, value);
+    ctx->mem.wram[addr & WRAM_MASK] = value;
+}
+
+// -----------------------------------------------------------------------------
+uint8_t mmu_rd_wram_bank(gbx_context_t *ctx, uint16_t addr)
+{
+    uint8_t value = ctx->mem.wram_bank[addr & WRAM_MASK];
+    log_spew("mmu_rd_wram_bank: addr=%04X value=%02X\n", addr, value);
+    return value;
+}
+
+// -----------------------------------------------------------------------------
+void mmu_wr_wram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+{
+    log_spew("mmu_wr_wram_bank: addr=%04X value=%02X\n", addr, value);
+    ctx->mem.wram_bank[addr & WRAM_MASK] = value;
+}
+
+// -----------------------------------------------------------------------------
+uint8_t mmu_rd_oam(gbx_context_t *ctx, uint16_t addr)
 {
 #ifdef PROTECT_OAM_ACCESS
     if (!is_oam_accessible(ctx)) {
@@ -82,12 +132,12 @@ static uint8_t read_oam_region(gbx_context_t *ctx, uint16_t addr)
     }
 #endif
 
-    log_spew("read_oam_region: addr=%04X\n", addr);
+    log_spew("mmu_rd_oam: addr=%04X\n", addr);
     return ctx->mem.oam[addr & 0xFF];
 }
 
 // -----------------------------------------------------------------------------
-static void write_oam_region(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
 #ifdef PROTECT_OAM_ACCESS
     if (!is_oam_accessible(ctx)) {
@@ -96,172 +146,8 @@ static void write_oam_region(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     }
 #endif
 
-    log_spew("write_oam_region: addr=%04X value=%02X\n", addr, value);
+    log_spew("mmu_wr_oam: addr=%04X value=%02X\n", addr, value);
     ctx->mem.oam[addr & 0xFF] = value;
-}
-
-// -----------------------------------------------------------------------------
-static uint8_t read_high_ram(gbx_context_t *ctx, uint16_t addr)
-{
-    log_spew("read_high_ram: addr=%04X\n", addr);
-    return ctx->mem.hram[addr & 0xFF];
-}
-
-// -----------------------------------------------------------------------------
-static void write_high_ram(gbx_context_t *ctx, uint16_t addr, uint8_t value)
-{
-    log_spew("write_high_ram: addr=%04X value=%02X\n", addr, value);
-    ctx->mem.hram[addr & 0xFF] = value;
-}
-
-// -----------------------------------------------------------------------------
-INLINE int set_xrom_bank(gbx_context_t *ctx, int bank)
-{
-    assert(ctx->mem.xrom_banks);
-
-    // if bank index exceeds number of banks, wrap around to valid index
-    if (bank >= ctx->mem.xrom_banks) {
-        log_err("specified invalid XROM bank %d, wrapped to %d\n",
-                bank, bank % ctx->mem.xrom_banks);
-        bank %= ctx->mem.xrom_banks;
-    }
-
-    ctx->mem.xrom_bank = ctx->mem.xrom + bank * XROM_BANK_SIZE;
-    ctx->mem.xrom_bnum = bank;
-    return bank;
-}
-
-// -----------------------------------------------------------------------------
-INLINE int set_xram_bank(gbx_context_t *ctx, int bank)
-{
-    assert(ctx->mem.xram_banks);
-
-    // if bank index exceeds number of banks, wrap around to valid index
-    if (bank >= ctx->mem.xram_banks) {
-        log_err("specified invalid XRAM bank %d, wrapped to %d\n",
-                bank, bank % ctx->mem.xram_banks);
-        bank %= ctx->mem.xram_banks;
-    }
-
-    ctx->mem.xram_bank = ctx->mem.xram + bank * XRAM_BANK_SIZE;
-    ctx->mem.xram_bnum = bank;
-    return bank;
-}
-
-// -----------------------------------------------------------------------------
-void mbc1_set_rom_bank(gbx_context_t *ctx, uint8_t value)
-{
-    if (ctx->mbc1_mode) {
-        int bank = set_xrom_bank(ctx, (value & 0x1F) ? (value & 0x1F) : 1);
-        log_dbg("MBC1 set XROM bank %02X (set bits %02X)\n", bank, value);
-    }
-    else {
-        // cannot map bank 0 to programmable region (0x00, 0x20, 0x40, 0x60)
-        int bank_lo = (value & 0x1F) ? (value & 0x1F) : 1;
-        int bank = set_xrom_bank(ctx, (ctx->mem.xrom_bnum & 0xE0) | bank_lo);
-        log_dbg("MBC1 set XROM bank %02X (set lo bits %02X)\n", bank, value);
-    }
-}
-
-// -----------------------------------------------------------------------------
-void mbc1_set_ram_bank(gbx_context_t *ctx, uint8_t value)
-{
-    if (ctx->mbc1_mode)  {
-        // set the two bit RAM address, assuming XRAM is actually present
-        if (ctx->mem.xram_banks) {
-            int bank = set_xram_bank(ctx, value & 3);
-            log_dbg("MBC1 set XRAM bank %02X (set bits %02X)\n", bank, value);
-        }
-        else
-            log_err("MBC1 set XRAM bank %02X, but no XRAM present\n", value);
-    }
-    else {
-        // set bits 5 and 6 of the XROM bank index when in mode 00
-        int bank_hi = (value & 3) << 5;
-        int bank = set_xrom_bank(ctx, (ctx->mem.xrom_bnum & 0x1F) | bank_hi);
-        assert(ctx->mem.xrom_bnum & 0x1F);
-        log_dbg("MBC1 set XROM bank %02X (set hi bits %02X)\n", bank, value);
-    }
-}
-
-// -----------------------------------------------------------------------------
-void mbc1_set_memory_model(gbx_context_t *ctx, uint8_t value)
-{
-    if (value & 1) {
-        // RAM banking mode (4 Mb ROM / 32 KB RAM)
-        ctx->mbc1_mode = 1;
-    }
-    else {
-        // ROM banking mode (16 Mb ROM / 8 KB RAM)
-        ctx->mbc1_mode = 0;
-    }
-    log_dbg("MBC1 set memory model to %d\n", ctx->mbc1_mode);
-}
-
-// -----------------------------------------------------------------------------
-void mbc2_set_rom_bank(gbx_context_t *ctx, uint8_t value)
-{
-    // specify 4-bit ROM bank index, but 0 always maps to 1
-    int bank = set_xrom_bank(ctx, (value & 0x0F) ? (value & 0x0F) : 1);
-    log_dbg("MBC2 set XROM bank %02X (set bits %02X)\n", bank, value);
-}
-
-// -----------------------------------------------------------------------------
-void mbc3_set_rom_bank(gbx_context_t *ctx, uint8_t value)
-{
-    // specify a full 7-bit ROM bank index, but 0 always maps to 1
-    int bank = set_xrom_bank(ctx, (value & 0x7F) ? (value & 0x7F) : 1);
-    log_dbg("MBC3 set XROM bank %02X (set bits %02X)\n", bank, value);
-}
-
-// -----------------------------------------------------------------------------
-void mbc3_set_ram_bank(gbx_context_t *ctx, uint8_t value)
-{
-    if (value <= 0x03) {
-        if (ctx->mem.xram_banks) {
-            int bank = set_xram_bank(ctx, value & 0x03);
-            log_dbg("MBC3 set XRAM bank %02X (set bits %02X)\n", bank,  value);
-        }
-        else
-            log_err("MBC3 set XRAM bank %02X, but no XRAM present\n", value);
-    }
-    else {
-        log_err("TODO: implement RTC register select\n");
-    }
-}
-
-// -----------------------------------------------------------------------------
-void mbc3_latch_clock_data(gbx_context_t *ctx, uint8_t value)
-{
-    log_err("TODO: implement latch clock data\n");
-}
-
-// -----------------------------------------------------------------------------
-void mbc5_set_rom_bank_lo(gbx_context_t *ctx, uint8_t value)
-{
-    // specify a full 8-bit ROM bank index, but 0 always maps to 1
-    int bank_lo = value ? value : 1;
-    int bank = set_xrom_bank(ctx, (ctx->mem.xrom_bnum & 0x100) | bank_lo);
-    log_dbg("MBC5 set XROM bank %03X (set lo bits %02X)\n", bank, value);
-}
-
-// -----------------------------------------------------------------------------
-void mbc5_set_rom_bank_hi(gbx_context_t *ctx, uint8_t value)
-{
-    int bank_hi = (value & 1) << 8;
-    int bank = set_xrom_bank(ctx, (ctx->mem.xrom_bnum & 0xFF) | bank_hi);
-    log_dbg("MBC5 set XROM bank %03X (set hi bits %02X)\n", bank, value);
-}
-
-// -----------------------------------------------------------------------------
-void mbc5_set_ram_bank(gbx_context_t *ctx, uint8_t value)
-{
-    if (ctx->mem.xram_banks) {
-        int bank = set_xram_bank(ctx, value & 0x0F);
-        log_dbg("MBC5 set XRAM bank %02X (set bits %02X)\n", bank,  value);
-    }
-    else
-        log_err("MBC5 set XRAM bank %02X, but no XRAM present\n", value);
 }
 
 // -----------------------------------------------------------------------------
@@ -418,7 +304,7 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 }
 
 // -----------------------------------------------------------------------------
-static void hdma_hblank_transfer(gbx_context_t *ctx)
+/*static*/ void hdma_hblank_transfer(gbx_context_t *ctx)
 {
     log_spew("begin %d byte hblank dma transfer from %04X to %04X\n",
              ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
@@ -428,7 +314,7 @@ static void hdma_hblank_transfer(gbx_context_t *ctx)
 }
 
 // -----------------------------------------------------------------------------
-static void hdma_general_purpose_transfer(gbx_context_t *ctx)
+/*static*/ void hdma_general_purpose_transfer(gbx_context_t *ctx)
 {
     int i;
     log_spew("begin %d byte general dma transfer from %04X to %04X\n",
@@ -448,21 +334,21 @@ static void hdma_general_purpose_transfer(gbx_context_t *ctx)
 #define IR_RD_ENABLE    0xC0    // data read enable - 00 disabled, 11 enabled
 
 // -----------------------------------------------------------------------------
-static void write_infrared_comm_port(gbx_context_t *ctx, uint8_t value)
+/*static*/ void write_infrared_comm_port(gbx_context_t *ctx, uint8_t value)
 {
     log_dbg("write %02X to IR comm port\n", value);
     ctx->rp = value & (IR_WR_DATA | IR_RD_ENABLE);
 }
 
 // -----------------------------------------------------------------------------
-static uint8_t read_infrared_comm_port(gbx_context_t *ctx)
+/*static*/ uint8_t read_infrared_comm_port(gbx_context_t *ctx)
 {
     log_dbg("read %02X from IR comm port\n", 0);
     return ctx->rp | IR_RD_DATA;
 }
 
 // -----------------------------------------------------------------------------
-static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
+/*static*/ uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = 0;
     switch (addr & 0xFF) {
@@ -599,21 +485,21 @@ static uint8_t read_io_port(gbx_context_t *ctx, uint16_t addr)
         value = ctx->bios_enabled;
         break;
     default:
-        log_err("attempting to read invalid io port (%04X)\n", addr);
+        value = ctx->mem.hram[addr & 0xFF];
         break;
     }
 
-    log_spew("read_io_port: port=%s addr=%04X value=%02X\n",
-             gbx_port_names[addr & 0xFF], addr, value);
+//  log_spew("read_io_port: port=%s addr=%04X value=%02X\n",
+//           gbx_port_names[addr & 0xFF], addr, value);
     return value;
 }
 
 // -----------------------------------------------------------------------------
-static void write_io_port(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+/*static*/ void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     uint16_t dma_addr;
-    log_spew("write_io_port: port=%s addr=%04X value=%02X\n",
-             gbx_port_names[addr & 0xFF], addr, value);
+//  log_spew("mmu_wr_himem: port=%s addr=%04X value=%02X\n",
+//           gbx_port_names[addr & 0xFF], addr, value);
 
     switch (addr & 0xFF) {
     case PORT_JOYP:
@@ -767,148 +653,114 @@ static void write_io_port(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         ctx->mem.hram[addr & 0xFF] = value;
         break;
     case PORT_BIOS:
-        ctx->bios_enabled = 0;
+        if (ctx->bios_enabled) {
+            ctx->bios_enabled = 0;
+            mmu_map_bios(ctx, BIOS_UNMAP);
+        }
         break;
     default:
-        log_err("write to invalid io port (%04X) <- %02X\n", addr, value);
+        ctx->mem.hram[addr & 0xFF] = value;
         return;
+    }
+}
+
+// -----------------------------------------------------------------------------
+void mmu_map_bios(gbx_context_t *ctx, int setting)
+{
+    mmu_rd_fn fn = (setting == BIOS_MAP) ? mmu_rd_bios : mmu_rd_xrom;
+
+    if (ctx->cgb_enabled) {
+        // for the CGB, the bios image is mapped to 0000-00FF and 0200-08FF
+        mmu_map_ro(ctx, 0x00, 1, fn);
+        mmu_map_ro(ctx, 0x02, 7, fn);
+    }
+    else {
+        // for the GMB/GBP/SGB, the bios image is a single page in length
+        mmu_map_ro(ctx, 0x00, 1, fn);
+    }
+}
+
+// -----------------------------------------------------------------------------
+void mmu_map_pages(gbx_context_t *ctx)
+{
+    // only set read handlers from XROM - write is either NOP or MBC specific
+    mmu_map_ro(ctx, 0x00, 0x40, mmu_rd_xrom);
+    mmu_map_ro(ctx, 0x40, 0x40, mmu_rd_xrom_bank);
+
+    // set RW handlers for VRAM, which is always (potentially) bankable
+    mmu_map_rw(ctx, 0x80, 0x20, mmu_rd_vram_bank, mmu_wr_vram_bank);
+
+    // map the external RAM handlers only if RAM present, set to NOP otherwise
+    if (ctx->mem.xram_banks)
+        mmu_map_rw(ctx, 0xA0, 0x20, mmu_rd_xram_bank, mmu_wr_xram_bank);
+    else
+        mmu_map_rw(ctx, 0xA0, 0x20, mmu_rd_nop, mmu_wr_nop);
+
+    // set RW handlers for WRAM, first region is fixed, second is bankable
+    mmu_map_rw(ctx, 0xC0, 0x10, mmu_rd_wram, mmu_wr_wram);
+    mmu_map_rw(ctx, 0xD0, 0x10, mmu_rd_wram_bank, mmu_wr_wram_bank);
+
+    // C000-CFFF mirrored at E000-EFFF, D000-DDFF mirrored at F000-FDFF
+    mmu_map_rw(ctx, 0xE0, 0x10, mmu_rd_wram, mmu_wr_wram);
+    mmu_map_rw(ctx, 0xF0, 0x0E, mmu_rd_wram_bank, mmu_wr_wram_bank);
+
+    // the rest of high memory is OAM, IO ports, HRAM, or unallocated
+    mmu_map_rw(ctx, 0xFE, 1, mmu_rd_oam, mmu_wr_oam);
+    mmu_map_rw(ctx, 0xFF, 1, mmu_rd_himem, mmu_wr_himem);
+
+    switch (ctx->cart_features & CART_MBC) {
+    default:
+        // shouldn't ever get here... but fall through just in case
+        assert(!"unknown memory bank controller in mmu_map_pages");
+    case CART_MBC_ROM:
+        mmu_map_wo(ctx, 0x00, 0x80, mmu_wr_nop);
+        break;
+    case CART_MBC_MBC1: mmu_map_mbc1(ctx); break;
+    case CART_MBC_MBC2: mmu_map_mbc2(ctx); break;
+    case CART_MBC_MBC3: mmu_map_mbc3(ctx); break;
+    case CART_MBC_MBC5: mmu_map_mbc5(ctx); break;
+    }
+
+    // if a bios ROM image is available, patch it into the memory map
+    if (ctx->bios_enabled)
+        mmu_map_bios(ctx, BIOS_MAP);
+}
+
+// -----------------------------------------------------------------------------
+void mmu_map_ro(gbx_context_t *ctx, int beg, int n, mmu_rd_fn fn)
+{
+    int page, end = beg + n;
+    for (page = beg; page < end; page++)
+        ctx->mem.page_rd[page] = fn;
+}
+
+// -----------------------------------------------------------------------------
+void mmu_map_wo(gbx_context_t *ctx, int beg, int n, mmu_wr_fn fn)
+{
+    int page, end = beg + n;
+    for (page = beg; page < end; page++)
+        ctx->mem.page_wr[page] = fn;
+}
+
+// -----------------------------------------------------------------------------
+void mmu_map_rw(gbx_context_t *ctx, int beg, int n, mmu_rd_fn rf, mmu_wr_fn wf)
+{
+    int page, end = beg + n;
+    for (page = beg; page < end; page++) {
+        ctx->mem.page_rd[page] = rf;
+        ctx->mem.page_wr[page] = wf;
     }
 }
 
 // -----------------------------------------------------------------------------
 uint8_t gbx_read_byte(gbx_context_t *ctx, uint16_t addr)
 {
-    switch (addr >> 12) {
-    case 0x0: case 0x1: case 0x2: case 0x3:
-        if (ctx->bios_enabled)
-            return read_bios_rom(ctx, addr);
-        else
-            return ctx->mem.xrom[addr & XROM_MASK];
-    case 0x4: case 0x5: case 0x6: case 0x7:
-        return ctx->mem.xrom_bank[addr & XROM_MASK];
-    case 0x8: case 0x9:
-#ifdef PROTECT_VRAM_ACCESS
-        if (!is_vram_accessible(ctx)) {
-            log_err("attempted to read VRAM when in use by LCD controller\n");
-            return 0xFF;
-        }
-#endif
-        return ctx->mem.vram_bank[addr & VRAM_MASK];
-    case 0xA: case 0xB:
-        if (ctx->have_mbc2)
-            return ctx->mem.xram[addr & 0x1FF];
-        else if (!ctx->mem.xram_bank)
-            log_err("bad XRAM read - addr:%04X\n", addr);
-        else
-            return ctx->mem.xram_bank[addr & XRAM_MASK];
-        break;
-    case 0xC:
-        return ctx->mem.wram[addr & WRAM_MASK];
-    case 0xD:
-        return ctx->mem.wram_bank[addr & WRAM_MASK];
-    case 0xE:
-        return ctx->mem.wram[addr & WRAM_MASK];
-    case 0xF:
-        if (addr < 0xFE00) return ctx->mem.wram_bank[addr & WRAM_MASK];
-        if (addr < 0xFEA0) return read_oam_region(ctx, addr);
-        if (addr < 0xFF00) return read_bad_region(ctx, addr);
-        if (addr < 0xFF80) return read_io_port(ctx, addr);
-        if (addr < 0xFFFF) return read_high_ram(ctx, addr);
-        else return read_io_port(ctx, addr);
-    }
-
-    log_err("gbx_read_byte: invalid address (%04X)\n", addr);
-    return 0;
+    return ctx->mem.page_rd[addr >> 8](ctx, addr);
 }
 
 // -----------------------------------------------------------------------------
 void gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
-    memory_regions_t *mem = &ctx->mem;
-
-    switch (addr >> 12) {
-    case 0x0: case 0x1:
-        if (ctx->have_mbc1 || ctx->have_mbc2 || ctx->have_mbc3 || ctx->have_mbc5)
-            log_dbg("enable RAM access: %02X\n", value);
-        else
-            log_err("bad XROM write - addr:%04X val:%02X\n", addr, value);
-        break;
-    case 0x2:
-        if (ctx->have_mbc5) {
-            mbc5_set_rom_bank_lo(ctx, value);
-            break;
-        }
-        // fall through for other chips
-    case 0x3:
-        if (ctx->have_mbc1) 
-            mbc1_set_rom_bank(ctx, value);
-        else if (ctx->have_mbc2)
-            mbc2_set_rom_bank(ctx, value);
-        else if (ctx->have_mbc3)
-            mbc3_set_rom_bank(ctx, value);
-        else if (ctx->have_mbc5)
-            mbc5_set_rom_bank_hi(ctx, value);
-        else
-            log_err("bad XROM write - addr:%04X val:%02X\n", addr, value);
-        break;
-    case 0x4: case 0x5:
-        if (ctx->have_mbc1)
-            mbc1_set_ram_bank(ctx, value);
-        else if (ctx->have_mbc3)
-            mbc3_set_ram_bank(ctx, value);
-        else if (ctx->have_mbc5)
-            mbc5_set_ram_bank(ctx, value);
-        else
-            log_err("bad XROM write - addr:%04X val:%02X\n", addr, value);
-        break;
-    case 0x6: case 0x7:
-        if (ctx->have_mbc1)
-            mbc1_set_memory_model(ctx, value);
-        else if (ctx->have_mbc3)
-            mbc3_latch_clock_data(ctx, value);
-        else
-            log_err("bad XROM write - addr:%04X val:%02X\n", addr, value);
-        break;
-    case 0x8: case 0x9:
-#ifdef PROTECT_VRAM_ACCESS
-        if (!is_vram_accessible(ctx)) {
-            log_err("attempted to write VRAM when in use by LCD controller\n");
-            return;
-        }
-#endif
-        mem->vram_bank[addr & VRAM_MASK] = value;
-        break;
-    case 0xA: case 0xB:
-        if (ctx->have_mbc2)
-            ctx->mem.xram[addr & 0x1FF] = value & 0x0F;
-        else if (!mem->xram_bank)
-            log_err("bad XRAM write - addr:%04X val:%02X\n", addr, value);
-        else
-            mem->xram_bank[addr & XRAM_MASK] = value;
-        break;
-    case 0xC:
-        mem->wram[addr & WRAM_MASK] = value;
-        break;
-    case 0xD:
-        mem->wram_bank[addr & WRAM_MASK] = value;
-        break;
-    case 0xE:
-        mem->wram[addr & WRAM_MASK] = value;
-        break;
-    case 0xF:
-        if (addr < 0xFE00)
-            mem->wram_bank[addr & WRAM_MASK] = value;
-        else if (addr < 0xFEA0)
-            write_oam_region(ctx, addr, value);
-        else if (addr < 0xFF00)
-            write_bad_region(ctx, addr, value);
-        else if (addr < 0xFF80)
-            write_io_port(ctx, addr, value);
-        else if (addr < 0xFFFF)
-            write_high_ram(ctx, addr, value);
-        else
-            write_io_port(ctx, addr, value);
-        break;
-    }
+    ctx->mem.page_wr[addr >> 8](ctx, addr, value);
 }
 

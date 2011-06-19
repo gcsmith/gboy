@@ -20,6 +20,10 @@ set(gboy_src
     gbx.c
     interp.c
     memory.c
+    mmu_mbc1.c
+    mmu_mbc2.c
+    mmu_mbc3.c
+    mmu_mbc5.c
     romfile.c
     tables.c
     video.c

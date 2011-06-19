@@ -223,38 +223,6 @@ static int alloc_memory_regions(gbx_context_t *ctx, uint8_t *rom, size_t size)
 }
 
 // -----------------------------------------------------------------------------
-static int configure_bank_controllers(gbx_context_t *ctx)
-{
-    switch (ctx->cart_features & CART_MBC) {
-    case CART_MBC_MBC1:
-        ctx->have_mbc1 = 1;
-        break;
-    case CART_MBC_MBC2:
-        // MBC2 has a built in RAM of 512x4bits, RAM banks must be set to 00
-        if (ctx->mem.xram_banks) {
-            log_err("Cannot specify XRAM for MBC2, built-in memory only.\n");
-            return -1;
-        }
-        // allocate 512 bytes, although only the low nibbles are used
-        ctx->mem.xram = calloc(1, 512);
-        ctx->have_mbc2 = 1;
-        break;
-    case CART_MBC_MBC3:
-    case CART_MBC_CAMERA:
-        ctx->have_mbc3 = 1;
-        break;
-    case CART_MBC_MBC4:
-        // as far as I've been able to gather, MBC4 doesn't actually exist?
-        log_err("Specified unsupported MBC4, which doesn't appear to exist.");
-        return -1;
-    case CART_MBC_MBC5:
-        ctx->have_mbc5 = 1;
-        break;
-    }
-    return 0;
-}
-
-// -----------------------------------------------------------------------------
 void optionally_load_bios(gbx_context_t *ctx)
 {
     char *path = NULL;
@@ -320,12 +288,11 @@ int gbx_load_file(gbx_context_t *ctx, const char *path)
     if (alloc_memory_regions(ctx, buffer, length))
         goto error_cleanup;
 
-    if (configure_bank_controllers(ctx))
-        goto error_cleanup;
-
     // if a bios path was specified, search for bios ROM and load it if found
     if (ctx->bios_dir)
         optionally_load_bios(ctx);
+
+    mmu_map_pages(ctx);
 
     rc = 0;
     buffer = NULL;

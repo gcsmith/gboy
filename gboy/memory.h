@@ -34,7 +34,10 @@
 #define VRAM_MASK       (VRAM_BANK_SIZE - 1)
 #define WRAM_MASK       (WRAM_BANK_SIZE - 1)
 
-typedef uint8_t (*mem_rd_fn)(gbx_context_t *, uint16_t);
+#define BIOS_UNMAP  0
+#define BIOS_MAP    1
+
+typedef uint8_t (*mmu_rd_fn)(gbx_context_t *, uint16_t);
 typedef void (*mmu_wr_fn)(gbx_context_t *, uint16_t, uint8_t);
 
 typedef struct memory_regions {
@@ -49,7 +52,20 @@ typedef struct memory_regions {
     int xram_banks, xram_bnum;
     int vram_banks, vram_bnum;
     int wram_banks, wram_bnum;
+    mmu_rd_fn page_rd[0x100];
+    mmu_wr_fn page_wr[0x100];
 } memory_regions_t;
+
+void mmu_map_bios(gbx_context_t *ctx, int setting);
+void mmu_map_mbc1(gbx_context_t *ctx);
+void mmu_map_mbc2(gbx_context_t *ctx);
+void mmu_map_mbc3(gbx_context_t *ctx);
+void mmu_map_mbc5(gbx_context_t *ctx);
+
+void mmu_map_pages(gbx_context_t *ctx);
+void mmu_map_rw(gbx_context_t *ctx, int beg, int n, mmu_rd_fn rf, mmu_wr_fn wf);
+void mmu_map_ro(gbx_context_t *ctx, int beg, int n, mmu_rd_fn fn);
+void mmu_map_wo(gbx_context_t *ctx, int beg, int n, mmu_wr_fn fn);
 
 uint8_t gbx_read_byte(gbx_context_t *ctx, uint16_t addr);
 void    gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t data);

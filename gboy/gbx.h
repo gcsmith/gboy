@@ -73,9 +73,8 @@ struct gbx_context {
     timer_registers_t timer;
     video_registers_t video;
     const char *bios_dir;
+    uint8_t int_en, int_flags, int_flags_delay;
     int ime, ei_delay, di_delay;
-    uint8_t int_en;
-    uint8_t int_flags, int_flags_delay;
     int system;
     int key1;
     int cart_features;
@@ -93,8 +92,8 @@ struct gbx_context {
     uint8_t opcode1;
     uint8_t opcode2;
     uint16_t next_pc;
-    void *userdata;
     uint32_t fb[GBX_LCD_XRES * GBX_LCD_YRES];
+    void *userdata;
     FILE *serial_log;
 };
 
