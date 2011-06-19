@@ -80,7 +80,6 @@ struct gbx_context {
     int cart_features;
     int cgb_enabled;
     int sb, sc, sc_active, sc_ticks;
-    int have_mbc1, have_mbc2, have_mbc3, have_mbc5;
     int mbc1_mode;
     int cpu_speed;
     int bios_enabled;

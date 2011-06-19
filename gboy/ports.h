@@ -87,7 +87,13 @@
 #define PORT_HDMA3      0x53    // new DMA destination, hi
 #define PORT_HDMA4      0x54    // new DMA destination, lo
 #define PORT_HDMA5      0x55    // new DMA length/mode/start
+
 #define PORT_RP         0x56    // infrared communications port
+
+#define RP_WR_DATA      0x01    // write data - enable or disable LED
+#define RR_RD_DATA      0x02    // read data - 0 if receiving, 1 if normal
+#define RP_RD_ENABLE    0xC0    // data read enable - 00 disabled, 11 enabled
+
 #define PORT_BCPS       0x68    // background color palette specification
 #define PORT_BCPD       0x69    // background color palette data
 #define PORT_OCPS       0x6A    // object color palette specification

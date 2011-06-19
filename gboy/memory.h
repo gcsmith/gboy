@@ -37,6 +37,9 @@
 #define BIOS_UNMAP  0
 #define BIOS_MAP    1
 
+// #define PROTECT_OAM_ACCESS
+// #define PROTECT_VRAM_ACCESS
+
 typedef uint8_t (*mmu_rd_fn)(gbx_context_t *, uint16_t);
 typedef void (*mmu_wr_fn)(gbx_context_t *, uint16_t, uint8_t);
 

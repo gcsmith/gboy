@@ -22,9 +22,6 @@
 #include "ports.h"
 #include "video.h"
 
-// #define PROTECT_OAM_ACCESS
-// #define PROTECT_VRAM_ACCESS
-
 // -----------------------------------------------------------------------------
 uint8_t mmu_rd_nop(gbx_context_t *ctx, uint16_t addr)
 {
@@ -81,6 +78,13 @@ void mmu_wr_xram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 uint8_t mmu_rd_vram_bank(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = ctx->mem.vram_bank[addr & VRAM_MASK];
+#ifdef PROTECT_VRAM_ACCESS
+    if (!is_vram_accessible(ctx)) {
+        log_err("attempted to read VRAM when in use by LCD controller\n");
+        return 0xFF;
+    }
+#endif
+
     log_spew("mmu_rd_vram_bank: addr=%04X value=%02X\n", addr, value);
     return value;
 }
@@ -88,6 +92,13 @@ uint8_t mmu_rd_vram_bank(gbx_context_t *ctx, uint16_t addr)
 // -----------------------------------------------------------------------------
 void mmu_wr_vram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
+#ifdef PROTECT_VRAM_ACCESS
+    if (!is_vram_accessible(ctx)) {
+        log_err("attempted to write VRAM when in use by LCD controller\n");
+        return;
+    }
+#endif
+
     log_spew("mmu_wr_vram_bank: addr=%04X value=%02X\n", addr, value);
     ctx->mem.vram_bank[addr & VRAM_MASK] = value;
 }
@@ -304,7 +315,7 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 }
 
 // -----------------------------------------------------------------------------
-/*static*/ void hdma_hblank_transfer(gbx_context_t *ctx)
+static void hdma_hblank_transfer(gbx_context_t *ctx)
 {
     log_spew("begin %d byte hblank dma transfer from %04X to %04X\n",
              ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
@@ -314,7 +325,7 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 }
 
 // -----------------------------------------------------------------------------
-/*static*/ void hdma_general_purpose_transfer(gbx_context_t *ctx)
+static void hdma_general_purpose_transfer(gbx_context_t *ctx)
 {
     int i;
     log_spew("begin %d byte general dma transfer from %04X to %04X\n",
@@ -329,29 +340,27 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
     ctx->video.hdma_active = 0;
 }
 
-#define IR_WR_DATA      0x01    // write data - enable or disable LED
-#define IR_RD_DATA      0x02    // read data - 0 if receiving, 1 if normal
-#define IR_RD_ENABLE    0xC0    // data read enable - 00 disabled, 11 enabled
-
 // -----------------------------------------------------------------------------
-/*static*/ void write_infrared_comm_port(gbx_context_t *ctx, uint8_t value)
+static void write_infrared_comm_port(gbx_context_t *ctx, uint8_t value)
 {
     log_dbg("write %02X to IR comm port\n", value);
-    ctx->rp = value & (IR_WR_DATA | IR_RD_ENABLE);
+    ctx->rp = value & (RP_WR_DATA | RP_RD_ENABLE);
 }
 
 // -----------------------------------------------------------------------------
-/*static*/ uint8_t read_infrared_comm_port(gbx_context_t *ctx)
+static uint8_t read_infrared_comm_port(gbx_context_t *ctx)
 {
     log_dbg("read %02X from IR comm port\n", 0);
-    return ctx->rp | IR_RD_DATA;
+    return ctx->rp | RR_RD_DATA;
 }
 
 // -----------------------------------------------------------------------------
-/*static*/ uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
+static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = 0;
-    switch (addr & 0xFF) {
+    int offset = addr & 0xFF;
+
+    switch (offset) {
     case PORT_JOYP:
         value = read_joyp_port(ctx);
         break;
@@ -479,29 +488,33 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
     case PORT_NR51:
     case PORT_NR52:
         // TODO: implement
-        value = ctx->mem.hram[addr & 0xFF];
+        value = ctx->mem.hram[offset];
         break;
     case PORT_BIOS:
         value = ctx->bios_enabled;
         break;
     default:
-        value = ctx->mem.hram[addr & 0xFF];
+        if (offset < 0x80)
+            log_err("attempting to read invalid io port (%04X)\n", addr);
+        value = ctx->mem.hram[offset];
         break;
     }
 
-//  log_spew("read_io_port: port=%s addr=%04X value=%02X\n",
-//           gbx_port_names[addr & 0xFF], addr, value);
+    log_spew("read_io_port: port=%s addr=%04X value=%02X\n",
+             gbx_port_names[addr & 0xFF], addr, value);
     return value;
 }
 
 // -----------------------------------------------------------------------------
-/*static*/ void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     uint16_t dma_addr;
-//  log_spew("mmu_wr_himem: port=%s addr=%04X value=%02X\n",
-//           gbx_port_names[addr & 0xFF], addr, value);
+    int offset = addr & 0xFF;
 
-    switch (addr & 0xFF) {
+    log_spew("mmu_wr_himem: port=%s addr=%04X value=%02X\n",
+             gbx_port_names[offset], addr, value);
+
+    switch (offset) {
     case PORT_JOYP:
         // only the button/direction select bits (P14/P15) are writable
         ctx->joyp = value & (JOYP_SEL_DIR | JOYP_SEL_BTN);
@@ -650,7 +663,7 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
     case PORT_NR51:
     case PORT_NR52:
         // TODO: implement
-        ctx->mem.hram[addr & 0xFF] = value;
+        ctx->mem.hram[offset] = value;
         break;
     case PORT_BIOS:
         if (ctx->bios_enabled) {
@@ -659,7 +672,9 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
         }
         break;
     default:
-        ctx->mem.hram[addr & 0xFF] = value;
+        if (offset < 0x80)
+            log_err("write to invalid io port (%04X) <- %02X\n", addr, value);
+        ctx->mem.hram[offset] = value;
         return;
     }
 }
