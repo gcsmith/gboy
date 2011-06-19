@@ -22,6 +22,7 @@
 // -----------------------------------------------------------------------------
 void mmu_wr_mbc5_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
+    log_dbg("MBC5 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
 // -----------------------------------------------------------------------------
@@ -52,8 +53,6 @@ void mmu_wr_mbc5_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         log_err("MBC5 set XRAM bank %02X, but no XRAM present\n", value);
 }
 
-extern void mmu_wr_nop(gbx_context_t *ctx, uint16_t addr, uint8_t value);
-
 // -----------------------------------------------------------------------------
 void mmu_map_mbc5(gbx_context_t *ctx)
 {
@@ -61,6 +60,5 @@ void mmu_map_mbc5(gbx_context_t *ctx)
     mmu_map_wo(ctx, 0x20, 0x10, mmu_wr_mbc5_romb0);
     mmu_map_wo(ctx, 0x30, 0x10, mmu_wr_mbc5_romb1);
     mmu_map_wo(ctx, 0x40, 0x20, mmu_wr_mbc5_ramb);
-    mmu_map_wo(ctx, 0x60, 0x20, mmu_wr_nop);
 }
 

@@ -23,14 +23,14 @@
 #include "video.h"
 
 // -----------------------------------------------------------------------------
-uint8_t mmu_rd_nop(gbx_context_t *ctx, uint16_t addr)
+uint8_t mmu_rd_invalid(gbx_context_t *ctx, uint16_t addr)
 {
     log_err("reading from unmapped page: addr=%04X value=FF\n", addr);
     return 0xFF;
 }
 
 // -----------------------------------------------------------------------------
-void mmu_wr_nop(gbx_context_t *ctx, uint16_t addr, uint8_t value)
+void mmu_wr_invalid(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_err("writing to unmapped page: addr=%04X value=%02X\n", addr, value);
 }
@@ -141,6 +141,11 @@ uint8_t mmu_rd_oam(gbx_context_t *ctx, uint16_t addr)
         log_err("attempted to read OAM when in use by LCD controller\n");
         return 0xFF;
     }
+
+    if (addr > 0xFE9F) {
+        log_err("attempting to read unusable memory region (%04X)\n", addr);
+        return 0xFF;
+    }
 #endif
 
     log_spew("mmu_rd_oam: addr=%04X\n", addr);
@@ -153,6 +158,11 @@ void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 #ifdef PROTECT_OAM_ACCESS
     if (!is_oam_accessible(ctx)) {
         log_err("attempted to write OAM when in use by LCD controller\n");
+        return;
+    }
+
+    if (addr > 0xFE9F) {
+        log_err("attempting to write unusable memory region (%04X)\n", addr);
         return;
     }
 #endif
@@ -351,7 +361,7 @@ static void write_infrared_comm_port(gbx_context_t *ctx, uint8_t value)
 static uint8_t read_infrared_comm_port(gbx_context_t *ctx)
 {
     log_dbg("read %02X from IR comm port\n", 0);
-    return ctx->rp | RR_RD_DATA;
+    return ctx->rp | RP_RD_DATA;
 }
 
 // -----------------------------------------------------------------------------
@@ -698,42 +708,37 @@ void mmu_map_bios(gbx_context_t *ctx, int setting)
 // -----------------------------------------------------------------------------
 void mmu_map_pages(gbx_context_t *ctx)
 {
-    // only set read handlers from XROM - write is either NOP or MBC specific
+    // XROM is read-only (may be altered by MBC settings), VRAM always banked
+    mmu_map_wo(ctx, 0x00, 0x80, mmu_wr_invalid);
     mmu_map_ro(ctx, 0x00, 0x40, mmu_rd_xrom);
     mmu_map_ro(ctx, 0x40, 0x40, mmu_rd_xrom_bank);
-
-    // set RW handlers for VRAM, which is always (potentially) bankable
     mmu_map_rw(ctx, 0x80, 0x20, mmu_rd_vram_bank, mmu_wr_vram_bank);
 
-    // map the external RAM handlers only if RAM present, set to NOP otherwise
+    // map the external RAM handlers only if RAM present, unmapped otherwise
     if (ctx->mem.xram_banks)
         mmu_map_rw(ctx, 0xA0, 0x20, mmu_rd_xram_bank, mmu_wr_xram_bank);
     else
-        mmu_map_rw(ctx, 0xA0, 0x20, mmu_rd_nop, mmu_wr_nop);
+        mmu_map_rw(ctx, 0xA0, 0x20, mmu_rd_invalid, mmu_wr_invalid);
 
-    // set RW handlers for WRAM, first region is fixed, second is bankable
+    // set RW handlers for WRAM, WRAM mirror, OAM, IO ports, and HRAM
     mmu_map_rw(ctx, 0xC0, 0x10, mmu_rd_wram, mmu_wr_wram);
     mmu_map_rw(ctx, 0xD0, 0x10, mmu_rd_wram_bank, mmu_wr_wram_bank);
-
-    // C000-CFFF mirrored at E000-EFFF, D000-DDFF mirrored at F000-FDFF
     mmu_map_rw(ctx, 0xE0, 0x10, mmu_rd_wram, mmu_wr_wram);
     mmu_map_rw(ctx, 0xF0, 0x0E, mmu_rd_wram_bank, mmu_wr_wram_bank);
+    mmu_map_rw(ctx, 0xFE, 0x01, mmu_rd_oam, mmu_wr_oam);
+    mmu_map_rw(ctx, 0xFF, 0x01, mmu_rd_himem, mmu_wr_himem);
 
-    // the rest of high memory is OAM, IO ports, HRAM, or unallocated
-    mmu_map_rw(ctx, 0xFE, 1, mmu_rd_oam, mmu_wr_oam);
-    mmu_map_rw(ctx, 0xFF, 1, mmu_rd_himem, mmu_wr_himem);
-
+    // configure memory bank controller specific mappings
     switch (ctx->cart_features & CART_MBC) {
     default:
         // shouldn't ever get here... but fall through just in case
         assert(!"unknown memory bank controller in mmu_map_pages");
-    case CART_MBC_ROM:
-        mmu_map_wo(ctx, 0x00, 0x80, mmu_wr_nop);
-        break;
+    case CART_MBC_ROM: break;
     case CART_MBC_MBC1: mmu_map_mbc1(ctx); break;
     case CART_MBC_MBC2: mmu_map_mbc2(ctx); break;
     case CART_MBC_MBC3: mmu_map_mbc3(ctx); break;
     case CART_MBC_MBC5: mmu_map_mbc5(ctx); break;
+    case CART_MBC_MBC7: mmu_map_mbc7(ctx); break;
     }
 
     // if a bios ROM image is available, patch it into the memory map

@@ -23,6 +23,7 @@
 // -----------------------------------------------------------------------------
 void mmu_wr_mbc2_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
+    log_dbg("MBC2 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
 // -----------------------------------------------------------------------------
@@ -49,11 +50,10 @@ void mmu_wr_mbc2_ram(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 void mmu_map_mbc2(gbx_context_t *ctx)
 {
     // MBC2 has only 512 bytes of internal RAM
-    ctx->mem.xram = calloc(1, 512);
+    ctx->mem.xram = calloc(1, 0x200);
 
     mmu_map_wo(ctx, 0x00, 0x20, mmu_wr_mbc2_ramg);
     mmu_map_wo(ctx, 0x20, 0x20, mmu_wr_mbc2_romb);
-    mmu_map_ro(ctx, 0xA0, 0x20, mmu_rd_mbc2_ram);
-    mmu_map_wo(ctx, 0xA0, 0x20, mmu_wr_mbc2_ram);
+    mmu_map_rw(ctx, 0xA0, 0x20, mmu_rd_mbc2_ram, mmu_wr_mbc2_ram);
 }
 

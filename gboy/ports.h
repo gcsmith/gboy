@@ -91,7 +91,7 @@
 #define PORT_RP         0x56    // infrared communications port
 
 #define RP_WR_DATA      0x01    // write data - enable or disable LED
-#define RR_RD_DATA      0x02    // read data - 0 if receiving, 1 if normal
+#define RP_RD_DATA      0x02    // read data - 0 if receiving, 1 if normal
 #define RP_RD_ENABLE    0xC0    // data read enable - 00 disabled, 11 enabled
 
 #define PORT_BCPS       0x68    // background color palette specification

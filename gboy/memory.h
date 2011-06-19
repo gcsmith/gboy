@@ -44,7 +44,7 @@ typedef uint8_t (*mmu_rd_fn)(gbx_context_t *, uint16_t);
 typedef void (*mmu_wr_fn)(gbx_context_t *, uint16_t, uint8_t);
 
 typedef struct memory_regions {
-    uint8_t oam[0xA0];          // object attribute memory
+    uint8_t oam[0x100];         // object attribute memory
     uint8_t hram[0x100];        // on chip high memory / zero page
     uint8_t *bios;              // (optional) bios image
     uint8_t *xrom, *xrom_bank;  // base address and current bank of ext ROM
@@ -64,6 +64,7 @@ void mmu_map_mbc1(gbx_context_t *ctx);
 void mmu_map_mbc2(gbx_context_t *ctx);
 void mmu_map_mbc3(gbx_context_t *ctx);
 void mmu_map_mbc5(gbx_context_t *ctx);
+void mmu_map_mbc7(gbx_context_t *ctx);
 
 void mmu_map_pages(gbx_context_t *ctx);
 void mmu_map_rw(gbx_context_t *ctx, int beg, int n, mmu_rd_fn rf, mmu_wr_fn wf);
