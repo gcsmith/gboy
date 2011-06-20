@@ -22,6 +22,53 @@
 #include "video.h"
 
 // -----------------------------------------------------------------------------
+void video_write_mono_palette(uint32_t *dest, uint8_t value)
+{
+    dest[0] = gbx_monochrome_colors[(value >> 0) & 3];
+    dest[1] = gbx_monochrome_colors[(value >> 2) & 3];
+    dest[2] = gbx_monochrome_colors[(value >> 4) & 3];
+    dest[3] = gbx_monochrome_colors[(value >> 6) & 3];
+}
+
+// -----------------------------------------------------------------------------
+void video_write_bcpd(gbx_context_t *ctx, uint8_t value)
+{
+    int color, index = ctx->video.bcps & CPS_INDEX;
+    if (!ctx->color_enabled) {
+        log_warn("cannot write BG color palette when not in CGB mode\n");
+        return;
+    }
+
+    ctx->video.bcpd[index] = value;
+    color = ctx->video.bcpd[index & ~1] | (ctx->video.bcpd[index | 1] << 8);
+    ctx->video.bcpd_rgb[index >> 1] = cgb_color_to_rgb(color);
+
+    // if flag is set, auto increment the palette specification index by one
+    if (ctx->video.bcps & CPS_INCREMENT)
+        ctx->video.bcps = CPS_INCREMENT | ((index + 1) & CPS_INDEX);
+}
+
+// -----------------------------------------------------------------------------
+void video_write_ocpd(gbx_context_t *ctx, uint8_t value)
+{
+    int index = ctx->video.ocps & CPS_INDEX;
+    uint16_t color;
+    if (!ctx->color_enabled) {
+        log_warn("cannot write OBJ color palette when not in CGB mode\n");
+        return;
+    }
+
+    // store the color in both 16-bit CGB format and 32-bit ARGB
+    ctx->video.ocpd[index] = value;
+    color = ctx->video.ocpd[index & ~1] | (ctx->video.ocpd[index | 1] << 8);
+    ctx->video.ocpd_rgb[index >> 1] = cgb_color_to_rgb(color);
+
+    // if flag is set, auto increment the palette specification index by one
+    if (ctx->video.ocps & CPS_INCREMENT)
+        ctx->video.ocps = CPS_INCREMENT | ((index + 1) & CPS_INDEX);
+}
+
+// -----------------------------------------------------------------------------
 INLINE void sprite_normal(gbx_context_t *ctx, uint32_t *palette,
         uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
 {
@@ -207,7 +254,7 @@ void render_bg_pixel(gbx_context_t *ctx, int x, int y)
         palette = &ctx->video.bcpd_rgb[(attr & BG_ATTR_PAL) << 2];
     }
 
-    // tile character data may be located at either 0x8000 or 0x8800
+    // tile character data may be indexed from either 0x8000 or 0x8800
     if (ctx->video.lcdc & LCDC_BG_CHAR)
         addr = char_base + (tile << 4) + (off_y << 1);
     else

@@ -172,59 +172,6 @@ void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 }
 
 // -----------------------------------------------------------------------------
-INLINE void write_monochrome_palette(uint32_t *dest, uint8_t value)
-{
-    dest[0] = gbx_monochrome_colors[(value >> 0) & 3];
-    dest[1] = gbx_monochrome_colors[(value >> 2) & 3];
-    dest[2] = gbx_monochrome_colors[(value >> 4) & 3];
-    dest[3] = gbx_monochrome_colors[(value >> 6) & 3];
-}
-
-// -----------------------------------------------------------------------------
-INLINE uint32_t cgb_color_to_rgb(uint16_t c)
-{
-    return ((c & 0x001F) << 3) | ((c & 0x03E0) << 6) | ((c & 0x7C00) << 9);
-}
-
-// -----------------------------------------------------------------------------
-INLINE void write_bcpd_color_palette(gbx_context_t *ctx, uint8_t value)
-{
-    int color, index = ctx->video.bcps & 0x3F;
-    if (!ctx->color_enabled) {
-        log_warn("cannot write BG color palette when not in CGB mode\n");
-        return;
-    }
-
-    ctx->video.bcpd[index] = value;
-    color = ctx->video.bcpd[index & ~1] | (ctx->video.bcpd[index | 1] << 8);
-    ctx->video.bcpd_rgb[index >> 1] = cgb_color_to_rgb(color);
-
-    // if flag is set, auto increment the palette specification index by one
-    if (ctx->video.bcps & 0x80)
-        ctx->video.bcps = 0x80 | ((index + 1) & 0x3F);
-}
-
-// -----------------------------------------------------------------------------
-INLINE void write_ocpd_color_palette(gbx_context_t *ctx, uint8_t value)
-{
-    int index = ctx->video.ocps & 0x3F;
-    uint16_t color;
-    if (!ctx->color_enabled) {
-        log_warn("cannot write OBJ color palette when not in CGB mode\n");
-        return;
-    }
-
-    // store the color in both 16-bit CGB format and 32-bit ARGB
-    ctx->video.ocpd[index] = value;
-    color = ctx->video.ocpd[index & ~1] | (ctx->video.ocpd[index | 1] << 8);
-    ctx->video.ocpd_rgb[index >> 1] = cgb_color_to_rgb(color);
-
-    // if flag is set, auto increment the palette specification index by one
-    if (ctx->video.ocps & 0x80)
-        ctx->video.ocps = 0x80 | ((index + 1) & 0x3F);
-}
-
-// -----------------------------------------------------------------------------
 INLINE uint8_t read_joyp_port(gbx_context_t *ctx)
 {
     uint8_t input_bits = 0x0F;
@@ -388,8 +335,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
     case PORT_LYC:
         value = ctx->video.lyc;
     case PORT_DMA:
-        log_warn("attempting to read write-only DMA port\n");
-        value = ctx->dma.src; // ???
+        value = ctx->dma.src >> 8; // ???
         break;
     case PORT_BGP:
         value = ctx->video.bgp;
@@ -553,15 +499,15 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         break;
     case PORT_BGP:
         ctx->video.bgp = value;
-        write_monochrome_palette(ctx->video.bgp_rgb, value);
+        video_write_mono_palette(ctx->video.bgp_rgb, value);
         break;
     case PORT_OBP0:
         ctx->video.obp0 = value;
-        write_monochrome_palette(ctx->video.obp0_rgb, value);
+        video_write_mono_palette(ctx->video.obp0_rgb, value);
         break;
     case PORT_OBP1:
         ctx->video.obp1 = value;
-        write_monochrome_palette(ctx->video.obp1_rgb, value);
+        video_write_mono_palette(ctx->video.obp1_rgb, value);
         break;
     case PORT_WY:
         ctx->video.wy = value;
@@ -607,13 +553,13 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         ctx->video.bcps = value & 0xBF;
         break;
     case PORT_BCPD:
-        write_bcpd_color_palette(ctx, value);
+        video_write_bcpd(ctx, value);
         break;
     case PORT_OCPS:
         ctx->video.ocps = value & 0xBF;
         break;
     case PORT_OCPD:
-        write_ocpd_color_palette(ctx, value);
+        video_write_ocpd(ctx, value);
         break;
     case PORT_SVBK:
         set_wram_bank(ctx, value);

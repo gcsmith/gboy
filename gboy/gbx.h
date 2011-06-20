@@ -66,7 +66,6 @@
 #define EXEC_STOP       0x08
 
 struct gbx_context {
-    rom_header_t header;
     memory_regions_t mem;
     cpu_registers_t reg;
     dma_registers_t dma;

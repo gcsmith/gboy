@@ -1023,7 +1023,6 @@ static int process_halt_state(gbx_context_t *ctx)
     if (ctx->int_en & ctx->int_flags) {
         // leave HALT mode if any interrupt is fired
         ctx->exec_flags &= ~EXEC_HALT;
-        return 0;
     }
 
     // remain in HALT mode. drive the rest of the system forward
@@ -1043,8 +1042,7 @@ static int process_stop_state(gbx_context_t *ctx)
         return 0;
     }
 
-    if (ctx->int_flags) {
-        // leave STOP mode if any interrupt is fired
+    if ((ctx->int_en & ctx->int_flags) & INT_JOYPAD) {
         ctx->exec_flags &= ~EXEC_STOP;
         return 0;
     }
@@ -1073,13 +1071,13 @@ long gbx_execute_cycles(gbx_context_t *ctx, long cycles_left)
 
             // if the cpu is halted, wait for an interrupt to be raised
             if ((ctx->exec_flags & EXEC_HALT) && process_halt_state(ctx)) {
-                cycles_left -= HALT_CYCLES;
+                cycles_left -= ctx->cycle_delta;
                 continue;
             }
 
             // if the cpu is stopped, wait for a joypad interrupt
             if ((ctx->exec_flags & EXEC_STOP) && process_stop_state(ctx)) {
-                cycles_left -= STOP_CYCLES;
+                cycles_left -= ctx->cycle_delta;
                 continue;
             }
 

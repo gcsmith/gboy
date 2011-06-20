@@ -21,6 +21,7 @@
 
 #define JOYP_SEL_DIR    0x10
 #define JOYP_SEL_BTN    0x20
+#define JOYP_BTN_MASK   0x0F
 
 // Serial Data Transfer
 
@@ -98,6 +99,10 @@
 #define PORT_BCPD       0x69    // background color palette data
 #define PORT_OCPS       0x6A    // object color palette specification
 #define PORT_OCPD       0x6B    // object color palette data
+
+#define CPS_INDEX       0x3F
+#define CPS_INCREMENT   0x80
+
 #define PORT_SVBK       0x70    // WRAM bank specification
 
 // Sound Channel 1 - Tone & Sweep

@@ -144,5 +144,15 @@ INLINE uint16_t gbx_validate_hdma_dst(uint16_t addr)
     return 0;
 }
 
+// -----------------------------------------------------------------------------
+INLINE uint32_t cgb_color_to_rgb(uint16_t c)
+{
+    return ((c & 0x001F) << 3) | ((c & 0x03E0) << 6) | ((c & 0x7C00) << 9);
+}
+
+void video_write_bcpd(gbx_context_t *ctx, uint8_t value);
+void video_write_ocpd(gbx_context_t *ctx, uint8_t value);
+void video_write_mono_palette(uint32_t *dest, uint8_t value);
+
 #endif // GBOY_VIDEO__H
 

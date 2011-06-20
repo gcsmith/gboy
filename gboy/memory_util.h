@@ -81,7 +81,7 @@ INLINE void set_vram_bank(gbx_context_t *ctx, uint8_t value)
 
     ctx->mem.vram_bank = ctx->mem.vram + bank * VRAM_BANK_SIZE;
     ctx->mem.vram_bnum = bank;
-    log_dbg("CGB set VRAM bank %02X (set bits %02X)\n", bank,  value);
+    log_spew("CGB set VRAM bank %02X (set bits %02X)\n", bank,  value);
 }
 
 // -----------------------------------------------------------------------------
@@ -95,7 +95,7 @@ INLINE void set_wram_bank(gbx_context_t *ctx, uint8_t value)
 
     ctx->mem.wram_bank = ctx->mem.wram + bank * WRAM_BANK_SIZE;
     ctx->mem.wram_bnum = bank;
-    log_dbg("CGB set WRAM bank %02X (set bits %02X)\n", bank,  value);
+    log_spew("CGB set WRAM bank %02X (set bits %02X)\n", bank,  value);
 }
 
 #endif // GBOY_MEMORY_UTIL__H

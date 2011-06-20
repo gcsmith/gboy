@@ -177,6 +177,7 @@ static code_table_t old_licensee[] = {
 static code_table_t new_licensee[] = {
     { 0x00, "None" },
     { 0x01, "Nintendo" },
+    { 0x04, "Konami" },
     { 0x08, "Capcom" },
     { 0x13, "Electronic arts" },
     { 0x18, "Hudsonsoft" },

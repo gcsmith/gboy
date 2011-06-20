@@ -147,7 +147,7 @@ static int process_header_fields(gbx_context_t *ctx, rom_header_t *header)
     }
 
     // store cart feature flags (bank controller, peripherals, etc)
-    ctx->cart_features = rom_get_cart_features(ctx->header.carttype);
+    ctx->cart_features = rom_get_cart_features(header->carttype);
 
     return 0;
 }
@@ -266,7 +266,7 @@ int gbx_load_file(gbx_context_t *ctx, const char *path)
     int rc = -1;
     size_t length = 0;
     uint8_t *buffer = NULL;
-    rom_header_t *header = &ctx->header;
+    rom_header_t header;
 
     if (load_binary_file(path, &buffer, &length))
         goto error_cleanup;
@@ -277,15 +277,15 @@ int gbx_load_file(gbx_context_t *ctx, const char *path)
         goto error_cleanup;
     }
 
-    rom_extract_header(header, buffer, length);
-    rom_print_details(header);
+    rom_extract_header(&header, buffer, length);
+    rom_print_details(&header);
 
     // determine system setting, if that hasn't been done for us
     if (ctx->system == SYSTEM_AUTO)
-        ctx->system = detect_system_type(header);
+        ctx->system = detect_system_type(&header);
 
     // now validate the system setting against the supported game features
-    if (process_header_fields(ctx, header))
+    if (process_header_fields(ctx, &header))
         goto error_cleanup;
 
     // allocate memory for XRAM/VRAM/WRAM
