@@ -428,8 +428,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
         break;
     }
 
-    log_spew("read_io_port: port=%s addr=%04X value=%02X\n",
-             gbx_port_names[addr & 0xFF], addr, value);
+    log_spew("mmu_rd_himem: addr=%04X value=%02X\n", addr, value);
     return value;
 }
 
@@ -439,8 +438,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     uint16_t dma_addr;
     int offset = addr & 0xFF;
 
-    log_spew("mmu_wr_himem: port=%s addr=%04X value=%02X\n",
-             gbx_port_names[offset], addr, value);
+    log_spew("mmu_wr_himem: addr=%04X value=%02X\n", addr, value);
 
     switch (offset) {
     case PORT_JOYP:

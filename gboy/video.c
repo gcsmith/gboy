@@ -21,6 +21,13 @@
 #include "ports.h"
 #include "video.h"
 
+static const uint32_t gbx_monochrome_colors[4] = {
+    0xFFFFFFFF,
+    0x80808080,
+    0x40404040,
+    0x00000000
+};
+
 // -----------------------------------------------------------------------------
 void video_write_mono_palette(uint32_t *dest, uint8_t value)
 {

@@ -116,12 +116,6 @@ int  gbx_get_clock_frequency(gbx_context_t *ctx);
 int  gbx_disassemble_op(gbx_context_t *ctx, char *buffer, int size);
 void gbx_trace_instruction(gbx_context_t *ctx);
 
-extern const int gbx_instruction_cycles[256];
-extern const int gbx_instruction_cycles_cb[256];
-extern const uint16_t gbx_daa_lut[2048];
-extern const uint32_t gbx_monochrome_colors[4];
-extern const char *gbx_port_names[0x100];
-
 // interface to emulator frontend
 
 extern void ext_video_sync(void *data);

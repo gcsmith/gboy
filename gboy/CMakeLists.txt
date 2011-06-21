@@ -26,7 +26,6 @@ set(gboy_src
     mmu_mbc5.c
     mmu_mbc7.c
     romfile.c
-    tables.c
     video.c
 )
 
