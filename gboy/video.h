@@ -120,7 +120,7 @@ typedef struct video_registers {
     int hdma_len, hdma_active, hdma_pos;
 } video_registers_t;
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE uint16_t gbx_validate_hdma_src(uint16_t addr)
 {
     addr &= 0xFFF0;
@@ -132,7 +132,7 @@ INLINE uint16_t gbx_validate_hdma_src(uint16_t addr)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE uint16_t gbx_validate_hdma_dst(uint16_t addr)
 {
     addr = (addr & 0x1FF0) | 0x8000;
@@ -144,7 +144,7 @@ INLINE uint16_t gbx_validate_hdma_dst(uint16_t addr)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE uint32_t cgb_color_to_rgb(uint16_t c)
 {
     return ((c & 0x001F) << 3) | ((c & 0x03E0) << 6) | ((c & 0x7C00) << 9);

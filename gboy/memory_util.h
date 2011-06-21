@@ -20,7 +20,7 @@
 
 #include "gbx.h"
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Returns a non-zero value if VRAM is currently accessible by the CPU.
 INLINE int is_vram_accessible(gbx_context_t *ctx)
 {
@@ -28,7 +28,7 @@ INLINE int is_vram_accessible(gbx_context_t *ctx)
     return (mode < MODE_TRANSFER) ? 1 : 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Returns a non-zero value if OAM is currently accessible by the CPU.
 INLINE int is_oam_accessible(gbx_context_t *ctx)
 {
@@ -36,7 +36,7 @@ INLINE int is_oam_accessible(gbx_context_t *ctx)
     return (mode < MODE_SEARCH) ? 1 : 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE int set_xrom_bank(gbx_context_t *ctx, int bank)
 {
     assert(ctx->mem.xrom_banks);
@@ -53,7 +53,7 @@ INLINE int set_xrom_bank(gbx_context_t *ctx, int bank)
     return bank;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE int set_xram_bank(gbx_context_t *ctx, int bank)
 {
     assert(ctx->mem.xram_banks);
@@ -70,7 +70,7 @@ INLINE int set_xram_bank(gbx_context_t *ctx, int bank)
     return bank;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void set_vram_bank(gbx_context_t *ctx, uint8_t value)
 {
     int bank = value & 1;
@@ -84,7 +84,7 @@ INLINE void set_vram_bank(gbx_context_t *ctx, uint8_t value)
     log_spew("CGB set VRAM bank %02X (set bits %02X)\n", bank,  value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void set_wram_bank(gbx_context_t *ctx, uint8_t value)
 {
     int bank = (value & 7) ? (value & 7) : 1;

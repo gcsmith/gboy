@@ -21,7 +21,7 @@
 #include <string.h>
 #include "graphics.h"
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 graphics_t *graphics_init(int width, int height, int stretch)
 {
     graphics_t *gfx = (graphics_t *)calloc(1, sizeof(graphics_t));
@@ -72,7 +72,7 @@ graphics_t *graphics_init(int width, int height, int stretch)
     return gfx;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void graphics_resize(graphics_t *gfx, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -104,7 +104,7 @@ void graphics_resize(graphics_t *gfx, int width, int height)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void graphics_update(graphics_t *gfx, uint32_t *src)
 {
     uint32_t *pbuf;
@@ -121,7 +121,7 @@ void graphics_update(graphics_t *gfx, uint32_t *src)
             gfx->width, gfx->height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void graphics_render(graphics_t *gfx)
 {
     glClear(GL_COLOR_BUFFER_BIT);
@@ -139,7 +139,7 @@ void graphics_render(graphics_t *gfx)
     glEnd();
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void graphics_shutdown(graphics_t *gfx)
 {
     glDeleteBuffers(1, &gfx->pbo);

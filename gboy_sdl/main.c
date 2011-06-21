@@ -56,7 +56,7 @@ typedef struct window_state {
     int stretch;                // control stretched or aspect correct display
 } window_state_t;
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Insert a user-defined event into the SDL event queue.
 INLINE void push_user_event(int code, void *data1, void *data2)
 {
@@ -71,7 +71,7 @@ INLINE void push_user_event(int code, void *data1, void *data2)
     SDL_PushEvent(&event);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Compute the emulator performance in terms of cycles/second.
 uint32_t perf_timer_event(uint32_t interval, void *param)
 {
@@ -82,7 +82,7 @@ uint32_t perf_timer_event(uint32_t interval, void *param)
     return interval;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Set the desired emulator clock frequency, in Hz.
 static void set_gbx_frequency(gbx_thread_t *gt, int hz)
 {
@@ -92,7 +92,7 @@ static void set_gbx_frequency(gbx_thread_t *gt, int hz)
     gt->real_period = gt->cycles_per_update * 1000.0f / gt->clock_rate;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Callback fired each time the emulator enters the vertical blank period.
 void ext_video_sync(void *data)
 {
@@ -104,7 +104,7 @@ void ext_video_sync(void *data)
         sound_render(gt->snd, gt->ctx->frame_cycles);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Callback fired when the emulator switches between normal/double speed.
 void ext_speed_change(void *data, int speed)
 {
@@ -118,7 +118,7 @@ void ext_speed_change(void *data, int speed)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Callback fired each time the LCD switches between enabled/disabled state.
 void ext_lcd_enabled(void *data, int enabled)
 {
@@ -129,7 +129,7 @@ void ext_lcd_enabled(void *data, int enabled)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void ext_sound_write(void *data, uint16_t addr, uint8_t value)
 {
     gbx_thread_t *gt = (gbx_thread_t *)data;
@@ -137,7 +137,7 @@ void ext_sound_write(void *data, uint16_t addr, uint8_t value)
         sound_write(gt->snd, gt->ctx->frame_cycles, addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void ext_sound_read(void *data, uint16_t addr, uint8_t *value)
 {
     gbx_thread_t *gt = (gbx_thread_t *)data;
@@ -145,7 +145,7 @@ void ext_sound_read(void *data, uint16_t addr, uint8_t *value)
         *value = sound_read(gt->snd, gt->ctx->frame_cycles, addr);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Entry-point for emulator thread. Execute cycles and perform CPU throttling.
 int gbx_thread_run(void *data)
 {
@@ -187,7 +187,7 @@ int gbx_thread_run(void *data)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Create, initialize, and launch the emulator thread.
 gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
 {
@@ -222,7 +222,7 @@ gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
     return gt;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Terminate and destroy the emulator thread. Blocks until thread completes.
 void gbx_thread_destroy(gbx_thread_t *gt)
 {
@@ -240,7 +240,7 @@ void gbx_thread_destroy(gbx_thread_t *gt)
     SAFE_FREE(gt);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Initialize SDL, OpenGL, and GLEW. Create and display the main window.
 int create_sdl_window(window_state_t *ws, cmdargs_t *ca)
 {
@@ -296,7 +296,7 @@ int create_sdl_window(window_state_t *ws, cmdargs_t *ca)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // XXX: Placeholder code -- should allow for configurable control scheme.
 static int keysym_to_joypad(int keysym)
 {
@@ -313,7 +313,7 @@ static int keysym_to_joypad(int keysym)
     return -1;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int process_window_events(gbx_thread_t *gt, window_state_t *ws)
 {
     SDL_Event event;
@@ -388,7 +388,7 @@ int process_window_events(gbx_thread_t *gt, window_state_t *ws)
     return 1;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int window_event_pump(gbx_thread_t *gt, window_state_t *ws)
 {
     ws->gfx = graphics_init(GBX_LCD_XRES, GBX_LCD_YRES, ws->stretch);
@@ -406,7 +406,7 @@ int window_event_pump(gbx_thread_t *gt, window_state_t *ws)
     return 1;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
     cmdargs_t ca;

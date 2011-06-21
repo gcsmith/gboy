@@ -19,13 +19,13 @@
 #include "memory.h"
 #include "memory_util.h"
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc1_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("MBC1 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc1_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     if (ctx->mem.mbc1_mode) {
@@ -40,7 +40,7 @@ void mmu_wr_mbc1_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc1_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     if (ctx->mem.mbc1_mode)  {
@@ -61,7 +61,7 @@ void mmu_wr_mbc1_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc1_mode(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     if (value & 1) {
@@ -75,7 +75,7 @@ void mmu_wr_mbc1_mode(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     log_spew("MBC1 set memory model to %d\n", ctx->mem.mbc1_mode);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_mbc1(gbx_context_t *ctx)
 {
     mmu_map_wo(ctx, 0x00, 0x20, mmu_wr_mbc1_ramg);

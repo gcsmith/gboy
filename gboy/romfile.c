@@ -316,7 +316,7 @@ static code_table_t ram_type[] = {
     { 0x00, NULL }
 };
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static const char *search_table(const code_table_t *tab, uint8_t code)
 {
     int index = 0;
@@ -330,7 +330,7 @@ static const char *search_table(const code_table_t *tab, uint8_t code)
     return "unknown";
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void rom_extract_header(rom_header_t *rh, uint8_t *buffer, size_t length)
 {
     size_t i;
@@ -370,7 +370,7 @@ void rom_extract_header(rom_header_t *rh, uint8_t *buffer, size_t length)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void rom_print_details(rom_header_t *rh)
 {
     log_info("  Title:        %s\n", rh->title);
@@ -405,7 +405,7 @@ void rom_print_details(rom_header_t *rh)
              (rh->computed_g == rh->chksum_g) ? "OK" : "BAD");
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int rom_get_cart_features(int carttype)
 {
     switch (carttype) {
@@ -443,7 +443,7 @@ int rom_get_cart_features(int carttype)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Determine the number of ROM banks based on the ROM size header field.
 int xrom_size_to_banks(int rom_size)
 {
@@ -458,7 +458,7 @@ int xrom_size_to_banks(int rom_size)
     return -1;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Determine the number of RAM banks based on the RAM size header field.
 int xram_size_to_banks(int ram_size)
 {

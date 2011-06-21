@@ -28,7 +28,7 @@ static const uint32_t gbx_monochrome_colors[4] = {
     0x00000000
 };
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void video_write_mono_palette(uint32_t *dest, uint8_t value)
 {
     dest[0] = gbx_monochrome_colors[(value >> 0) & 3];
@@ -37,7 +37,7 @@ void video_write_mono_palette(uint32_t *dest, uint8_t value)
     dest[3] = gbx_monochrome_colors[(value >> 6) & 3];
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void video_write_bcpd(gbx_context_t *ctx, uint8_t value)
 {
     int color, index = ctx->video.bcps & CPS_INDEX;
@@ -55,7 +55,7 @@ void video_write_bcpd(gbx_context_t *ctx, uint8_t value)
         ctx->video.bcps = CPS_INCREMENT | ((index + 1) & CPS_INDEX);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void video_write_ocpd(gbx_context_t *ctx, uint8_t value)
 {
     int index = ctx->video.ocps & CPS_INDEX;
@@ -75,7 +75,7 @@ void video_write_ocpd(gbx_context_t *ctx, uint8_t value)
         ctx->video.ocps = CPS_INCREMENT | ((index + 1) & CPS_INDEX);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void sprite_normal(gbx_context_t *ctx, uint32_t *palette,
         uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
 {
@@ -92,7 +92,7 @@ INLINE void sprite_normal(gbx_context_t *ctx, uint32_t *palette,
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void sprite_xflip(gbx_context_t *ctx, uint32_t *palette,
         uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
 {
@@ -109,7 +109,7 @@ INLINE void sprite_xflip(gbx_context_t *ctx, uint32_t *palette,
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void sprite_yflip(gbx_context_t *ctx, uint32_t *palette,
         uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
 {
@@ -126,7 +126,7 @@ INLINE void sprite_yflip(gbx_context_t *ctx, uint32_t *palette,
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void sprite_xyflip(gbx_context_t *ctx, uint32_t *palette,
         uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
 {
@@ -143,7 +143,7 @@ INLINE void sprite_xyflip(gbx_context_t *ctx, uint32_t *palette,
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void render_sprites(gbx_context_t *ctx)
 {
     int i, xpos, ypos, w0, h0, w1, h1, type;
@@ -216,7 +216,7 @@ void render_sprites(gbx_context_t *ctx)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void render_bg_pixel(gbx_context_t *ctx, int x, int y)
 {
     int base_x, base_y, off_x, off_y, mappos, cnum;
@@ -274,7 +274,7 @@ void render_bg_pixel(gbx_context_t *ctx, int x, int y)
     ctx->fb[y * GBX_LCD_XRES + x] = palette[cnum];
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void set_stat_mode(gbx_context_t *ctx, int mode)
 {
     assert(mode >= 0 && mode <= 3);
@@ -282,7 +282,7 @@ INLINE void set_stat_mode(gbx_context_t *ctx, int mode)
     log_spew("LCD STAT mode changing to %d\n", mode);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void check_coincidence(gbx_context_t *ctx)
 {
     // fire an interrupt when LY == LYC becomes true and interrupt enabled
@@ -293,7 +293,7 @@ INLINE void check_coincidence(gbx_context_t *ctx)
     // flag here, it is computed on demand when the STAT register is read
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void transition_to_search(gbx_context_t *ctx)
 {
     ctx->video.state = VIDEO_STATE_SEARCH;
@@ -306,7 +306,7 @@ INLINE void transition_to_search(gbx_context_t *ctx)
         gbx_req_interrupt(ctx, INT_LCDSTAT);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void transition_to_transfer(gbx_context_t *ctx)
 {
     ctx->video.state = VIDEO_STATE_TRANSFER;
@@ -316,7 +316,7 @@ INLINE void transition_to_transfer(gbx_context_t *ctx)
     set_stat_mode(ctx, MODE_TRANSFER);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static void hdma_transfer_block(gbx_context_t *ctx)
 {
     uint16_t src = ctx->video.hdma_src + ctx->video.hdma_pos;
@@ -338,7 +338,7 @@ static void hdma_transfer_block(gbx_context_t *ctx)
              copy_length, src, dst, ctx->video.hdma_len);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void transition_to_hblank(gbx_context_t *ctx)
 {
     ctx->video.state = VIDEO_STATE_HBLANK;
@@ -354,7 +354,7 @@ INLINE void transition_to_hblank(gbx_context_t *ctx)
         gbx_req_interrupt(ctx, INT_LCDSTAT);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void transition_to_vblank(gbx_context_t *ctx)
 {
     ctx->video.state = VIDEO_STATE_VBLANK;
@@ -372,7 +372,7 @@ INLINE void transition_to_vblank(gbx_context_t *ctx)
     ctx->frame_cycles = 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void video_update_cycles(gbx_context_t *ctx, long cycles)
 {
     long i;

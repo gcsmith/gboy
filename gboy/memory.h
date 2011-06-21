@@ -75,13 +75,13 @@ void mmu_map_wo(gbx_context_t *ctx, int beg, int n, mmu_wr_fn fn);
 uint8_t gbx_read_byte(gbx_context_t *ctx, uint16_t addr);
 void    gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t data);
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE uint16_t gbx_read_word(gbx_context_t *ctx, uint16_t addr)
 {
     return gbx_read_byte(ctx, addr) | gbx_read_byte(ctx, addr + 1) << 8;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void gbx_write_word(gbx_context_t *ctx, uint16_t addr, uint16_t data)
 {
     gbx_write_byte(ctx, addr, data & 0xFF);

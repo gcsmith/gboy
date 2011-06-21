@@ -30,13 +30,13 @@
 #define MBC7_UNK4       0x70
 #define MBC7_UNK5       0x80
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc7_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("MBC7 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc7_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     // specify 7-bit ROM bank index, but 0 always maps to 1
@@ -44,7 +44,7 @@ void mmu_wr_mbc7_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     log_spew("MBC7 set XROM bank %02X (set bits %02X)\n", bank, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc7_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     if (ctx->mem.xram_banks) {
@@ -55,7 +55,7 @@ void mmu_wr_mbc7_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         log_warn("MBC7 set XRAM bank %02X, but no XRAM present\n", value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_mbc7_ram(gbx_context_t *ctx, uint16_t addr)
 {
     log_info("reading MBC7 ram, addr:%04X\n", addr);
@@ -75,13 +75,13 @@ uint8_t mmu_rd_mbc7_ram(gbx_context_t *ctx, uint16_t addr)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc7_ram(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_info("writing MBC7 ram, addr:%04X value:%02X\n", addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_mbc7(gbx_context_t *ctx)
 {
     mmu_map_wo(ctx, 0x00, 0x20, mmu_wr_mbc7_ramg);

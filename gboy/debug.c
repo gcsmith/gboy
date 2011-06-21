@@ -145,7 +145,7 @@ static const char *r16[] = { "AF", "BC", "DE", "HL", "SP", "PC" };
 #define OP_1(n, a)      asm_##n(a); break
 #define OP_2(n, a, b)   asm_##n(a, b); break
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int gbx_disassemble_op(gbx_context_t *ctx, char *o, int s)
 {
     ctx->next_pc = ctx->reg.pc;
@@ -163,7 +163,7 @@ int gbx_disassemble_op(gbx_context_t *ctx, char *o, int s)
     return ctx->bytes_read;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_trace_instruction(gbx_context_t *ctx)
 {
     char buffer[256];

@@ -19,19 +19,19 @@
 #include "memory.h"
 #include "memory_util.h"
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc3_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("MBC3 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc3_rtc(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_err("TODO: implement RTC registers\n");
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc3_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     // specify a full 7-bit ROM bank index, but 0 always maps to 1
@@ -39,7 +39,7 @@ void mmu_wr_mbc3_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     log_spew("MBC3 set XROM bank %02X (set bits %02X)\n", bank, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc3_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     if (value <= 0x03) {
@@ -55,13 +55,13 @@ void mmu_wr_mbc3_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc3_latch(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_err("TODO: implement latch clock data\n");
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_mbc3(gbx_context_t *ctx)
 {
     mmu_map_wo(ctx, 0x00, 0x20, mmu_wr_mbc3_ramg);

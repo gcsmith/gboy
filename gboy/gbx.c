@@ -24,7 +24,7 @@
 #include "ports.h"
 #include "video.h"
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int gbx_create_context(gbx_context_t **pctx, int system)
 {
     gbx_context_t *ctx;
@@ -50,7 +50,7 @@ int gbx_create_context(gbx_context_t **pctx, int system)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_destroy_context(gbx_context_t *ctx)
 {
     if (!ctx) return;
@@ -63,7 +63,7 @@ void gbx_destroy_context(gbx_context_t *ctx)
     SAFE_FREE(ctx);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static int load_binary_file(const char *path, uint8_t **pbuf, size_t *plen)
 {
     FILE *fp;
@@ -95,7 +95,7 @@ static int load_binary_file(const char *path, uint8_t **pbuf, size_t *plen)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static int detect_system_type(rom_header_t *header)
 {
     // if game supports color mode, emulate gameboy color
@@ -115,7 +115,7 @@ static int detect_system_type(rom_header_t *header)
     return SYSTEM_GMB;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static int process_header_fields(gbx_context_t *ctx, rom_header_t *header)
 {
     // make sure that the ROM and RAM size fields make sense
@@ -152,7 +152,7 @@ static int process_header_fields(gbx_context_t *ctx, rom_header_t *header)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static int alloc_memory_regions(gbx_context_t *ctx, uint8_t *rom, size_t size)
 {
     size_t xrom_size, xram_size, vram_size, wram_size;
@@ -220,7 +220,7 @@ static int alloc_memory_regions(gbx_context_t *ctx, uint8_t *rom, size_t size)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void optionally_load_bios(gbx_context_t *ctx)
 {
     char *path = NULL;
@@ -260,7 +260,7 @@ void optionally_load_bios(gbx_context_t *ctx)
     SAFE_FREE(path);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int gbx_load_file(gbx_context_t *ctx, const char *path)
 {
     int rc = -1;
@@ -306,14 +306,14 @@ error_cleanup:
     return rc;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_set_userdata(gbx_context_t *ctx, void *userdata)
 {
     assert(NULL != ctx);
     ctx->userdata = userdata;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_set_bios_dir(gbx_context_t *ctx, const char *path)
 {
     assert(NULL != ctx);
@@ -322,7 +322,7 @@ void gbx_set_bios_dir(gbx_context_t *ctx, const char *path)
     log_dbg("bios directory set to %s\n", path);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_set_serial_log(gbx_context_t *ctx, const char *path)
 {
     assert(NULL != ctx);
@@ -343,7 +343,7 @@ void gbx_set_serial_log(gbx_context_t *ctx, const char *path)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_set_debugger(gbx_context_t *ctx, int enable)
 {
     assert(NULL != ctx);
@@ -356,7 +356,7 @@ void gbx_set_debugger(gbx_context_t *ctx, int enable)
     log_spew("debug mode %s\n", enable ? "enabled" : "disabled");
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_set_input_state(gbx_context_t *ctx, int key, int pressed)
 {
     assert(NULL != ctx);
@@ -372,7 +372,7 @@ void gbx_set_input_state(gbx_context_t *ctx, int key, int pressed)
     log_spew("input index %d set to %s\n", key, pressed ? "down" : "up");
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_get_framebuffer(gbx_context_t *ctx, void *dest)
 {
     assert(NULL != ctx);
@@ -380,14 +380,14 @@ void gbx_get_framebuffer(gbx_context_t *ctx, void *dest)
     memcpy(dest, ctx->fb, GBX_LCD_XRES * GBX_LCD_YRES * 4);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int gbx_get_clock_frequency(gbx_context_t *ctx)
 {
     assert(NULL != ctx);
     return ctx->cpu_speed;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static void simulate_starting_state(gbx_context_t *ctx)
 {
     cpu_registers_t *r = &ctx->reg;
@@ -454,7 +454,7 @@ static void simulate_starting_state(gbx_context_t *ctx)
     ctx->cycles = 0x102A4;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_power_on(gbx_context_t *ctx)
 {
     if (ctx->bios_enabled) {
@@ -467,7 +467,7 @@ void gbx_power_on(gbx_context_t *ctx)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_req_interrupt(gbx_context_t *ctx, int interrupt)
 {
     assert(NULL != ctx);

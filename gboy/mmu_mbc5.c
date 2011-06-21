@@ -19,13 +19,13 @@
 #include "memory.h"
 #include "memory_util.h"
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc5_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("MBC5 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc5_romb0(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     // specify a full 8-bit ROM bank index, but 0 always maps to 1
@@ -34,7 +34,7 @@ void mmu_wr_mbc5_romb0(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     log_spew("MBC5 set XROM bank %03X (set lo bits %02X)\n", bank, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc5_romb1(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     int bank_hi = (value & 1) << 8;
@@ -42,7 +42,7 @@ void mmu_wr_mbc5_romb1(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     log_spew("MBC5 set XROM bank %03X (set hi bits %02X)\n", bank, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc5_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     if (ctx->mem.xram_banks) {
@@ -53,7 +53,7 @@ void mmu_wr_mbc5_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         log_warn("MBC5 set XRAM bank %02X, but no XRAM present\n", value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_mbc5(gbx_context_t *ctx)
 {
     mmu_map_wo(ctx, 0x00, 0x20, mmu_wr_mbc5_ramg);

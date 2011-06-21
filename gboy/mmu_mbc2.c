@@ -20,13 +20,13 @@
 #include "memory.h"
 #include "memory_util.h"
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc2_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("MBC2 set RAM enable, addr:%04X data:%02X\n", addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc2_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     // specify 4-bit ROM bank index, but 0 always maps to 1
@@ -34,19 +34,19 @@ void mmu_wr_mbc2_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     log_spew("MBC2 set XROM bank %02X (set bits %02X)\n", bank, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_mbc2_ram(gbx_context_t *ctx, uint16_t addr)
 {
     return ctx->mem.xram[addr & 0x1FF];
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_mbc2_ram(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     ctx->mem.xram[addr & 0x1FF] = value & 0x0F;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_mbc2(gbx_context_t *ctx)
 {
     // MBC2 has only 512 bytes of internal RAM

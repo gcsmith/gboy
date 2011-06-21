@@ -37,7 +37,7 @@ void graphics_update(graphics_t *gfx, uint32_t *src);
 void graphics_render(graphics_t *gfx);
 void graphics_shutdown(graphics_t *gfx);
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Return the nearest square, pow2 texture dimension >= MAX(width, height).
 INLINE unsigned int tex_pow2(unsigned int width, unsigned int height)
 {

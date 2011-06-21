@@ -22,20 +22,20 @@
 #include "ports.h"
 #include "video.h"
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_invalid(gbx_context_t *ctx, uint16_t addr)
 {
     log_warn("reading from unmapped page: addr=%04X value=FF\n", addr);
     return 0xFF;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_invalid(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_warn("writing to unmapped page: addr=%04X value=%02X\n", addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_bios(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = ctx->mem.bios[addr];
@@ -43,7 +43,7 @@ uint8_t mmu_rd_bios(gbx_context_t *ctx, uint16_t addr)
     return value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_xrom(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = ctx->mem.xrom[addr & XROM_MASK];
@@ -51,7 +51,7 @@ uint8_t mmu_rd_xrom(gbx_context_t *ctx, uint16_t addr)
     return value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_xrom_bank(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = ctx->mem.xrom_bank[addr & XROM_MASK];
@@ -59,7 +59,7 @@ uint8_t mmu_rd_xrom_bank(gbx_context_t *ctx, uint16_t addr)
     return value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_xram_bank(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = ctx->mem.xram_bank[addr & XRAM_MASK];
@@ -67,14 +67,14 @@ uint8_t mmu_rd_xram_bank(gbx_context_t *ctx, uint16_t addr)
     return value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_xram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("mmu_wr_xram_bank: addr=%04X value=%02X\n", addr, value);
     ctx->mem.xram_bank[addr & XRAM_MASK] = value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_vram_bank(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = ctx->mem.vram_bank[addr & VRAM_MASK];
@@ -89,7 +89,7 @@ uint8_t mmu_rd_vram_bank(gbx_context_t *ctx, uint16_t addr)
     return value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_vram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
 #ifdef PROTECT_VRAM_ACCESS
@@ -103,7 +103,7 @@ void mmu_wr_vram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     ctx->mem.vram_bank[addr & VRAM_MASK] = value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_wram(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = ctx->mem.wram[addr & WRAM_MASK];
@@ -111,14 +111,14 @@ uint8_t mmu_rd_wram(gbx_context_t *ctx, uint16_t addr)
     return value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_wram(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("mmu_wr_wram: addr=%04X value=%02X\n", addr, value);
     ctx->mem.wram[addr & WRAM_MASK] = value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_wram_bank(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = ctx->mem.wram_bank[addr & WRAM_MASK];
@@ -126,14 +126,14 @@ uint8_t mmu_rd_wram_bank(gbx_context_t *ctx, uint16_t addr)
     return value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_wram_bank(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     log_spew("mmu_wr_wram_bank: addr=%04X value=%02X\n", addr, value);
     ctx->mem.wram_bank[addr & WRAM_MASK] = value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t mmu_rd_oam(gbx_context_t *ctx, uint16_t addr)
 {
 #ifdef PROTECT_OAM_ACCESS
@@ -152,7 +152,7 @@ uint8_t mmu_rd_oam(gbx_context_t *ctx, uint16_t addr)
     return ctx->mem.oam[addr & 0xFF];
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
 #ifdef PROTECT_OAM_ACCESS
@@ -171,7 +171,7 @@ void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     ctx->mem.oam[addr & 0xFF] = value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE uint8_t read_joyp_port(gbx_context_t *ctx)
 {
     uint8_t input_bits = 0x0F;
@@ -182,7 +182,7 @@ INLINE uint8_t read_joyp_port(gbx_context_t *ctx)
     return ctx->joyp | input_bits | 0xC0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE uint8_t read_video_stat(gbx_context_t *ctx)
 {
     int stat = ctx->video.stat & ~STAT_LYC;
@@ -196,7 +196,7 @@ INLINE uint8_t read_video_stat(gbx_context_t *ctx)
     return stat | 0x80;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void write_timer_control(gbx_context_t *ctx, uint8_t value)
 {
     switch (value & 3) {
@@ -208,7 +208,7 @@ INLINE void write_timer_control(gbx_context_t *ctx, uint8_t value)
     ctx->timer.tac = value & 7;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void write_lcdc(gbx_context_t *ctx, uint8_t value)
 {
     // if the LCD enable/disable state changes, inform the frontend
@@ -224,7 +224,7 @@ INLINE void write_lcdc(gbx_context_t *ctx, uint8_t value)
     ctx->video.lcdc = value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 {
     if (ctx->dma.active) {
@@ -243,7 +243,7 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
     ctx->dma.write_cycle = 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static void hdma_hblank_transfer(gbx_context_t *ctx)
 {
     log_spew("begin %d byte hblank dma transfer from %04X to %04X\n",
@@ -253,7 +253,7 @@ static void hdma_hblank_transfer(gbx_context_t *ctx)
     ctx->video.hdma_active = 1;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static void hdma_general_purpose_transfer(gbx_context_t *ctx)
 {
     int i;
@@ -269,21 +269,21 @@ static void hdma_general_purpose_transfer(gbx_context_t *ctx)
     ctx->video.hdma_active = 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static void write_infrared_comm_port(gbx_context_t *ctx, uint8_t value)
 {
     log_dbg("write %02X to IR comm port\n", value);
     ctx->rp = value & (RP_WR_DATA | RP_RD_ENABLE);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static uint8_t read_infrared_comm_port(gbx_context_t *ctx)
 {
     log_dbg("read %02X from IR comm port\n", 0);
     return ctx->rp | RP_RD_DATA;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
 {
     uint8_t value = 0;
@@ -432,7 +432,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
     return value;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     uint16_t dma_addr;
@@ -608,7 +608,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_bios(gbx_context_t *ctx, int setting)
 {
     mmu_rd_fn fn = (setting == BIOS_MAP) ? mmu_rd_bios : mmu_rd_xrom;
@@ -624,7 +624,7 @@ void mmu_map_bios(gbx_context_t *ctx, int setting)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_pages(gbx_context_t *ctx)
 {
     // XROM is read-only (may be altered by MBC settings), VRAM always banked
@@ -665,7 +665,7 @@ void mmu_map_pages(gbx_context_t *ctx)
         mmu_map_bios(ctx, BIOS_MAP);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_ro(gbx_context_t *ctx, int beg, int n, mmu_rd_fn fn)
 {
     int page, end = beg + n;
@@ -673,7 +673,7 @@ void mmu_map_ro(gbx_context_t *ctx, int beg, int n, mmu_rd_fn fn)
         ctx->mem.page_rd[page] = fn;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_wo(gbx_context_t *ctx, int beg, int n, mmu_wr_fn fn)
 {
     int page, end = beg + n;
@@ -681,7 +681,7 @@ void mmu_map_wo(gbx_context_t *ctx, int beg, int n, mmu_wr_fn fn)
         ctx->mem.page_wr[page] = fn;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void mmu_map_rw(gbx_context_t *ctx, int beg, int n, mmu_rd_fn rf, mmu_wr_fn wf)
 {
     int page, end = beg + n;
@@ -691,13 +691,13 @@ void mmu_map_rw(gbx_context_t *ctx, int beg, int n, mmu_rd_fn rf, mmu_wr_fn wf)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t gbx_read_byte(gbx_context_t *ctx, uint16_t addr)
 {
     return ctx->mem.page_rd[addr >> 8](ctx, addr);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void gbx_write_byte(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
     ctx->mem.page_wr[addr >> 8](ctx, addr, value);

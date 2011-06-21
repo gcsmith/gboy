@@ -29,7 +29,7 @@ struct blargg_sound {
     int sample_rate;
 };
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 sound_t *sound_init(int sample_rate, int buff_size)
 {
     blargg_sound *psnd = new blargg_sound;
@@ -49,14 +49,14 @@ sound_t *sound_init(int sample_rate, int buff_size)
     return (sound_t *)psnd;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void sound_set_freq(sound_t *snd, int hz)
 {
     blargg_sound *psnd = (blargg_sound *)snd;
     psnd->buf.clock_rate(hz);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void sound_write(sound_t *snd, int cycle, uint16_t addr, uint8_t value)
 {
     blargg_sound *psnd = (blargg_sound *)snd;
@@ -68,7 +68,7 @@ void sound_write(sound_t *snd, int cycle, uint16_t addr, uint8_t value)
     psnd->apu.write_register(cycle, addr, value);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 uint8_t sound_read(sound_t *snd, int cycle, uint16_t addr)
 {
     blargg_sound *psnd = (blargg_sound *)snd;
@@ -80,7 +80,7 @@ uint8_t sound_read(sound_t *snd, int cycle, uint16_t addr)
     return psnd->apu.read_register(cycle, addr);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void sound_render(sound_t *snd, int cycle)
 {
     blargg_sound *psnd = (blargg_sound *)snd;
@@ -97,7 +97,7 @@ void sound_render(sound_t *snd, int cycle)
     }
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void sound_shutdown(sound_t *snd)
 {
     blargg_sound *psnd = (blargg_sound *)snd;

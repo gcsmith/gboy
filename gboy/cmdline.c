@@ -37,7 +37,7 @@ const char *gboy_usage = "usage: gboy [options] [file]";
 const char *gboy_ver   = "0.1-dev";
 const char *gboy_title = "gboy 0.1-dev";
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void cmdline_display_usage(void)
 {
     log_info("%s\n%s\n\n", gboy_desc, gboy_usage);
@@ -62,7 +62,7 @@ void cmdline_display_usage(void)
     exit(EXIT_FAILURE);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void cmdline_display_version(void)
 {
     log_info("gboy %s\n", gboy_ver);
@@ -70,7 +70,7 @@ void cmdline_display_version(void)
     exit(EXIT_FAILURE);
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
 {
     static const char *s_opts = "b:dfr:s:Suvh?";
@@ -191,7 +191,7 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
     return 0;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 void cmdline_destroy(cmdargs_t *args)
 {
     assert(NULL != args);
