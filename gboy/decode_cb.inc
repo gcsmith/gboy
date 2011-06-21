@@ -86,7 +86,7 @@ case 0x42: OP_2(bit, 0, REG_D);             // BIT 0,D      2   8   Z 0 1 -
 case 0x43: OP_2(bit, 0, REG_E);             // BIT 0,E      2   8   Z 0 1 -    
 case 0x44: OP_2(bit, 0, REG_H);             // BIT 0,H      2   8   Z 0 1 -    
 case 0x45: OP_2(bit, 0, REG_L);             // BIT 0,L      2   8   Z 0 1 -    
-case 0x46: OP_1(biti, 0);                   // BIT 0,(HL)   2  16   Z 0 1 -    
+case 0x46: OP_1(biti, 0);                   // BIT 0,(HL)   2  12   Z 0 1 -    
 case 0x47: OP_2(bit, 0, REG_A);             // BIT 0,A      2   8   Z 0 1 -    
 case 0x48: OP_2(bit, 1, REG_B);             // BIT 1,B      2   8   Z 0 1 -    
 case 0x49: OP_2(bit, 1, REG_C);             // BIT 1,C      2   8   Z 0 1 -    
@@ -94,7 +94,7 @@ case 0x4A: OP_2(bit, 1, REG_D);             // BIT 1,D      2   8   Z 0 1 -
 case 0x4B: OP_2(bit, 1, REG_E);             // BIT 1,E      2   8   Z 0 1 -    
 case 0x4C: OP_2(bit, 1, REG_H);             // BIT 1,H      2   8   Z 0 1 -    
 case 0x4D: OP_2(bit, 1, REG_L);             // BIT 1,L      2   8   Z 0 1 -    
-case 0x4E: OP_1(biti, 1);                   // BIT 1,(HL)   2  16   Z 0 1 -    
+case 0x4E: OP_1(biti, 1);                   // BIT 1,(HL)   2  12   Z 0 1 -    
 case 0x4F: OP_2(bit, 1, REG_A);             // BIT 1,A      2   8   Z 0 1 -
 case 0x50: OP_2(bit, 2, REG_B);             // BIT 2,B      2   8   Z 0 1 -   
 case 0x51: OP_2(bit, 2, REG_C);             // BIT 2,C      2   8   Z 0 1 -   
@@ -102,7 +102,7 @@ case 0x52: OP_2(bit, 2, REG_D);             // BIT 2,D      2   8   Z 0 1 -
 case 0x53: OP_2(bit, 2, REG_E);             // BIT 2,E      2   8   Z 0 1 -   
 case 0x54: OP_2(bit, 2, REG_H);             // BIT 2,H      2   8   Z 0 1 -   
 case 0x55: OP_2(bit, 2, REG_L);             // BIT 2,L      2   8   Z 0 1 -   
-case 0x56: OP_1(biti, 2);                   // BIT 2,(HL)   2  16   Z 0 1 -   
+case 0x56: OP_1(biti, 2);                   // BIT 2,(HL)   2  12   Z 0 1 -   
 case 0x57: OP_2(bit, 2, REG_A);             // BIT 2,A      2   8   Z 0 1 -   
 case 0x58: OP_2(bit, 3, REG_B);             // BIT 3,B      2   8   Z 0 1 -   
 case 0x59: OP_2(bit, 3, REG_C);             // BIT 3,C      2   8   Z 0 1 -   
@@ -110,7 +110,7 @@ case 0x5A: OP_2(bit, 3, REG_D);             // BIT 3,D      2   8   Z 0 1 -
 case 0x5B: OP_2(bit, 3, REG_E);             // BIT 3,E      2   8   Z 0 1 -   
 case 0x5C: OP_2(bit, 3, REG_H);             // BIT 3,H      2   8   Z 0 1 -   
 case 0x5D: OP_2(bit, 3, REG_L);             // BIT 3,L      2   8   Z 0 1 -   
-case 0x5E: OP_1(biti, 3);                   // BIT 3,(HL)   2  16   Z 0 1 -   
+case 0x5E: OP_1(biti, 3);                   // BIT 3,(HL)   2  12   Z 0 1 -   
 case 0x5F: OP_2(bit, 3, REG_A);             // BIT 3,A      2   8   Z 0 1 -
 case 0x60: OP_2(bit, 4, REG_B);             // BIT 4,B      2   8   Z 0 1 -  
 case 0x61: OP_2(bit, 4, REG_C);             // BIT 4,C      2   8   Z 0 1 -  
@@ -118,7 +118,7 @@ case 0x62: OP_2(bit, 4, REG_D);             // BIT 4,D      2   8   Z 0 1 -
 case 0x63: OP_2(bit, 4, REG_E);             // BIT 4,E      2   8   Z 0 1 -  
 case 0x64: OP_2(bit, 4, REG_H);             // BIT 4,H      2   8   Z 0 1 -  
 case 0x65: OP_2(bit, 4, REG_L);             // BIT 4,L      2   8   Z 0 1 -  
-case 0x66: OP_1(biti, 4);                   // BIT 4,(HL)   2  16   Z 0 1 -  
+case 0x66: OP_1(biti, 4);                   // BIT 4,(HL)   2  12   Z 0 1 -  
 case 0x67: OP_2(bit, 4, REG_A);             // BIT 4,A      2   8   Z 0 1 -  
 case 0x68: OP_2(bit, 5, REG_B);             // BIT 5,B      2   8   Z 0 1 -  
 case 0x69: OP_2(bit, 5, REG_C);             // BIT 5,C      2   8   Z 0 1 -  
@@ -126,7 +126,7 @@ case 0x6A: OP_2(bit, 5, REG_D);             // BIT 5,D      2   8   Z 0 1 -
 case 0x6B: OP_2(bit, 5, REG_E);             // BIT 5,E      2   8   Z 0 1 -  
 case 0x6C: OP_2(bit, 5, REG_H);             // BIT 5,H      2   8   Z 0 1 -  
 case 0x6D: OP_2(bit, 5, REG_L);             // BIT 5,L      2   8   Z 0 1 -  
-case 0x6E: OP_1(biti, 5);                   // BIT 5,(HL)   2  16   Z 0 1 -  
+case 0x6E: OP_1(biti, 5);                   // BIT 5,(HL)   2  12   Z 0 1 -  
 case 0x6F: OP_2(bit, 5, REG_A);             // BIT 5,A      2   8   Z 0 1 -
 case 0x70: OP_2(bit, 6, REG_B);             // BIT 6,B      2   8   Z 0 1 - 
 case 0x71: OP_2(bit, 6, REG_C);             // BIT 6,C      2   8   Z 0 1 - 
@@ -134,7 +134,7 @@ case 0x72: OP_2(bit, 6, REG_D);             // BIT 6,D      2   8   Z 0 1 -
 case 0x73: OP_2(bit, 6, REG_E);             // BIT 6,E      2   8   Z 0 1 - 
 case 0x74: OP_2(bit, 6, REG_H);             // BIT 6,H      2   8   Z 0 1 - 
 case 0x75: OP_2(bit, 6, REG_L);             // BIT 6,L      2   8   Z 0 1 - 
-case 0x76: OP_1(biti, 6);                   // BIT 6,(HL)   2  16   Z 0 1 - 
+case 0x76: OP_1(biti, 6);                   // BIT 6,(HL)   2  12   Z 0 1 - 
 case 0x77: OP_2(bit, 6, REG_A);             // BIT 6,A      2   8   Z 0 1 - 
 case 0x78: OP_2(bit, 7, REG_B);             // BIT 7,B      2   8   Z 0 1 - 
 case 0x79: OP_2(bit, 7, REG_C);             // BIT 7,C      2   8   Z 0 1 - 
@@ -142,7 +142,7 @@ case 0x7A: OP_2(bit, 7, REG_D);             // BIT 7,D      2   8   Z 0 1 -
 case 0x7B: OP_2(bit, 7, REG_E);             // BIT 7,E      2   8   Z 0 1 - 
 case 0x7C: OP_2(bit, 7, REG_H);             // BIT 7,H      2   8   Z 0 1 - 
 case 0x7D: OP_2(bit, 7, REG_L);             // BIT 7,L      2   8   Z 0 1 - 
-case 0x7E: OP_1(biti, 7);                   // BIT 7,(HL)   2  16   Z 0 1 - 
+case 0x7E: OP_1(biti, 7);                   // BIT 7,(HL)   2  12   Z 0 1 - 
 case 0x7F: OP_2(bit, 7, REG_A);             // BIT 7,A      2   8   Z 0 1 -
 case 0x80: OP_2(res, 0, REG_B);             // RES 0,B      2   8   - - - -    
 case 0x81: OP_2(res, 0, REG_C);             // RES 0,C      2   8   - - - -    

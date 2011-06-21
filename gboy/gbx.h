@@ -116,8 +116,6 @@ int  gbx_get_clock_frequency(gbx_context_t *ctx);
 int  gbx_disassemble_op(gbx_context_t *ctx, char *buffer, int size);
 void gbx_trace_instruction(gbx_context_t *ctx);
 
-void video_update_cycles(gbx_context_t *ctx, long cycles);
-
 extern const int gbx_instruction_cycles[256];
 extern const int gbx_instruction_cycles_cb[256];
 extern const uint16_t gbx_daa_lut[2048];

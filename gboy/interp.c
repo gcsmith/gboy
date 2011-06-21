@@ -68,6 +68,7 @@ OP_FUNC op_halt(gbx_context_t *ctx)
 OP_FUNC op_stop(gbx_context_t *ctx)
 {
     ctx->exec_flags |= EXEC_STOP;
+    rNextPC++;
 }
 
 // -----------------------------------------------------------------------------

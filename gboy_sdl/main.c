@@ -232,8 +232,10 @@ void gbx_thread_destroy(gbx_thread_t *gt)
     gt->running = 0;
     SDL_WaitThread(gt->thread, NULL);
 
-    log_info("Shutting down APU library...\n");
-    sound_shutdown(gt->snd);
+    if (gt->enable_sound) {
+        log_info("Shutting down APU library...\n");
+        sound_shutdown(gt->snd);
+    }
 
     SAFE_FREE(gt);
 }

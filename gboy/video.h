@@ -153,6 +153,7 @@ INLINE uint32_t cgb_color_to_rgb(uint16_t c)
 void video_write_bcpd(gbx_context_t *ctx, uint8_t value);
 void video_write_ocpd(gbx_context_t *ctx, uint8_t value);
 void video_write_mono_palette(uint32_t *dest, uint8_t value);
+void video_update_cycles(gbx_context_t *ctx, long cycles);
 
 #endif // GBOY_VIDEO__H
 
