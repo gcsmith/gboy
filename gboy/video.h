@@ -37,6 +37,11 @@
 
 #include "common.h"
 
+// LCD screen resolution, identical for all game boy variants (before GBA)
+
+#define GBX_LCD_XRES    160
+#define GBX_LCD_YRES    144
+
 // LCD control (LCDC) fields
 
 #define LCDC_BG_EN      0x01    // background display enable
@@ -76,7 +81,7 @@
 #define OAM_ATTR_YFLIP  0x40    // mirror vertically
 #define OAM_ATTR_PRI    0x80    // OBJ/BG priority
 
-// background/window map attribute fields
+// background/window map attribute fields (CGB mode only)
 
 #define BG_ATTR_PAL     0x07
 #define BG_ATTR_BANK    0x08
@@ -100,7 +105,20 @@
 
 #define LCD_SCANLINE_COUNT      154
 
+typedef struct obj_char {
+    uint8_t ypos;               // y-axis coordinate
+    uint8_t xpos;               // x-axis coordinate
+    uint8_t code;               // character code
+    uint8_t attr;               // attribute data
+} obj_char_t;
+
 typedef struct video_registers {
+    int line_obj[GBX_LCD_XRES]; // object lookup for each column in scanline
+    int line_col[GBX_LCD_XRES];
+    int show_bg;                // enable display of background
+    int show_wnd;               // enable display of window
+    int show_obj;               // enable display of objects
+    int obj_pri;                // enable forced object priority over bg/wnd
     int state, cycle;
     int lcdc, stat, lyc;
     int lcd_x, lcd_y;
@@ -150,6 +168,7 @@ INLINE uint32_t cgb_color_to_rgb(uint16_t c)
     return ((c & 0x001F) << 3) | ((c & 0x03E0) << 6) | ((c & 0x7C00) << 9);
 }
 
+void video_write_lcdc(gbx_context_t *ctx, uint8_t value);
 void video_write_bcpd(gbx_context_t *ctx, uint8_t value);
 void video_write_ocpd(gbx_context_t *ctx, uint8_t value);
 void video_write_mono_palette(uint32_t *dest, uint8_t value);

@@ -23,11 +23,6 @@
 #include "romfile.h"
 #include "video.h"
 
-// LCD screen resolution, identical for all game boy variants (before GBA)
-
-#define GBX_LCD_XRES    160
-#define GBX_LCD_YRES    144
-
 // joypad inputs (from frontend)
 
 #define INPUT_RIGHT     0
@@ -41,7 +36,7 @@
 
 // supported system types
 
-#define SYSTEM_GMB      0       // emulate gameboy original
+#define SYSTEM_DMG      0       // emulate gameboy original
 #define SYSTEM_GBP      1       // emulate gameboy pocket
 #define SYSTEM_CGB      2       // emulate gameboy color
 #define SYSTEM_SGB      3       // emulate super gameboy
@@ -51,11 +46,11 @@
 
 // clock frequencies (in Hz) for each game boy model
 
-#define CPU_FREQ_GMB    4194304
-#define CPU_FREQ_GBP    4194304 // same as GMB
-#define CPU_FREQ_CGB    8388608 // max speed mode, otherwise same as GMB
+#define CPU_FREQ_DMG    4194304
+#define CPU_FREQ_GBP    4194304 // same as DMG
+#define CPU_FREQ_CGB    8388608 // max speed mode, otherwise same as DMG
 #define CPU_FREQ_SGB    4295454 // SNES clock speed divided by 5
-#define CPU_FREQ_SGB2   4194304 // corrected from SGB, same as GMB
+#define CPU_FREQ_SGB2   4194304 // corrected from SGB, same as DMG
 #define CPU_FREQ_GBA    8388608 // operating in GBC mode (max speed mode)
 
 // execution interruption flags

@@ -30,7 +30,7 @@ int gbx_create_context(gbx_context_t **pctx, int system)
     gbx_context_t *ctx;
 
     // validate the requsted system type
-    if (system < SYSTEM_GMB || system > SYSTEM_AUTO) {
+    if (system < SYSTEM_DMG || system > SYSTEM_AUTO) {
         log_err("Invalid system mode (%d) specified.\n", system);
         return -1;
     }
@@ -111,8 +111,8 @@ static int detect_system_type(rom_header_t *header)
     }
 
     // if game supports neither color nor SGB, emulate the standard gameboy
-    log_info("Automatically enabling GMB system support.\n");
-    return SYSTEM_GMB;
+    log_info("Automatically enabling DMG system support.\n");
+    return SYSTEM_DMG;
 }
 
 // ----------------------------------------------------------------------------
@@ -232,7 +232,7 @@ void optionally_load_bios(gbx_context_t *ctx)
 
     // determine which bios to load based on the system type (if supported)
     switch (ctx->system) {
-    case SYSTEM_GMB: bios_file = "gmb_bios.bin"; break;
+    case SYSTEM_DMG: bios_file = "dmg_bios.bin"; break;
     case SYSTEM_SGB: bios_file = "sgb_bios.bin"; break;
     case SYSTEM_CGB: bios_file = "cgb_bios.bin"; break;
     default: return;

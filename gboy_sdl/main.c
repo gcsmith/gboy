@@ -114,7 +114,7 @@ void ext_speed_change(void *data, int speed)
     }
     else {
         log_dbg("changing to normal speed mode\n");
-        set_gbx_frequency((gbx_thread_t *)data, CPU_FREQ_GMB);
+        set_gbx_frequency((gbx_thread_t *)data, CPU_FREQ_DMG);
     }
 }
 
@@ -156,7 +156,7 @@ int gbx_thread_run(void *data)
 
     // set emulator to power on state (or post-bios state if no bios present)
     gbx_power_on(ctx);
-    set_gbx_frequency(gt, CPU_FREQ_GMB);
+    set_gbx_frequency(gt, CPU_FREQ_DMG);
 
     // execute instructions until the thread is terminated
     while (gt->running) {
@@ -209,7 +209,7 @@ gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
     if (gt->enable_sound) {
         log_info("Initializing APU library...\n");
         gt->snd = sound_init(44100, 4096);
-        sound_set_freq(gt->snd, CPU_FREQ_GMB);
+        sound_set_freq(gt->snd, CPU_FREQ_DMG);
     }
 
     // create and launch the emulator thread

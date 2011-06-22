@@ -24,7 +24,7 @@
 #include "gbx.h"
 
 #define CMDLINE_VERSION         1000
-#define CMDLINE_SYSTEM_GMB      1001
+#define CMDLINE_SYSTEM_DMG      1001
 #define CMDLINE_SYSTEM_CGB      1002
 #define CMDLINE_SYSTEM_SGB      1003
 #define CMDLINE_SYSTEM_SGB2     1004
@@ -50,7 +50,7 @@ void cmdline_display_usage(void)
         "  -r, --rom=PATH           path to rom file\n"
         "  -s, --scale=INT          scale screen resolution\n"
         "  -S, --stretch            stretch image to fill screen\n"
-        "      --system-gmb         force system type to original game boy\n"
+        "      --system-dmg         force system type to original game boy\n"
         "      --system-cgb         force system type to game boy color\n"
         "      --system-sgb         force system type to super game boy\n"
         "      --system-sgb2        force system type to super game boy 2\n"
@@ -83,7 +83,7 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
         { "rom",            required_argument,  NULL, 'r' },
         { "scale",          required_argument,  NULL, 's' },
         { "stretch",        no_argument,        NULL, 'S' },
-        { "system-gmb",     no_argument,        NULL, CMDLINE_SYSTEM_GMB },
+        { "system-dmg",     no_argument,        NULL, CMDLINE_SYSTEM_DMG },
         { "system-cgb",     no_argument,        NULL, CMDLINE_SYSTEM_CGB },
         { "system-sgb",     no_argument,        NULL, CMDLINE_SYSTEM_SGB },
         { "system-sgb2",    no_argument,        NULL, CMDLINE_SYSTEM_SGB2 },
@@ -134,8 +134,8 @@ int cmdline_parse(int argc, char *argv[], cmdargs_t *args)
         case 'v':
             args->vsync = 1;
             break;
-        case CMDLINE_SYSTEM_GMB:
-            args->system = SYSTEM_GMB;
+        case CMDLINE_SYSTEM_DMG:
+            args->system = SYSTEM_DMG;
             break;
         case CMDLINE_SYSTEM_CGB:
             args->system = SYSTEM_CGB;

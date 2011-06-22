@@ -15,26 +15,63 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#include <string.h>
 #include <assert.h>
 #include "gbx.h"
 #include "memory.h"
 #include "ports.h"
 #include "video.h"
 
-static const uint32_t gbx_monochrome_colors[4] = {
-    0xFFFFFFFF,
-    0x80808080,
-    0x40404040,
-    0x00000000
-};
-
 // ----------------------------------------------------------------------------
-void video_write_mono_palette(uint32_t *dest, uint8_t value)
+void video_write_lcdc(gbx_context_t *ctx, uint8_t value)
 {
-    dest[0] = gbx_monochrome_colors[(value >> 0) & 3];
-    dest[1] = gbx_monochrome_colors[(value >> 2) & 3];
-    dest[2] = gbx_monochrome_colors[(value >> 4) & 3];
-    dest[3] = gbx_monochrome_colors[(value >> 6) & 3];
+    // if the LCD enable/disable state changes, inform the frontend
+    if ((ctx->video.lcdc ^ value) & LCDC_LCD_EN) {
+        ext_lcd_enabled(ctx->userdata, (value & LCDC_LCD_EN) ? 1 : 0);
+
+        // force reset of video state machine when if LCD disabled
+        if (!(value & LCDC_LCD_EN)) {
+            ctx->video.lcd_x = 0;
+            ctx->video.lcd_y = 0;
+            ctx->video.state = VIDEO_STATE_SEARCH;
+            ctx->video.cycle = 0;
+        }
+    }
+
+    // set all layers to enabled and standard priority, then alter below...
+    ctx->video.show_bg = ctx->video.show_wnd = ctx->video.show_obj = 1;
+    ctx->video.obj_pri = 0;
+
+    if (!(value & LCDC_OBJ_EN))
+        ctx->video.show_obj = 0;
+
+    if (!(value & LCDC_WND_EN))
+        ctx->video.show_wnd = 0;
+
+    // BG_EN is odd in that its behavior depends on the system type and whether
+    // we're running in color or monochrome mode, and may override other bits
+
+    if (!(ctx->video.lcdc & LCDC_BG_EN)) {
+        if (ctx->system == SYSTEM_CGB) {
+            if (ctx->color_enabled) {
+                // CGB in color mode -- set object priority over BG and window
+                // keep unset if objects are disabled
+                ctx->video.obj_pri = ctx->video.show_obj;
+            }
+            else {
+                // CGB in monochrome mode -- disable BG and window layer
+                // note that the WND_EN bit is overridden in this case
+                ctx->video.show_bg = 0;
+                ctx->video.show_wnd = 0;
+            }
+        }
+        else {
+            // non-CGB / monochrome system -- only disable the BG layer
+            ctx->video.show_bg = 0;
+        }
+    }
+
+    ctx->video.lcdc = value;
 }
 
 // ----------------------------------------------------------------------------
@@ -76,156 +113,126 @@ void video_write_ocpd(gbx_context_t *ctx, uint8_t value)
 }
 
 // ----------------------------------------------------------------------------
-INLINE void sprite_normal(gbx_context_t *ctx, uint32_t *palette,
-        uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
+void video_write_mono_palette(uint32_t *dest, uint8_t value)
 {
-    int x, y, w, h, val, a, b;
-    for (h = h0; h <= h1; ++h) {
-        a = *tile++;
-        b = *tile++;
-        for (w = w0; w <= w1; ++w) {
-            x = xpos + w;
-            y = ypos + h;
-            val = ((a >> (7 - w)) & 1) | (((b >> (7 - w)) << 1) & 2);
-            if (val) ctx->fb[y * GBX_LCD_XRES + x] = palette[val];
-        }
+    static const uint32_t monochrome_colors[4] = {
+        0xFFFFFFFF, 0x80808080, 0x40404040, 0x00000000
+    };
+
+    dest[0] = monochrome_colors[(value >> 0) & 3];
+    dest[1] = monochrome_colors[(value >> 2) & 3];
+    dest[2] = monochrome_colors[(value >> 4) & 3];
+    dest[3] = monochrome_colors[(value >> 6) & 3];
+}
+
+// ----------------------------------------------------------------------------
+INLINE void commit_sprite_color(gbx_context_t *ctx, int sprite, int x, int y)
+{
+    obj_char_t *obj = &((obj_char_t *)ctx->mem.oam)[sprite];
+    uint32_t *palette = ctx->video.bgp_rgb;
+    int ci, c1, c2, addr, code = obj->code, sh = 7;
+
+    int off_x = x - obj->xpos + 8;
+    int off_y = y - obj->ypos + 16;
+
+    if (ctx->video.lcdc & LCDC_OBJ_SIZE) {
+        code = obj->code & 0xFE;
+        sh = 15;
+    }
+
+    // determine the orientation (normal, xflip, yflip, xflip & yflip)
+    if (!(obj->attr & OAM_ATTR_XFLIP)) off_x = 7 - off_x;
+    if (obj->attr & OAM_ATTR_YFLIP) off_y = sh - off_y;
+
+    if (ctx->color_enabled) {
+        // select the palette base address (OBP0-7)
+        palette = &ctx->video.ocpd_rgb[(obj->attr & OAM_ATTR_CPAL) << 2];
+
+        // select the tile data from either VRAM bank 0 or bank 1
+        if (obj->attr & OAM_ATTR_BANK)
+            addr = VRAM_BANK_SIZE + (obj->code << 4) + (off_y << 1);
+        else
+            addr = (obj->code << 4) + (off_y << 1);
+    }
+    else {
+        // monochrome mode: select from either OBP0 or OBP1
+        if (obj->attr & OAM_ATTR_PAL)
+            palette = ctx->video.obp1_rgb;
+        else
+            palette = ctx->video.obp0_rgb;
+
+        // tile data located in the first (and only) VRAM bank
+        addr = (obj->code << 4) + (off_y << 1);
+    }
+
+    c1 = ctx->mem.vram[addr + 0];
+    c2 = ctx->mem.vram[addr + 1];
+    ci = ((c1 >> off_x) & 1) | (((c2 >> off_x) << 1) & 2);
+
+    if (ci) {
+        ctx->video.line_obj[x] = sprite;
+        ctx->video.line_col[x] = palette[ci];
     }
 }
 
 // ----------------------------------------------------------------------------
-INLINE void sprite_xflip(gbx_context_t *ctx, uint32_t *palette,
-        uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
+static void prepare_line_buffer(gbx_context_t *ctx)
 {
-    int x, y, w, h, val, a, b;
-    for (h = h0; h <= h1; ++h) {
-        a = *tile++;
-        b = *tile++;
-        for (w = w0; w <= w1; ++w) {
-            x = xpos + w;
-            y = ypos + h;
-            val = ((a >> w) & 1) | (((b >> w) << 1) & 2);
-            if (val) ctx->fb[y * GBX_LCD_XRES + x] = palette[val];
-        }
-    }
-}
+    obj_char_t *obj = (obj_char_t *)ctx->mem.oam;
+    int *line = ctx->video.line_obj;
+    int height = (ctx->video.lcdc & LCDC_OBJ_SIZE) ? 16 : 8;
+    int old, xpos, ypos, x, sprite, curr_line = ctx->video.lcd_y;
 
-// ----------------------------------------------------------------------------
-INLINE void sprite_yflip(gbx_context_t *ctx, uint32_t *palette,
-        uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
-{
-    int x, y, w, h, val, a, b;
-    for (h = h0; h <= h1; ++h) {
-        b = *tile--;
-        a = *tile--;
-        for (w = w0; w <= w1; ++w) {
-            x = xpos + w;
-            y = ypos + h;
-            val = ((a >> (7 - w)) & 1) | (((b >> (7 - w)) << 1) & 2);
-            if (val) ctx->fb[y * GBX_LCD_XRES + x] = palette[val];
-        }
-    }
-}
+    // clear the object line buffer, any index < 0 considered uninitialized
+    memset(line, 0xFF, sizeof(int) * GBX_LCD_XRES);
 
-// ----------------------------------------------------------------------------
-INLINE void sprite_xyflip(gbx_context_t *ctx, uint32_t *palette,
-        uint8_t *tile, int xpos, int ypos, int w0, int h0, int w1, int h1)
-{
-    int x, y, w, h, val, a, b;
-    for (h = h0; h <= h1; ++h) {
-        b = *tile--;
-        a = *tile--;
-        for (w = w0; w <= w1; ++w) {
-            x = xpos + w;
-            y = ypos + h;
-            val = ((a >> w) & 1) | (((b >> w) << 1) & 2);
-            if (val) ctx->fb[y * GBX_LCD_XRES + x] = palette[val];
-        }
-    }
-}
-
-// ----------------------------------------------------------------------------
-void render_sprites(gbx_context_t *ctx)
-{
-    int i, xpos, ypos, w0, h0, w1, h1, type;
-    uint8_t pnum, attr, *tile;
-    uint16_t oam_addr = 0xFE00;
-    uint32_t *palette;
-
-    // check for 8x8 or 8x16 sprite, for 8x16 pattern LSB is ignored
-    int SH = (ctx->video.lcdc & LCDC_OBJ_SIZE) ? 16 : 8;
-    uint8_t pnum_mask = (ctx->video.lcdc & LCDC_OBJ_SIZE) ? 0xFE : 0xFF;
-
-    for (i = 0; i < 40; ++i) {
-        ypos = gbx_read_byte(ctx, oam_addr++) - 16;
-        xpos = gbx_read_byte(ctx, oam_addr++) - 8;
-        pnum = gbx_read_byte(ctx, oam_addr++) & pnum_mask;
-        attr = gbx_read_byte(ctx, oam_addr++);
-
-        if (ypos == -16 || ypos >= GBX_LCD_YRES ||
-            xpos ==  -8 || xpos >= GBX_LCD_XRES)
+    for (sprite = 0; sprite < 40; ++sprite) {
+        // skip this sprite if it doesn't touch any pixels on the current line
+        ypos = obj[sprite].ypos - 16;
+        if (curr_line < ypos || curr_line >= (ypos + height))
             continue;
+        
+        xpos = obj[sprite].xpos - 8;
+        for (x = xpos; x < xpos + 8; x++) {
+            // obviously skip if the current sprite pixel is not on the screen
+            if (x < 0 || x >= GBX_LCD_XRES)
+                continue;
 
-        // determine the orientation (normal, xflip, yflip, xflip & yflip)
-        type = ((attr & OAM_ATTR_XFLIP) >> 5) | ((attr & OAM_ATTR_YFLIP) >> 5);
+            old = line[x];
+            if (old >= 0) {
+                // lowest OBJ index always taken on CGB regardless of X coord
+                if (obj[old].xpos == obj[sprite].xpos || ctx->color_enabled)
+                    continue;
 
-        if (ctx->color_enabled) {
-            // select the palette base address (OBP0-7)
-            palette = &ctx->video.ocpd_rgb[(attr & OAM_ATTR_CPAL) << 2];
+                // for DMG (or DMG mode), however, take the lowest x coord
+                if (obj[old].xpos < obj[sprite].xpos)
+                    continue;
+            }
 
-            // select the tile data from either VRAM bank 0 or bank 1
-            if (attr & OAM_ATTR_BANK)
-                tile = &ctx->mem.vram[VRAM_BANK_SIZE + (pnum << 4)];
-            else
-                tile = &ctx->mem.vram[pnum << 4];
-        }
-        else {
-            // monochrome mode: select from either OBP0 or OBP1
-            if (attr & OAM_ATTR_PAL)
-                palette = ctx->video.obp1_rgb;
-            else
-                palette = ctx->video.obp0_rgb;
-
-            // tile data located in the first (and only) VRAM bank
-            tile = &ctx->mem.vram[pnum << 4];
-        }
-
-        w0 = (xpos >= 0) ? 0 : -xpos;
-        h0 = (ypos >= 0) ? 0 : -ypos;
-
-        w1 = (xpos <= (GBX_LCD_XRES - 8)) ? 7 : (GBX_LCD_XRES - xpos - 1);
-        h1 = (ypos <= (GBX_LCD_YRES - SH)) ? SH-1 : (GBX_LCD_YRES - ypos - 1);
-
-        switch (type) {
-        case 0:
-            tile += (h0 << 1);
-            sprite_normal(ctx, palette, tile, xpos, ypos, w0, h0, w1, h1);
-            break;
-        case 1:
-            tile += (h0 << 1);
-            sprite_xflip(ctx, palette, tile, xpos, ypos, w0, h0, w1, h1);
-            break;
-        case 2:
-            tile += ((SH - 1 - h0) << 1) + 1;
-            sprite_yflip(ctx, palette, tile, xpos, ypos, w0, h0, w1, h1);
-            break;
-        case 3:
-            tile += ((SH - 1 - h0) << 1) + 1;
-            sprite_xyflip(ctx, palette, tile, xpos, ypos, w0, h0, w1, h1);
-            break;
+            // only assign the sprite to this column if its not transparent
+            commit_sprite_color(ctx, sprite, x, curr_line);
         }
     }
 }
 
 // ----------------------------------------------------------------------------
-void render_bg_pixel(gbx_context_t *ctx, int x, int y)
+static void video_render_pixel(gbx_context_t *ctx, int x, int y)
 {
-    int base_x, base_y, off_x, off_y, mappos, cnum;
+    int base_x, base_y, off_x, off_y, mappos, cnum, bg_oam_pri = 0;
     int wx = ctx->video.wx - 7, wy = ctx->video.wy, mapaddr;
     uint8_t tile, c1, c2, attr;
     uint16_t addr, char_base = 0;
     uint32_t *palette = ctx->video.bgp_rgb;
+    int sprite = ctx->video.line_obj[x];
 
-    if ((ctx->video.lcdc & LCDC_WND_EN) && (x >= wx) && (y >= wy)) {
+    // always render sprite if present and priority override is set in LCDC
+    if (sprite >= 0 && ctx->video.obj_pri) {
+        ctx->fb[y * GBX_LCD_XRES + x] = ctx->video.line_col[x];
+        return;
+    }
+
+    // if obj_pri is NOT set, need to evalulate both BG and OBJ priority
+    if (ctx->video.show_wnd && x >= wx && y >= wy) {
         base_x = x - wx;
         base_y = y - wy;
         mappos = ((base_y & 0xF8) << 2) | (base_x >> 3);
@@ -254,6 +261,9 @@ void render_bg_pixel(gbx_context_t *ctx, int x, int y)
         if (attr & BG_ATTR_BANK)
             char_base = VRAM_BANK_SIZE;
 
+        if (attr & BG_ATTR_PRI)
+            bg_oam_pri = 1;
+
         // check if we need to flip the tile in either the x or y direction
         if (attr & BG_ATTR_XFLIP) off_x = 7 - off_x;
         if (attr & BG_ATTR_YFLIP) off_y = 7 - off_y;
@@ -271,7 +281,18 @@ void render_bg_pixel(gbx_context_t *ctx, int x, int y)
     c1 = ctx->mem.vram[addr + 0];
     c2 = ctx->mem.vram[addr + 1];
     cnum = ((c1 >> off_x) & 1) | (((c2 >> off_x) << 1) & 2);
-    ctx->fb[y * GBX_LCD_XRES + x] = palette[cnum];
+
+    if (bg_oam_pri || sprite < 0) {
+        // bg-to-oam priority bit takes precedence oam attribute bit
+        ctx->fb[y * GBX_LCD_XRES + x] = palette[cnum];
+    }
+    else {
+        obj_char_t *obj = &((obj_char_t *)ctx->mem.oam)[sprite];
+        if ((obj->attr & OAM_ATTR_PRI) && cnum)
+            ctx->fb[y * GBX_LCD_XRES + x] = palette[cnum];
+        else
+            ctx->fb[y * GBX_LCD_XRES + x] = ctx->video.line_col[x];
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -291,29 +312,6 @@ INLINE void check_coincidence(gbx_context_t *ctx)
 
     // this is only called when Y transitions, so rather than set the STAT LYC
     // flag here, it is computed on demand when the STAT register is read
-}
-
-// ----------------------------------------------------------------------------
-INLINE void transition_to_search(gbx_context_t *ctx)
-{
-    ctx->video.state = VIDEO_STATE_SEARCH;
-    ctx->video.cycle = 0;
-    ctx->video.lcd_x = 0;
-
-    // check for OAM STAT interrupt
-    set_stat_mode(ctx, MODE_SEARCH);
-    if (ctx->video.stat & STAT_INT_OAM)
-        gbx_req_interrupt(ctx, INT_LCDSTAT);
-}
-
-// ----------------------------------------------------------------------------
-INLINE void transition_to_transfer(gbx_context_t *ctx)
-{
-    ctx->video.state = VIDEO_STATE_TRANSFER;
-    ctx->video.cycle = 0;
-
-    // no SEARCH STAT interrupt
-    set_stat_mode(ctx, MODE_TRANSFER);
 }
 
 // ----------------------------------------------------------------------------
@@ -339,6 +337,32 @@ static void hdma_transfer_block(gbx_context_t *ctx)
 }
 
 // ----------------------------------------------------------------------------
+INLINE void transition_to_search(gbx_context_t *ctx)
+{
+    ctx->video.state = VIDEO_STATE_SEARCH;
+    ctx->video.cycle = 0;
+    ctx->video.lcd_x = 0;
+
+    // check for OAM STAT interrupt
+    set_stat_mode(ctx, MODE_SEARCH);
+    if (ctx->video.stat & STAT_INT_OAM)
+        gbx_req_interrupt(ctx, INT_LCDSTAT);
+
+    // prepare the sprites for this scanline
+    prepare_line_buffer(ctx);
+}
+
+// ----------------------------------------------------------------------------
+INLINE void transition_to_transfer(gbx_context_t *ctx)
+{
+    ctx->video.state = VIDEO_STATE_TRANSFER;
+    ctx->video.cycle = 0;
+
+    // no SEARCH STAT interrupt
+    set_stat_mode(ctx, MODE_TRANSFER);
+}
+
+// ----------------------------------------------------------------------------
 INLINE void transition_to_hblank(gbx_context_t *ctx)
 {
     ctx->video.state = VIDEO_STATE_HBLANK;
@@ -360,7 +384,6 @@ INLINE void transition_to_vblank(gbx_context_t *ctx)
     ctx->video.state = VIDEO_STATE_VBLANK;
     ctx->video.cycle = 0;
 
-    render_sprites(ctx);
     ext_video_sync(ctx->userdata);
     gbx_req_interrupt(ctx, INT_VBLANK);
 
@@ -396,7 +419,7 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
         case VIDEO_STATE_TRANSFER:
             // render each pixel of the current scanline
             if (ctx->video.lcd_x < GBX_LCD_XRES) {
-                render_bg_pixel(ctx, ctx->video.lcd_x, ctx->video.lcd_y);
+                video_render_pixel(ctx, ctx->video.lcd_x, ctx->video.lcd_y);
                 ++ctx->video.lcd_x;
             }
 
@@ -420,8 +443,8 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
             // check for v-blank completion, transition to oam search
             if (++ctx->video.cycle >= VIDEO_CYCLES_SCANLINE) {
                 if (++ctx->video.lcd_y >= LCD_SCANLINE_COUNT) {
-                    transition_to_search(ctx);
                     ctx->video.lcd_y = 0;
+                    transition_to_search(ctx);
                 }
 
                 // check for coincidence interrupt each time LY changes

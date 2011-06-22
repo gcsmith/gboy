@@ -209,22 +209,6 @@ INLINE void write_timer_control(gbx_context_t *ctx, uint8_t value)
 }
 
 // ----------------------------------------------------------------------------
-INLINE void write_lcdc(gbx_context_t *ctx, uint8_t value)
-{
-    // if the LCD enable/disable state changes, inform the frontend
-    if ((ctx->video.lcdc ^ value) & LCDC_LCD_EN) {
-        ext_lcd_enabled(ctx->userdata, (value & LCDC_LCD_EN) ? 1 : 0);
-        if (!(value & LCDC_LCD_EN)) {
-            ctx->video.lcd_x = 0;
-            ctx->video.lcd_y = 0;
-            ctx->video.state = VIDEO_STATE_SEARCH;
-            ctx->video.cycle = 0;
-        }
-    }
-    ctx->video.lcdc = value;
-}
-
-// ----------------------------------------------------------------------------
 INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 {
     if (ctx->dma.active) {
@@ -475,7 +459,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         ctx->int_en = value & INT_MASK;
         break;
     case PORT_LCDC:
-        write_lcdc(ctx, value);
+        video_write_lcdc(ctx, value);
         break;
     case PORT_STAT:
         ctx->video.stat = value;
@@ -619,7 +603,7 @@ void mmu_map_bios(gbx_context_t *ctx, int setting)
         mmu_map_ro(ctx, 0x02, 7, fn);
     }
     else {
-        // for the GMB/GBP/SGB, the bios image is a single page in length
+        // for the DMG/GBP/SGB, the bios image is a single page in length
         mmu_map_ro(ctx, 0x00, 1, fn);
     }
 }
