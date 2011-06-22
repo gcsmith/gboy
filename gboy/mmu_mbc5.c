@@ -22,7 +22,9 @@
 // ----------------------------------------------------------------------------
 void mmu_wr_mbc5_ramg(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 {
-    log_spew("MBC5 set RAM enable, addr:%04X data:%02X\n", addr, value);
+    ctx->mem.ramg_en = (value & 0x0F) == 0x0A ? 1 : 0;
+    log_spew("MBC5 set RAM enable:%d addr:%04X data:%02X\n",
+             ctx->mem.ramg_en, addr, value);
 }
 
 // ----------------------------------------------------------------------------
@@ -60,5 +62,8 @@ void mmu_map_mbc5(gbx_context_t *ctx)
     mmu_map_wo(ctx, 0x20, 0x10, mmu_wr_mbc5_romb0);
     mmu_map_wo(ctx, 0x30, 0x10, mmu_wr_mbc5_romb1);
     mmu_map_wo(ctx, 0x40, 0x20, mmu_wr_mbc5_ramb);
+
+    // disable access to external RAM until RAMG is explicitly written to
+    ctx->mem.ramg_en = 0;
 }
 

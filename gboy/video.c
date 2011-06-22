@@ -218,17 +218,25 @@ static void prepare_line_buffer(gbx_context_t *ctx)
 // ----------------------------------------------------------------------------
 static void video_render_pixel(gbx_context_t *ctx, int x, int y)
 {
-    int base_x, base_y, off_x, off_y, mappos, cnum, bg_oam_pri = 0;
+    int base_x, base_y, off_x, off_y, mappos, cnum, bg_max_pri = 0;
     int wx = ctx->video.wx - 7, wy = ctx->video.wy, mapaddr;
     uint8_t tile, c1, c2, attr;
     uint16_t addr, char_base = 0;
     uint32_t *palette = ctx->video.bgp_rgb;
     int sprite = ctx->video.line_obj[x];
+    obj_char_t *obj = NULL;
 
-    // always render sprite if present and priority override is set in LCDC
-    if (sprite >= 0 && ctx->video.obj_pri) {
-        ctx->fb[y * GBX_LCD_XRES + x] = ctx->video.line_col[x];
-        return;
+    if (sprite >= 0) {
+        obj = &((obj_char_t *)ctx->mem.oam)[sprite];
+        if (ctx->video.obj_pri) {
+            // always render sprite if present and max priority given in LCDC
+            ctx->fb[y * GBX_LCD_XRES + x] = ctx->video.line_col[x];
+            return;
+        }
+        else if (obj->attr & OAM_ATTR_PRI) {
+            // even if not set here, OBJ priority may be overriden by BG attr
+            bg_max_pri = 1;
+        }
     }
 
     // if obj_pri is NOT set, need to evalulate both BG and OBJ priority
@@ -262,7 +270,7 @@ static void video_render_pixel(gbx_context_t *ctx, int x, int y)
             char_base = VRAM_BANK_SIZE;
 
         if (attr & BG_ATTR_PRI)
-            bg_oam_pri = 1;
+            bg_max_pri = 1;
 
         // check if we need to flip the tile in either the x or y direction
         if (attr & BG_ATTR_XFLIP) off_x = 7 - off_x;
@@ -282,17 +290,11 @@ static void video_render_pixel(gbx_context_t *ctx, int x, int y)
     c2 = ctx->mem.vram[addr + 1];
     cnum = ((c1 >> off_x) & 1) | (((c2 >> off_x) << 1) & 2);
 
-    if (bg_oam_pri || sprite < 0) {
-        // bg-to-oam priority bit takes precedence oam attribute bit
+    // if no OBJ (or OBJ disabled) always draw BG, otherwise check priority
+    if (!obj || !ctx->video.show_obj || (bg_max_pri && cnum))
         ctx->fb[y * GBX_LCD_XRES + x] = palette[cnum];
-    }
-    else {
-        obj_char_t *obj = &((obj_char_t *)ctx->mem.oam)[sprite];
-        if ((obj->attr & OAM_ATTR_PRI) && cnum)
-            ctx->fb[y * GBX_LCD_XRES + x] = palette[cnum];
-        else
-            ctx->fb[y * GBX_LCD_XRES + x] = ctx->video.line_col[x];
-    }
+    else 
+        ctx->fb[y * GBX_LCD_XRES + x] = ctx->video.line_col[x];
 }
 
 // ----------------------------------------------------------------------------

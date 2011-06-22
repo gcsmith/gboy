@@ -58,6 +58,7 @@ typedef struct memory_regions {
     mmu_rd_fn page_rd[0x100];
     mmu_wr_fn page_wr[0x100];
     int mbc1_mode;
+    int ramg_en;
 } memory_regions_t;
 
 void mmu_map_bios(gbx_context_t *ctx, int setting);
