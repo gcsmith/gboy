@@ -39,26 +39,10 @@
 #define PORT_TMA        0x06    // timer modulo (R/W)
 #define PORT_TAC        0x07    // timer control (R/W)
 
-#define TAC_ENABLED     0x04
-#define TAC_SEL_MASK    0x03
-
 // Interrupts
 
 #define PORT_IF         0x0F    // interrupt flag (R/W)
 #define PORT_IE         0xFF    // interrupt enable (R/W)
-
-#define INT_VBLANK      0x01    // vertical blanking
-#define INT_LCDSTAT     0x02    // LCDC stat
-#define INT_TIMER       0x04    // timer overflow
-#define INT_SERIAL      0x08    // serial transfer completion
-#define INT_JOYPAD      0x10    // P10-P13 edge / joypad
-#define INT_MASK        0x1F
-
-#define INT_VEC_VBLANK  0x40    // interrupt address for VBLANK
-#define INT_VEC_LCDSTAT 0x48    // interrupt address for LCDSTAT
-#define INT_VEC_TIMER   0x50    // interrupt address for TIMER
-#define INT_VEC_SERIAL  0x58    // interrupt address for SERIAL
-#define INT_VEC_JOYPAD  0x60    // interrupt address for JOYPAD
 
 // LCD control, position, and scrolling
 
@@ -78,17 +62,12 @@
 // CGB Registers
 
 #define PORT_KEY1       0x4D    // prepare CPU speed switch
-
-#define KEY1_PREP       0x01    // prepare speed switch
-#define KEY1_SPEED      0x80    // current speed
-
 #define PORT_VBK        0x4F    // VRAM bank specification
 #define PORT_HDMA1      0x51    // new DMA source, hi
 #define PORT_HDMA2      0x52    // new DMA source, lo
 #define PORT_HDMA3      0x53    // new DMA destination, hi
 #define PORT_HDMA4      0x54    // new DMA destination, lo
 #define PORT_HDMA5      0x55    // new DMA length/mode/start
-
 #define PORT_RP         0x56    // infrared communications port
 
 #define RP_WR_DATA      0x01    // write data - enable or disable LED
@@ -99,10 +78,6 @@
 #define PORT_BCPD       0x69    // background color palette data
 #define PORT_OCPS       0x6A    // object color palette specification
 #define PORT_OCPD       0x6B    // object color palette data
-
-#define CPS_INDEX       0x3F
-#define CPS_INCREMENT   0x80
-
 #define PORT_SVBK       0x70    // WRAM bank specification
 
 // Sound Channel 1 - Tone & Sweep

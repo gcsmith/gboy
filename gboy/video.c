@@ -23,6 +23,19 @@
 #include "video.h"
 
 // ----------------------------------------------------------------------------
+void video_write_mono_palette(uint32_t *dest, uint8_t value)
+{
+    static const uint32_t monochrome_colors[4] = {
+        0xFFFFFFFF, 0x80808080, 0x40404040, 0x00000000
+    };
+
+    dest[0] = monochrome_colors[(value >> 0) & 3];
+    dest[1] = monochrome_colors[(value >> 2) & 3];
+    dest[2] = monochrome_colors[(value >> 4) & 3];
+    dest[3] = monochrome_colors[(value >> 6) & 3];
+}
+
+// ----------------------------------------------------------------------------
 void video_write_lcdc(gbx_context_t *ctx, uint8_t value)
 {
     // if the LCD enable/disable state changes, inform the frontend
@@ -51,7 +64,7 @@ void video_write_lcdc(gbx_context_t *ctx, uint8_t value)
     // BG_EN is odd in that its behavior depends on the system type and whether
     // we're running in color or monochrome mode, and may override other bits
 
-    if (!(ctx->video.lcdc & LCDC_BG_EN)) {
+    if (!(value & LCDC_BG_EN)) {
         if (ctx->system == SYSTEM_CGB) {
             if (ctx->color_enabled) {
                 // CGB in color mode -- set object priority over BG and window
@@ -113,16 +126,84 @@ void video_write_ocpd(gbx_context_t *ctx, uint8_t value)
 }
 
 // ----------------------------------------------------------------------------
-void video_write_mono_palette(uint32_t *dest, uint8_t value)
+static void hdma_hblank_transfer_block(gbx_context_t *ctx)
 {
-    static const uint32_t monochrome_colors[4] = {
-        0xFFFFFFFF, 0x80808080, 0x40404040, 0x00000000
-    };
+    uint16_t src = ctx->video.hdma_src + ctx->video.hdma_pos;
+    uint16_t dst = ctx->video.hdma_dst + ctx->video.hdma_pos;
+    int i, copy_length = MIN(0x10, ctx->video.hdma_len);
 
-    dest[0] = monochrome_colors[(value >> 0) & 3];
-    dest[1] = monochrome_colors[(value >> 2) & 3];
-    dest[2] = monochrome_colors[(value >> 4) & 3];
-    dest[3] = monochrome_colors[(value >> 6) & 3];
+    for (i = 0; i < copy_length; i++) {
+        uint8_t data = gbx_read_byte(ctx, src + i);
+        gbx_write_byte(ctx, dst + i, data);
+    }
+
+    ctx->video.hdma_len -= copy_length;
+    ctx->video.hdma_pos += copy_length;
+
+    if (0 >= ctx->video.hdma_len)
+        ctx->video.hdma_active = 0;
+
+    log_dbg("HDMA copied %02X bytes from %04X to %04X (%04X left)\n",
+             copy_length, src, dst, ctx->video.hdma_len);
+}
+
+// ----------------------------------------------------------------------------
+static void video_schedule_hblank_dma(gbx_context_t *ctx, int length)
+{
+    ctx->video.hdma_pos = 0;
+    ctx->video.hdma_len = length;
+    ctx->video.hdma_active = 1;
+
+    log_dbg("begin %04X byte h-blank dma transfer from %04X to %04X\n",
+             ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
+}
+
+// ----------------------------------------------------------------------------
+static void video_schedule_general_dma(gbx_context_t *ctx, int length)
+{
+    int i;
+    ctx->video.hdma_active = 0;
+    ctx->video.hdma_len = length;
+
+    log_dbg("begin %04X byte general dma transfer from %04X to %04X\n",
+             ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
+
+    for (i = 0; i < ctx->video.hdma_len; i++) {
+        uint8_t data = gbx_read_byte(ctx, ctx->video.hdma_src + i);
+        gbx_write_byte(ctx, ctx->video.hdma_dst + i, data);
+    }
+}
+
+// ----------------------------------------------------------------------------
+void video_write_hdma(gbx_context_t *ctx, uint8_t value)
+{
+    // check for attempt to cancel HDMA (or erroneous attempt to schedule)
+    if (ctx->video.hdma_active) {
+        if (value & 0x80) {
+            log_err("attempt to schedule HDMA while currently active\n");
+            return;
+        }
+        else {
+            log_dbg("cancelling current HDMA operation w/ %d bytes left\n",
+                    ctx->video.hdma_len);
+            ctx->video.hdma_active = 0;
+            return;
+        }
+    }
+
+    if (value & HDMA_TYPE)
+        video_schedule_hblank_dma(ctx, ((value & HDMA_LENGTH) + 1) << 4);
+    else
+        video_schedule_general_dma(ctx, ((value & HDMA_LENGTH) + 1) << 4);
+}
+
+// ----------------------------------------------------------------------------
+uint8_t video_read_hdma(gbx_context_t *ctx)
+{
+    if (ctx->video.hdma_active)
+        return ((ctx->video.hdma_len >> 4) - 1);
+    else
+        return 0xFF;
 }
 
 // ----------------------------------------------------------------------------
@@ -317,28 +398,6 @@ INLINE void check_coincidence(gbx_context_t *ctx)
 }
 
 // ----------------------------------------------------------------------------
-static void hdma_transfer_block(gbx_context_t *ctx)
-{
-    uint16_t src = ctx->video.hdma_src + ctx->video.hdma_pos;
-    uint16_t dst = ctx->video.hdma_dst + ctx->video.hdma_pos;
-    int i, copy_length = MIN(0x10, ctx->video.hdma_len);
-
-    for (i = 0; i < copy_length; i++) {
-        uint8_t data = gbx_read_byte(ctx, src + i);
-        gbx_write_byte(ctx, dst + i, data);
-    }
-
-    ctx->video.hdma_len -= copy_length;
-    ctx->video.hdma_pos += copy_length;
-
-    if (0 >= ctx->video.hdma_len)
-        ctx->video.hdma_active = 0;
-
-    log_spew("HDMA copied %02X bytes from %04X to %04X (%02X left)\n",
-             copy_length, src, dst, ctx->video.hdma_len);
-}
-
-// ----------------------------------------------------------------------------
 INLINE void transition_to_search(gbx_context_t *ctx)
 {
     ctx->video.state = VIDEO_STATE_SEARCH;
@@ -372,7 +431,7 @@ INLINE void transition_to_hblank(gbx_context_t *ctx)
 
     // if there is an HBLANK DMA pending, perform a 16 byte transfer
     if (ctx->video.hdma_active)
-        hdma_transfer_block(ctx);
+        hdma_hblank_transfer_block(ctx);
 
     // check for HBLANK STAT interrupt
     set_stat_mode(ctx, MODE_HBLANK);

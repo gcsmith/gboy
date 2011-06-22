@@ -67,6 +67,11 @@
 #define MODE_SEARCH     0x02
 #define MODE_TRANSFER   0x03
 
+// color palette specification fields
+
+#define CPS_INDEX       0x3F
+#define CPS_INCREMENT   0x80
+
 // HDMA control fields
 
 #define HDMA_LENGTH     0x7F    // DMA transfer length
@@ -134,12 +139,11 @@ typedef struct video_registers {
     uint32_t bcpd_rgb[0x20];
     uint32_t ocpd_rgb[0x20];
     uint16_t hdma_src, hdma_dst;
-    uint8_t hdma_ctl;
     int hdma_len, hdma_active, hdma_pos;
 } video_registers_t;
 
 // ----------------------------------------------------------------------------
-INLINE uint16_t gbx_validate_hdma_src(uint16_t addr)
+INLINE uint16_t video_validate_hdma_src(uint16_t addr)
 {
     addr &= 0xFFF0;
     if (addr <= 0x7FF0 || (addr >= 0xA000 && addr <= 0xDFF0))
@@ -151,7 +155,7 @@ INLINE uint16_t gbx_validate_hdma_src(uint16_t addr)
 }
 
 // ----------------------------------------------------------------------------
-INLINE uint16_t gbx_validate_hdma_dst(uint16_t addr)
+INLINE uint16_t video_validate_hdma_dst(uint16_t addr)
 {
     addr = (addr & 0x1FF0) | 0x8000;
     if (addr >= 0x8000 && addr <= 0x9FF0)
@@ -168,10 +172,12 @@ INLINE uint32_t cgb_color_to_rgb(uint16_t c)
     return ((c & 0x001F) << 3) | ((c & 0x03E0) << 6) | ((c & 0x7C00) << 9);
 }
 
+void video_write_mono_palette(uint32_t *dest, uint8_t value);
 void video_write_lcdc(gbx_context_t *ctx, uint8_t value);
 void video_write_bcpd(gbx_context_t *ctx, uint8_t value);
 void video_write_ocpd(gbx_context_t *ctx, uint8_t value);
-void video_write_mono_palette(uint32_t *dest, uint8_t value);
+void video_write_hdma(gbx_context_t *ctx, uint8_t value);
+uint8_t video_read_hdma(gbx_context_t *ctx);
 void video_update_cycles(gbx_context_t *ctx, long cycles);
 
 #endif // GBOY_VIDEO__H

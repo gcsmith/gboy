@@ -88,7 +88,7 @@ void sound_render(sound_t *snd, int cycle)
     bool stereo = psnd->apu.end_frame(cycle);
     psnd->buf.end_frame(cycle, stereo);
 
-    if (psnd->buf.samples_avail() >= psnd->out_size) {
+    while (psnd->buf.samples_avail() >= psnd->out_size) {
         size_t count = psnd->buf.read_samples(psnd->out_buf, psnd->out_size);
         psnd->queue.write(psnd->out_buf, count);
 

@@ -228,32 +228,6 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 }
 
 // ----------------------------------------------------------------------------
-static void hdma_hblank_transfer(gbx_context_t *ctx)
-{
-    log_spew("begin %d byte hblank dma transfer from %04X to %04X\n",
-             ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
-
-    ctx->video.hdma_pos = 0;
-    ctx->video.hdma_active = 1;
-}
-
-// ----------------------------------------------------------------------------
-static void hdma_general_purpose_transfer(gbx_context_t *ctx)
-{
-    int i;
-    log_spew("begin %d byte general dma transfer from %04X to %04X\n",
-             ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
-
-    for (i = 0; i < ctx->video.hdma_len; i++) {
-        uint8_t data = gbx_read_byte(ctx, ctx->video.hdma_src + i);
-        gbx_write_byte(ctx, ctx->video.hdma_dst + i, data);
-    }
-
-    ctx->video.hdma_ctl = 0xFF;
-    ctx->video.hdma_active = 0;
-}
-
-// ----------------------------------------------------------------------------
 static void write_infrared_comm_port(gbx_context_t *ctx, uint8_t value)
 {
     log_dbg("write %02X to IR comm port\n", value);
@@ -355,10 +329,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
         value = ctx->video.hdma_dst & 0xFF;
         break;
     case PORT_HDMA5:
-        if (ctx->video.hdma_active)
-            value = 0x80 | ((ctx->video.hdma_len >> 4) - 1);
-        else
-            value = ctx->video.hdma_ctl;
+        value = video_read_hdma(ctx);
         break;
     case PORT_RP:
         value = read_infrared_comm_port(ctx);
@@ -451,6 +422,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         break;
     case PORT_TAC:
         write_timer_control(ctx, value);
+        ctx->timer.tima_ticks = ctx->cycles % ctx->timer.tima_limit;
         break;
     case PORT_IF:
         ctx->int_flags = value & INT_MASK;
@@ -506,27 +478,22 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         break;
     case PORT_HDMA1:
         dma_addr = (ctx->video.hdma_src & 0x00FF) | (value << 8);
-        ctx->video.hdma_src = gbx_validate_hdma_src(dma_addr);
+        ctx->video.hdma_src = video_validate_hdma_src(dma_addr);
         break;
     case PORT_HDMA2:
         dma_addr = (ctx->video.hdma_src & 0xFF00) | value;
-        ctx->video.hdma_src = gbx_validate_hdma_src(dma_addr);
+        ctx->video.hdma_src = video_validate_hdma_src(dma_addr);
         break;
     case PORT_HDMA3:
         dma_addr = (ctx->video.hdma_dst & 0x00FF) | (value << 8);
-        ctx->video.hdma_dst = gbx_validate_hdma_dst(dma_addr);
+        ctx->video.hdma_dst = video_validate_hdma_dst(dma_addr);
         break;
     case PORT_HDMA4:
         dma_addr = (ctx->video.hdma_dst & 0xFF00) | value;
-        ctx->video.hdma_dst = gbx_validate_hdma_dst(dma_addr);
+        ctx->video.hdma_dst = video_validate_hdma_dst(dma_addr);
         break;
     case PORT_HDMA5:
-        ctx->video.hdma_ctl = value;
-        ctx->video.hdma_len = ((value & HDMA_LENGTH) + 1) << 4;
-        if (value & HDMA_TYPE)
-            hdma_hblank_transfer(ctx);
-        else
-            hdma_general_purpose_transfer(ctx);
+        video_write_hdma(ctx, value);
         break;
     case PORT_RP:
         write_infrared_comm_port(ctx, value);
