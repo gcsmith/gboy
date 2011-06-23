@@ -21,7 +21,7 @@
 #include "memory.h"
 #include "ports.h"
 
-static const int gbx_instruction_cycles[256] = {
+const int gbx_instruction_cycles[256] = {
     1, 3, 2, 2, 1, 1, 2, 1, 5, 2, 2, 2, 1, 1, 2, 1,
     1, 3, 2, 2, 1, 1, 2, 1, 3, 2, 2, 2, 1, 1, 2, 1,
     2, 3, 2, 2, 1, 1, 2, 1, 2, 2, 2, 2, 1, 1, 2, 1,
@@ -972,7 +972,7 @@ INLINE void timer_update_cycles(gbx_context_t *ctx, long cycles)
         return;
 
     ctx->timer.tima_ticks += cycles;
-    if (ctx->timer.tima_ticks >= ctx->timer.tima_limit) {
+    while (ctx->timer.tima_ticks >= ctx->timer.tima_limit) {
         ctx->timer.tima_ticks -= ctx->timer.tima_limit;
 
         // load the timer modulo into the timer counter, set the interrupt

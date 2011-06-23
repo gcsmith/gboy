@@ -337,11 +337,11 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
     case PORT_BCPS:
         return ctx->video.bcps;
     case PORT_BCPD:
-        return ctx->video.bcpd[ctx->video.bcps & 0x3F];
+        return ctx->video.bcpd[ctx->video.bcps & CPS_INDEX];
     case PORT_OCPS:
         return ctx->video.ocps;
     case PORT_OCPD:
-        return ctx->video.ocpd[ctx->video.ocps & 0x3F];
+        return ctx->video.ocpd[ctx->video.ocps & CPS_INDEX];
     case PORT_SVBK:
         value = ctx->mem.wram_bnum;
         break;
@@ -413,6 +413,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     case PORT_DIV:
         // writing to DIV always resets it to 0, regardless of the value
         ctx->timer.div = 0;
+        ctx->timer.div_ticks = ctx->cycles % 256;
         break;
     case PORT_TIMA:
         ctx->timer.tima = value;

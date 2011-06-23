@@ -390,7 +390,7 @@ INLINE void set_stat_mode(gbx_context_t *ctx, int mode)
 INLINE void check_coincidence(gbx_context_t *ctx)
 {
     // fire an interrupt when LY == LYC becomes true and interrupt enabled
-    if (ctx->video.lcd_y == ctx->video.lyc && ctx->video.stat & STAT_INT_LYC)
+    if (ctx->video.lcd_y == ctx->video.lyc && (ctx->video.stat & STAT_INT_LYC))
         gbx_req_interrupt(ctx, INT_LCDSTAT);
 
     // this is only called when Y transitions, so rather than set the STAT LYC
