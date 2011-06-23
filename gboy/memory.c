@@ -308,7 +308,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
         value = ctx->video.wy;
         break;
     case PORT_WX:
-        value = ctx->video.wx;
+        value = ctx->video.wx + 7;
         break;
     case PORT_KEY1:
         value = ctx->key1;
@@ -468,7 +468,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         ctx->video.wy = value;
         break;
     case PORT_WX:
-        ctx->video.wx = value;
+        ctx->video.wx = value - 7;
         break;
     case PORT_KEY1:
         // only prep bit is writeable, mask out read-only / unused bits

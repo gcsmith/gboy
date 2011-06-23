@@ -140,6 +140,10 @@ typedef struct video_registers {
     uint32_t ocpd_rgb[0x20];
     uint16_t hdma_src, hdma_dst;
     int hdma_len, hdma_active, hdma_pos;
+    uint8_t *wnd_code;
+    uint8_t *bg_code;
+    int sprite_hmax;
+    int sprite_mask;
 } video_registers_t;
 
 // ----------------------------------------------------------------------------

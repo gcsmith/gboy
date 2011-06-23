@@ -51,6 +51,27 @@ void video_write_lcdc(gbx_context_t *ctx, uint8_t value)
         }
     }
 
+    // determine if window tile map is located at 9C00 or 9800
+    if (value & LCDC_WND_CODE)
+        ctx->video.wnd_code = &ctx->mem.vram[0x1C00];
+    else
+        ctx->video.wnd_code = &ctx->mem.vram[0x1800];
+
+    // determine if background tile map is located at 9C00 or 9800
+    if (value & LCDC_BG_CODE)
+        ctx->video.bg_code = &ctx->mem.vram[0x1C00];
+    else
+        ctx->video.bg_code = &ctx->mem.vram[0x1800];
+
+    if (value & LCDC_OBJ_SIZE) {
+        ctx->video.sprite_hmax = 15;
+        ctx->video.sprite_mask = 0xFE;
+    }
+    else {
+        ctx->video.sprite_hmax = 7;
+        ctx->video.sprite_mask = 0xFF;
+    }
+
     // set all layers to enabled and standard priority, then alter below...
     ctx->video.show_bg = ctx->video.show_wnd = ctx->video.show_obj = 1;
     ctx->video.obj_pri = 0;
@@ -211,19 +232,15 @@ INLINE void commit_sprite_color(gbx_context_t *ctx, int sprite, int x, int y)
 {
     obj_char_t *obj = &((obj_char_t *)ctx->mem.oam)[sprite];
     uint32_t *palette = ctx->video.bgp_rgb;
-    int ci, c1, c2, addr, code = obj->code, sh = 7;
-
+    int ci, c1, c2, addr;
+    
+    int code = obj->code & ctx->video.sprite_mask;
     int off_x = x - obj->xpos + 8;
     int off_y = y - obj->ypos + 16;
 
-    if (ctx->video.lcdc & LCDC_OBJ_SIZE) {
-        code = obj->code & 0xFE;
-        sh = 15;
-    }
-
     // determine the orientation (normal, xflip, yflip, xflip & yflip)
     if (!(obj->attr & OAM_ATTR_XFLIP)) off_x = 7 - off_x;
-    if (obj->attr & OAM_ATTR_YFLIP) off_y = sh - off_y;
+    if (obj->attr & OAM_ATTR_YFLIP) off_y = ctx->video.sprite_hmax - off_y;
 
     if (ctx->color_enabled) {
         // select the palette base address (OBP0-7)
@@ -231,9 +248,9 @@ INLINE void commit_sprite_color(gbx_context_t *ctx, int sprite, int x, int y)
 
         // select the tile data from either VRAM bank 0 or bank 1
         if (obj->attr & OAM_ATTR_BANK)
-            addr = VRAM_BANK_SIZE + (obj->code << 4) + (off_y << 1);
+            addr = VRAM_BANK_SIZE + (code << 4) + (off_y << 1);
         else
-            addr = (obj->code << 4) + (off_y << 1);
+            addr = (code << 4) + (off_y << 1);
     }
     else {
         // monochrome mode: select from either OBP0 or OBP1
@@ -243,7 +260,7 @@ INLINE void commit_sprite_color(gbx_context_t *ctx, int sprite, int x, int y)
             palette = ctx->video.obp0_rgb;
 
         // tile data located in the first (and only) VRAM bank
-        addr = (obj->code << 4) + (off_y << 1);
+        addr = (code << 4) + (off_y << 1);
     }
 
     c1 = ctx->mem.vram[addr + 0];
@@ -299,19 +316,17 @@ static void prepare_line_buffer(gbx_context_t *ctx)
 // ----------------------------------------------------------------------------
 static void video_render_pixel(gbx_context_t *ctx, int x, int y)
 {
-    int base_x, base_y, off_x, off_y, mappos, cnum, bg_max_pri = 0;
-    int wx = ctx->video.wx - 7, wy = ctx->video.wy, mapaddr;
-    uint8_t tile, c1, c2, attr;
-    uint16_t addr, char_base = 0;
+    const int fb_pos = y * GBX_LCD_XRES + x;
+    int base_x, base_y, off_x, off_y, ci, bg_max_pri = 0;
+    uint8_t *ptile, *pcolor = ctx->mem.vram;
     uint32_t *palette = ctx->video.bgp_rgb;
     int sprite = ctx->video.line_obj[x];
-    obj_char_t *obj = NULL;
 
     if (sprite >= 0) {
-        obj = &((obj_char_t *)ctx->mem.oam)[sprite];
+        obj_char_t *obj = &((obj_char_t *)ctx->mem.oam)[sprite];
         if (ctx->video.obj_pri) {
             // always render sprite if present and max priority given in LCDC
-            ctx->fb[y * GBX_LCD_XRES + x] = ctx->video.line_col[x];
+            ctx->fb[fb_pos] = ctx->video.line_col[x];
             return;
         }
         else if (obj->attr & OAM_ATTR_PRI) {
@@ -321,34 +336,31 @@ static void video_render_pixel(gbx_context_t *ctx, int x, int y)
     }
 
     // if obj_pri is NOT set, need to evalulate both BG and OBJ priority
-    if (ctx->video.show_wnd && x >= wx && y >= wy) {
-        base_x = x - wx;
-        base_y = y - wy;
-        mappos = ((base_y & 0xF8) << 2) | (base_x >> 3);
-
-        // window tile index may be located at either 0x9800 or 0x9C00
-        mapaddr = mappos + (ctx->video.lcdc & LCDC_WND_CODE ? 0x1C00 : 0x1800);
+    if (ctx->video.show_wnd && x >= ctx->video.wx && y >= ctx->video.wy) {
+        base_x = x - ctx->video.wx;
+        base_y = y - ctx->video.wy;
+        ptile = &ctx->video.wnd_code[((base_y & 0xF8) << 2) | (base_x >> 3)];
     }
-    else {
+    else if (ctx->video.show_bg) {
         base_x = (x + ctx->video.scx) & 0xFF;
         base_y = (y + ctx->video.scy) & 0xFF;
-        mappos = ((base_y & 0xF8) << 2) | (base_x >> 3);
-
-        // background tile index may be located at either 0x9800 or 0x9C00
-        mapaddr = mappos + (ctx->video.lcdc & LCDC_BG_CODE ? 0x1C00 : 0x1800);
+        ptile = &ctx->video.bg_code[((base_y & 0xF8) << 2) | (base_x >> 3)];
+    }
+    else {
+        ctx->fb[fb_pos] = sprite > 0 ? ctx->video.line_col[x] : 0;
+        return;
     }
 
     off_x = 7 - (base_x & 7);
     off_y = base_y & 7;
-    tile = ctx->mem.vram[mapaddr];
 
     if (ctx->color_enabled) {
         // read the background map attribute when operating in color mode
-        attr = ctx->mem.vram[mapaddr + VRAM_BANK_SIZE];
+        uint8_t attr = *(ptile + VRAM_BANK_SIZE);
 
         // determine whether the tile data is located in bank 0 or bank 1
         if (attr & BG_ATTR_BANK)
-            char_base = VRAM_BANK_SIZE;
+            pcolor += VRAM_BANK_SIZE;
 
         if (attr & BG_ATTR_PRI)
             bg_max_pri = 1;
@@ -362,20 +374,18 @@ static void video_render_pixel(gbx_context_t *ctx, int x, int y)
 
     // tile character data may be indexed from either 0x8000 or 0x8800
     if (ctx->video.lcdc & LCDC_BG_CHAR)
-        addr = char_base + (tile << 4) + (off_y << 1);
+        pcolor += (*ptile << 4) + (off_y << 1);
     else
-        addr = char_base + 0x1000 + ((int8_t)tile << 4) + (off_y << 1);
+        pcolor += 0x1000 + ((int8_t)*ptile << 4) + (off_y << 1);
 
     // compute the color and store it in the framebuffer
-    c1 = ctx->mem.vram[addr + 0];
-    c2 = ctx->mem.vram[addr + 1];
-    cnum = ((c1 >> off_x) & 1) | (((c2 >> off_x) << 1) & 2);
+    ci = ((pcolor[0] >> off_x) & 1) | (((pcolor[1] >> off_x) << 1) & 2);
 
     // if no OBJ (or OBJ disabled) always draw BG, otherwise check priority
-    if (!obj || !ctx->video.show_obj || (bg_max_pri && cnum))
-        ctx->fb[y * GBX_LCD_XRES + x] = palette[cnum];
+    if (sprite < 0 || !ctx->video.show_obj || (bg_max_pri && ci))
+        ctx->fb[fb_pos] = palette[ci];
     else 
-        ctx->fb[y * GBX_LCD_XRES + x] = ctx->video.line_col[x];
+        ctx->fb[fb_pos] = ctx->video.line_col[x];
 }
 
 // ----------------------------------------------------------------------------
