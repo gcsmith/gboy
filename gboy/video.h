@@ -181,7 +181,9 @@ void video_write_lcdc(gbx_context_t *ctx, uint8_t value);
 void video_write_bcpd(gbx_context_t *ctx, uint8_t value);
 void video_write_ocpd(gbx_context_t *ctx, uint8_t value);
 void video_write_hdma(gbx_context_t *ctx, uint8_t value);
+void video_write_stat(gbx_context_t *ctx, uint8_t value);
 uint8_t video_read_hdma(gbx_context_t *ctx);
+uint8_t video_read_stat(gbx_context_t *ctx);
 void video_update_cycles(gbx_context_t *ctx, long cycles);
 
 #endif // GBOY_VIDEO__H

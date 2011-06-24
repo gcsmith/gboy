@@ -228,6 +228,26 @@ uint8_t video_read_hdma(gbx_context_t *ctx)
 }
 
 // ----------------------------------------------------------------------------
+void video_write_stat(gbx_context_t *ctx, uint8_t value)
+{
+    ctx->video.stat = value & ~(STAT_MODE | STAT_LYC);
+}
+
+// ----------------------------------------------------------------------------
+uint8_t video_read_stat(gbx_context_t *ctx)
+{
+    int stat = ctx->video.stat & ~STAT_LYC;
+
+    if (!(ctx->video.lcdc & LCDC_LCD_EN)) // XXX
+        return 0x80;
+
+    if (ctx->video.lcd_y == ctx->video.lyc)
+        stat |= STAT_LYC;
+
+    return stat | 0x80;
+}
+
+// ----------------------------------------------------------------------------
 INLINE void commit_sprite_color(gbx_context_t *ctx, int sprite, int x, int y)
 {
     obj_char_t *obj = &((obj_char_t *)ctx->mem.oam)[sprite];
@@ -519,10 +539,11 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
                     ctx->video.lcd_y = 0;
                     ctx->video.curr_wy = 0;
                 }
+                else
+                    ctx->video.cycle = 0;
 
                 // check for coincidence interrupt each time LY changes
                 check_coincidence(ctx);
-                ctx->video.cycle = 0;
             }
             break;
         }
@@ -533,8 +554,13 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
 void gbx_get_tile_buffer(gbx_context_t *ctx, uint32_t *dest, int index)
 {
     int x, y, off_x, off_y, tile, ci, pal_num = 0;
-    uint32_t *palette = &ctx->video.bcpd_rgb[pal_num << 2];
     uint8_t *cb = NULL, *char_base = NULL;
+
+    uint32_t *palette = NULL;
+    if (ctx->color_enabled)
+        palette = &ctx->video.bcpd_rgb[pal_num << 2];
+    else
+        palette = ctx->video.bgp_rgb;
 
     switch (index) {
     default:
@@ -591,7 +617,7 @@ void gbx_get_tmap_buffer(gbx_context_t *ctx, uint32_t *dest, int index)
     for (y = 0; y < GBX_LCD_YRES; y++) {
         for (x = 0; x < GBX_LCD_XRES; x++) {
             pchar = ctx->mem.vram;
-            pcode = &ctx->video.wnd_code[((y & 0xF8) << 2) | (x >> 3)];
+            pcode = &code_base[((y & 0xF8) << 2) | (x >> 3)];
             int off_x = 7 - (x & 7);
             int off_y = y & 7;
             int fb_pos = y * GBX_LCD_XRES + x;

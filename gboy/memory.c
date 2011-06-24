@@ -183,20 +183,6 @@ INLINE uint8_t read_joyp_port(gbx_context_t *ctx)
 }
 
 // ----------------------------------------------------------------------------
-INLINE uint8_t read_video_stat(gbx_context_t *ctx)
-{
-    int stat = ctx->video.stat & ~STAT_LYC;
-
-    if (!(ctx->video.lcdc & LCDC_LCD_EN)) // XXX
-        return 0x80;
-
-    if (ctx->video.lcd_y == ctx->video.lyc)
-        stat |= STAT_LYC;
-
-    return stat | 0x80;
-}
-
-// ----------------------------------------------------------------------------
 INLINE void write_timer_control(gbx_context_t *ctx, uint8_t value)
 {
     switch (value & 3) {
@@ -279,7 +265,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
         value = ctx->video.lcdc;
         break;
     case PORT_STAT:
-        value = read_video_stat(ctx);
+        value = video_read_stat(ctx);
         break;
     case PORT_SCY:
         value = ctx->video.scy;
@@ -292,6 +278,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
         break;
     case PORT_LYC:
         value = ctx->video.lyc;
+        break;
     case PORT_DMA:
         value = ctx->dma.src >> 8; // ???
         break;
@@ -435,7 +422,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         video_write_lcdc(ctx, value);
         break;
     case PORT_STAT:
-        ctx->video.stat = value;
+        video_write_stat(ctx, value);
         break;
     case PORT_SCY:
         ctx->video.scy = value;
