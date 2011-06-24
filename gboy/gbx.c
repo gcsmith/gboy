@@ -373,7 +373,7 @@ void gbx_set_input_state(gbx_context_t *ctx, int key, int pressed)
 }
 
 // ----------------------------------------------------------------------------
-void gbx_get_framebuffer(gbx_context_t *ctx, void *dest)
+void gbx_get_framebuffer(gbx_context_t *ctx, uint32_t *dest)
 {
     assert(NULL != ctx);
     assert(NULL != dest);

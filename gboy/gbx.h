@@ -104,7 +104,9 @@ void gbx_set_serial_log(gbx_context_t *ctx, const char *path);
 void gbx_set_debugger(gbx_context_t *ctx, int enable);
 void gbx_set_input_state(gbx_context_t *ctx, int input, int pressed);
 
-void gbx_get_framebuffer(gbx_context_t *ctx, void *dest);
+void gbx_get_framebuffer(gbx_context_t *ctx, uint32_t *dest);
+void gbx_get_tile_buffer(gbx_context_t *ctx, uint32_t *dest, int index);
+void gbx_get_tmap_buffer(gbx_context_t *ctx, uint32_t *dest, int index);
 int  gbx_get_clock_frequency(gbx_context_t *ctx);
 
 int  gbx_disassemble_op(gbx_context_t *ctx, char *buffer, int size);

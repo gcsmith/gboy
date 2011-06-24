@@ -128,7 +128,7 @@ typedef struct video_registers {
     int lcdc, stat, lyc;
     int lcd_x, lcd_y;
     int scy, scx;
-    int wx, wy;
+    int wx, wy, curr_wy;
     int bgp, obp0, obp1;
     uint32_t bgp_rgb[4];
     uint32_t obp0_rgb[4];

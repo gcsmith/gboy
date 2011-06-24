@@ -338,7 +338,8 @@ static void video_render_pixel(gbx_context_t *ctx, int x, int y)
     // if obj_pri is NOT set, need to evalulate both BG and OBJ priority
     if (ctx->video.show_wnd && x >= ctx->video.wx && y >= ctx->video.wy) {
         base_x = x - ctx->video.wx;
-        base_y = y - ctx->video.wy;
+        base_y = ctx->video.curr_wy;
+        if (x == GBX_LCD_XRES-1) ctx->video.curr_wy++;
         ptile = &ctx->video.wnd_code[((base_y & 0xF8) << 2) | (base_x >> 3)];
     }
     else if (ctx->video.show_bg) {
@@ -514,8 +515,9 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
             // check for v-blank completion, transition to oam search
             if (++ctx->video.cycle >= VIDEO_CYCLES_SCANLINE) {
                 if (++ctx->video.lcd_y >= LCD_SCANLINE_COUNT) {
-                    ctx->video.lcd_y = 0;
                     transition_to_search(ctx);
+                    ctx->video.lcd_y = 0;
+                    ctx->video.curr_wy = 0;
                 }
 
                 // check for coincidence interrupt each time LY changes
@@ -523,6 +525,92 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
                 ctx->video.cycle = 0;
             }
             break;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+void gbx_get_tile_buffer(gbx_context_t *ctx, uint32_t *dest, int index)
+{
+    int x, y, off_x, off_y, tile, ci, pal_num = 0;
+    uint32_t *palette = &ctx->video.bcpd_rgb[pal_num << 2];
+    uint8_t *cb = NULL, *char_base = NULL;
+
+    switch (index) {
+    default:
+    case 0: // bank 0 region 0
+        char_base = &ctx->mem.vram[0x0000];
+        break;
+    case 1: // bank 0 region 1
+        char_base = &ctx->mem.vram[0x0800];
+        break;
+    case 2: // bank 1 region 0
+        char_base = &ctx->mem.vram[0x0000 + VRAM_BANK_SIZE];
+        break;
+    case 3: // bank 1 region 1
+        char_base = &ctx->mem.vram[0x0800 + VRAM_BANK_SIZE];
+        break;
+    }
+
+    for (y = 0; y < GBX_LCD_YRES; y++) {
+        for (x = 0; x < GBX_LCD_XRES; x++) {
+
+            if (y >= 128 || x >= 128) {
+                dest[y * GBX_LCD_XRES + x] = 0x00000000;
+                continue;
+            }
+
+            tile = ((y >> 3) << 5) + (x >> 3);
+            off_x = 7 - (x & 7);
+            off_y = y & 7;
+
+            cb = &char_base[(tile << 4) + (off_y << 1)];
+            ci = ((cb[0] >> off_x) & 1) | (((cb[1] >> off_x) << 1) & 2);
+            dest[y * GBX_LCD_XRES + x] = palette[ci];
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+void gbx_get_tmap_buffer(gbx_context_t *ctx, uint32_t *dest, int index)
+{
+    int ci, x, y;
+    uint8_t *pcode, *pchar, *code_base = NULL;
+    uint32_t *palette = ctx->video.bgp_rgb;
+
+    switch (index) {
+    default:
+    case 0: case 1: // map 0 region 0/1
+        code_base = &ctx->mem.vram[0x1800];
+        break;
+    case 2: case 3: // map 1 region 0/1
+        code_base = &ctx->mem.vram[0x1C00];
+        break;
+    }
+
+    for (y = 0; y < GBX_LCD_YRES; y++) {
+        for (x = 0; x < GBX_LCD_XRES; x++) {
+            pchar = ctx->mem.vram;
+            pcode = &ctx->video.wnd_code[((y & 0xF8) << 2) | (x >> 3)];
+            int off_x = 7 - (x & 7);
+            int off_y = y & 7;
+            int fb_pos = y * GBX_LCD_XRES + x;
+
+            if (ctx->color_enabled) {
+                uint8_t attr = *(pcode + VRAM_BANK_SIZE);
+                if (attr & BG_ATTR_BANK) pchar += VRAM_BANK_SIZE;
+                if (attr & BG_ATTR_XFLIP) off_x = 7 - off_x;
+                if (attr & BG_ATTR_YFLIP) off_y = 7 - off_y;
+                palette = &ctx->video.bcpd_rgb[(attr & BG_ATTR_PAL) << 2];
+            }
+
+            if (index & 1)
+                pchar += (*pcode << 4) + (off_y << 1);
+            else
+                pchar += 0x1000 + ((int8_t)*pcode << 4) + (off_y << 1);
+
+            ci = ((pchar[0] >> off_x) & 1) | (((pchar[1] >> off_x) << 1) & 2);
+            dest[fb_pos] = palette[ci];
         }
     }
 }

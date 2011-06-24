@@ -79,6 +79,11 @@ INLINE void set_vram_bank(gbx_context_t *ctx, uint8_t value)
         return;
     }
 
+    if (ctx->video.hdma_active) {
+        log_warn("cannot set VRAM bank during active HDMA operation\n");
+        return;
+    }
+
     ctx->mem.vram_bank = ctx->mem.vram + bank * VRAM_BANK_SIZE;
     ctx->mem.vram_bnum = bank;
     log_spew("CGB set VRAM bank %02X (set bits %02X)\n", bank,  value);
