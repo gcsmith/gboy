@@ -13,6 +13,12 @@ project(gboy)
 option(BUILD_EGL "Build the gboy-egl frontend" OFF)
 option(BUILD_SDL "Build the gboy-sdl frontend" ON)
 
+option(ENABLE_LOG_INFO "Enable 'info' level log messages" ON)
+option(ENABLE_LOG_ERR  "Enable 'error' level log messages" ON)
+option(ENABLE_LOG_WARN "Enable 'warning' level log messages" OFF)
+option(ENABLE_LOG_DBG  "Enable 'debug' level log messages" OFF)
+option(ENABLE_LOG_SPEW "Enable 'spew' level log messages" OFF)
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING
         "Choose type of build: None Debug Release RelWithDebInfo MinSizeRel."

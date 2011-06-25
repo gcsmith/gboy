@@ -15,6 +15,15 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#undef HAVE_INTRIN_H
+#undef HAVE_STDINT_H
+
 #cmakedefine HAVE_INTRIN_H
 #cmakedefine HAVE_STDINT_H
+
+#cmakedefine ENABLE_LOG_INFO
+#cmakedefine ENABLE_LOG_ERR
+#cmakedefine ENABLE_LOG_WARN
+#cmakedefine ENABLE_LOG_DBG
+#cmakedefine ENABLE_LOG_SPEW
 
