@@ -70,7 +70,7 @@ struct gbx_context {
     uint8_t int_en, int_flags, int_flags_delay;
     int ime, ei_delay, di_delay;
     int system;
-    int key1;
+    int key1, fast_mode;
     int cart_features;
     int color_enabled;
     int color_game;

@@ -1084,7 +1084,8 @@ static int process_stop_state(gbx_context_t *ctx)
         // perform speed change, toggle speed mode and clear flag
         ctx->exec_flags &= ~EXEC_STOP;
         ctx->key1 = (ctx->key1 ^ KEY1_SPEED) & ~KEY1_PREP;
-        ext_speed_change(ctx->userdata, ctx->key1 & KEY1_SPEED);
+        ctx->fast_mode = (ctx->key1 & KEY1_SPEED) ? 1 : 0;
+        ext_speed_change(ctx->userdata, ctx->fast_mode);
         return 0;
     }
 

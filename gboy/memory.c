@@ -199,6 +199,7 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
 {
     if (ctx->dma.active) {
         log_warn("attempting to start new DMA transfer with DMA active\n");
+        return;
     }
 
     if (value > 0xF1) {
@@ -211,6 +212,8 @@ INLINE void start_dma_transfer(gbx_context_t *ctx, uint8_t value)
     ctx->dma.cycle = 0;
     ctx->dma.write_pos = 0;
     ctx->dma.write_cycle = 0;
+
+    log_dbg("begin A0 byte DMA transfer from %04X to FE00\n", ctx->dma.src);
 }
 
 // ----------------------------------------------------------------------------
@@ -259,7 +262,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
         value = ctx->int_flags | ~INT_MASK; // set unused bits
         break;
     case PORT_IE:
-        value = ctx->int_en | ~INT_MASK; // set unused bits
+        value = ctx->int_en;
         break;
     case PORT_LCDC:
         value = ctx->video.lcdc;

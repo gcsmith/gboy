@@ -166,6 +166,8 @@ static void hdma_hblank_transfer_block(gbx_context_t *ctx)
 
     log_dbg("HDMA copied %02X bytes from %04X to %04X (%04X left)\n",
              copy_length, src, dst, ctx->video.hdma_len);
+
+    ctx->cycle_delta += (copy_length >> 4) * (ctx->fast_mode ? 16 : 8);
 }
 
 // ----------------------------------------------------------------------------
@@ -175,24 +177,26 @@ static void video_schedule_hblank_dma(gbx_context_t *ctx, int length)
     ctx->video.hdma_len = length;
     ctx->video.hdma_active = 1;
 
-    log_dbg("begin %04X byte h-blank dma transfer from %04X to %04X\n",
+    log_dbg("begin %04X byte h-blank DMA transfer from %04X to %04X\n",
              ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
 }
 
 // ----------------------------------------------------------------------------
-static void video_schedule_general_dma(gbx_context_t *ctx, int length)
+static void video_schedule_general_dma(gbx_context_t *ctx, int copy_length)
 {
     int i;
     ctx->video.hdma_active = 0;
-    ctx->video.hdma_len = length;
+    ctx->video.hdma_len = copy_length;
 
-    log_dbg("begin %04X byte general dma transfer from %04X to %04X\n",
+    log_dbg("begin %04X byte general DMA transfer from %04X to %04X\n",
              ctx->video.hdma_len, ctx->video.hdma_src, ctx->video.hdma_dst);
 
-    for (i = 0; i < ctx->video.hdma_len; i++) {
+    for (i = 0; i < copy_length; i++) {
         uint8_t data = gbx_read_byte(ctx, ctx->video.hdma_src + i);
         gbx_write_byte(ctx, ctx->video.hdma_dst + i, data);
     }
+
+    ctx->cycle_delta += (copy_length >> 4) * (ctx->fast_mode ? 16 : 8);
 }
 
 // ----------------------------------------------------------------------------

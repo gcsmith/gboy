@@ -120,19 +120,19 @@ static int process_header_fields(gbx_context_t *ctx, rom_header_t *header)
 {
     // make sure that the ROM and RAM size fields make sense
     if (0 > (ctx->mem.xrom_banks = xrom_size_to_banks(header->rom_size))) {
-        log_err("unexpected rom size specified\n");
+        log_err("Unexpected ROM size specified (%d)\n", header->rom_size);
         return -1;
     }
 
     if (0 > (ctx->mem.xram_banks = xram_size_to_banks(header->ram_size))) {
-        log_err("uxnexpected ram size specified\n");
+        log_err("Unexpected RAM size specified (%d)\n", header->ram_size);
         return -1;
     }
 
     // if game requires color, we can't run in any other mode beside CGB
     if ((header->cgb_flag & CGB_COLOR_ONLY) && (ctx->system != SYSTEM_CGB)) {
-        log_err("Cannot run color-only game in non-CGB system mode.\n");
-        return -1;
+        log_err("Attempting to run color-only game in non-CGB system mode.\n");
+        // technically an error, but the game should show a warning screen
     }
 
     // enable CGB features only if game supports color AND system is CGB
@@ -362,14 +362,16 @@ void gbx_set_input_state(gbx_context_t *ctx, int key, int pressed)
     assert(NULL != ctx);
     assert((key >= INPUT_RIGHT) && (key <= INPUT_START));
 
-    // joypad register bits are active low
+    int old_state = ctx->input_state;
     if (pressed)
         ctx->input_state &= ~(1 << key);
     else
         ctx->input_state |= (1 << key);
 
-    gbx_req_interrupt(ctx, INT_JOYPAD);
-    log_spew("input index %d set to %s\n", key, pressed ? "down" : "up");
+    if (old_state != ctx->input_state) {
+        gbx_req_interrupt(ctx, INT_JOYPAD);
+        log_spew("input index %d set to %s\n", key, pressed ? "down" : "up");
+    }
 }
 
 // ----------------------------------------------------------------------------
