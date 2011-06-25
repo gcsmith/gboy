@@ -41,11 +41,11 @@ INLINE int set_xrom_bank(gbx_context_t *ctx, int bank)
 {
     assert(ctx->mem.xrom_banks);
 
-    // if bank index exceeds number of banks, set to the maximum bank index
+    // if bank index exceeds number of banks, wrap to valid index
     if (bank >= ctx->mem.xrom_banks) {
-        log_err("specified invalid XROM bank %d, limiting to %d\n",
-                bank, ctx->mem.xrom_banks - 1);
-        bank = ctx->mem.xrom_banks - 1;
+        log_err("specified invalid XROM bank %d, wrapping to %d\n",
+                bank, bank % ctx->mem.xrom_banks);
+        bank %= ctx->mem.xrom_banks;
     }
 
     ctx->mem.xrom_bank = ctx->mem.xrom + bank * XROM_BANK_SIZE;
@@ -58,11 +58,11 @@ INLINE int set_xram_bank(gbx_context_t *ctx, int bank)
 {
     assert(ctx->mem.xram_banks);
 
-    // if bank index exceeds number of banks, set to the maximum bank index
+    // if bank index exceeds number of banks, wrap to valid index
     if (bank >= ctx->mem.xram_banks) {
-        log_err("specified invalid XRAM bank %d, limiting to %d\n",
-                bank, ctx->mem.xram_banks - 1);
-        bank = ctx->mem.xram_banks - 1;
+        log_err("specified invalid XRAM bank %d, wrapping to %d\n",
+                bank, bank % ctx->mem.xram_banks);
+        bank %= ctx->mem.xram_banks;
     }
 
     ctx->mem.xram_bank = ctx->mem.xram + bank * XRAM_BANK_SIZE;
