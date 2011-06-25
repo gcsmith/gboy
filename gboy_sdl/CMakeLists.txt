@@ -53,6 +53,6 @@ set(gboy_sdl_lib
     gboy
 )
 
-add_executable(gboy_sdl ${MKPROP} ${gboy_sdl_src} ${blargg_src} ${gboy_sdl_hdr})
+add_executable(gboy_sdl ${gboy_sdl_src} ${blargg_src} ${gboy_sdl_hdr})
 target_link_libraries(gboy_sdl ${gboy_sdl_lib})
 

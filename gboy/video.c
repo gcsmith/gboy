@@ -620,11 +620,11 @@ void gbx_get_tmap_buffer(gbx_context_t *ctx, uint32_t *dest, int index)
 
     for (y = 0; y < GBX_LCD_YRES; y++) {
         for (x = 0; x < GBX_LCD_XRES; x++) {
-            pchar = ctx->mem.vram;
-            pcode = &code_base[((y & 0xF8) << 2) | (x >> 3)];
             int off_x = 7 - (x & 7);
             int off_y = y & 7;
             int fb_pos = y * GBX_LCD_XRES + x;
+            pchar = ctx->mem.vram;
+            pcode = &code_base[((y & 0xF8) << 2) | (x >> 3)];
 
             if (ctx->color_enabled) {
                 uint8_t attr = *(pcode + VRAM_BANK_SIZE);

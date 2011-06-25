@@ -29,9 +29,26 @@
 // #define ENABLE_LOG_SPEW
 
 #define _isset(x, b)    ((x) & (1 << (b)))
+#define _rotl_flags(x)  ((((x) & 1) ? FLAG_C : 0) | (!(x) ? FLAG_Z : 0))
+
+#ifndef HAVE_INTRIN_H
 #define _rotl8(x, b)    (((x) << (b)) | ((x) >> (8 - (b))))
 #define _rotr8(x, b)    (((x) >> (b)) | ((x) << (8 - (b))))
-#define _rotl_flags(x)  ((((x) & 1) ? FLAG_C : 0) | (!(x) ? FLAG_Z : 0))
+#endif
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#else
+typedef signed char      int8_t;
+typedef signed short     int16_t;
+typedef signed int       int32_t;
+typedef signed long long int64_t;
+
+typedef unsigned char      uint8_t;
+typedef unsigned short     uint16_t;
+typedef unsigned int       uint32_t;
+typedef unsigned long long uint64_t;
+#endif
 
 #define SAFE_CLOSE(x)   if (NULL != x) { fclose(x); x = NULL; }
 #define SAFE_FREE(x)    if (NULL != x) { free(x); x = NULL; }
@@ -52,16 +69,6 @@
 #define FORCEINLINE __forceinline
 #define FASTCALL    __fastcall
 
-typedef signed char      int8_t;
-typedef signed short     int16_t;
-typedef signed int       int32_t;
-typedef signed long long int64_t;
-
-typedef unsigned char      uint8_t;
-typedef unsigned short     uint16_t;
-typedef unsigned int       uint32_t;
-typedef unsigned long long uint64_t;
-
 #define snprintf _snprintf
 #define strdup _strdup
 
@@ -73,21 +80,7 @@ typedef unsigned long long uint64_t;
 #define FORCEINLINE __attribute__((always_inline))
 #define FASTCALL    // __attribute__((fastcall))
 
-#include <stdint.h>
-
 #endif // _MSC_VER
-
-#ifdef HAVE_RECOMPILER
-void *low_malloc(size_t length);
-void *low_calloc(size_t length);
-void *low_realloc(void *p, size_t length);
-void  low_free(void *p);
-#else
-#define low_malloc(length) malloc(length)
-#define low_calloc(length) calloc(1, length)
-#define low_realloc(p, length) realloc(p, length)
-#define low_free(p) free(p)
-#endif
 
 #include <stdarg.h>
 

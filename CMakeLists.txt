@@ -25,6 +25,10 @@ set(GNULIB_DIR "${CMAKE_SOURCE_DIR}/gnulib")
 
 include(${GBOY_MODULE_PATH}/DetectPlatform.cmake)
 include(${GBOY_MODULE_PATH}/DetectArchitecture.cmake)
+include(CheckIncludeFiles)
+
+check_include_files(intrin.h HAVE_INTRIN_H)
+check_include_files(stdint.h HAVE_STDINT_H)
 
 configure_file(
     ${CMAKE_SOURCE_DIR}/gboy/config.h.cmake

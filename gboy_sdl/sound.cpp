@@ -15,10 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#include "sound.h"
 #include "Gb_Apu.h"
 #include "Multi_Buffer.h"
 #include "Sound_Queue.h"
-#include "sound.h"
 
 struct blargg_sound {
     Gb_Apu apu;
