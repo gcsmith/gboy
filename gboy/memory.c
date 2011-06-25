@@ -172,14 +172,22 @@ void mmu_wr_oam(gbx_context_t *ctx, uint16_t addr, uint8_t value)
 }
 
 // ----------------------------------------------------------------------------
-INLINE uint8_t read_joyp_port(gbx_context_t *ctx)
+void write_joyp(gbx_context_t *ctx, uint8_t value)
 {
-    uint8_t input_bits = 0x0F;
-    if (!(ctx->joyp & JOYP_SEL_DIR))
-        input_bits = ctx->input_state & 0xF;
-    else if (!(ctx->joyp & JOYP_SEL_BTN))
-        input_bits = ctx->input_state >> 4;
-    return ctx->joyp | input_bits | 0xC0;
+    uint8_t old_state = ctx->joyp & JOYP_BTN_MASK;
+    uint8_t new_state = 0xF;
+
+    if (!(value & JOYP_SEL_DIR))
+        new_state = ctx->input_state & 0xF;
+    else if (!(value & JOYP_SEL_BTN))
+        new_state = (ctx->input_state >> 4) & 0xF;
+
+    if (old_state & ~new_state & 0xF) {
+        // if any of the P10-P13 lines transitioned from hi->lo, interrupt
+        gbx_req_interrupt(ctx, INT_JOYPAD);
+    }
+
+    ctx->joyp = (value & (JOYP_SEL_DIR | JOYP_SEL_BTN)) | new_state | 0xC0;
 }
 
 // ----------------------------------------------------------------------------
@@ -238,7 +246,7 @@ static uint8_t mmu_rd_himem(gbx_context_t *ctx, uint16_t addr)
 
     switch (offset) {
     case PORT_JOYP:
-        value = read_joyp_port(ctx);
+        value = ctx->joyp;
         break;
     case PORT_SB:
         value = 0xFF; //ctx->sb;
@@ -388,7 +396,7 @@ static void mmu_wr_himem(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     switch (offset) {
     case PORT_JOYP:
         // only the button/direction select bits (P14/P15) are writable
-        ctx->joyp = value & (JOYP_SEL_DIR | JOYP_SEL_BTN);
+        write_joyp(ctx, value);
         break;
     case PORT_SB:
         ctx->sb = value;

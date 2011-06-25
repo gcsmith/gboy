@@ -366,10 +366,9 @@ void gbx_set_input_state(gbx_context_t *ctx, int key, int pressed)
         int old_state = ctx->input_state;
         ctx->input_state &= ~(1 << key);
 
-        // joypad interrupts only occur when line changes from high to low
-        if (old_state != ctx->input_state) {
+        if (old_state & ~ctx->input_state & 0xFF) {
+            // joypad interrupts only occur when line changes from hi->lo
             gbx_req_interrupt(ctx, INT_JOYPAD);
-            log_spew("input index %d set to %s\n", key, pressed ? "down" : "up");
         }
     }
     else

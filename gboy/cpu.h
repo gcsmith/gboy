@@ -69,6 +69,12 @@
 #define INT_VEC_SERIAL  0x58    // interrupt address for SERIAL
 #define INT_VEC_JOYPAD  0x60    // interrupt address for JOYPAD
 
+// joypad fields
+
+#define JOYP_SEL_DIR    0x10
+#define JOYP_SEL_BTN    0x20
+#define JOYP_BTN_MASK   0x0F
+
 // timer control fields
 
 #define TAC_ENABLED     0x04

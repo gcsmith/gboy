@@ -19,10 +19,6 @@
 
 #define PORT_JOYP       0x00    // joypad (R/W)
 
-#define JOYP_SEL_DIR    0x10
-#define JOYP_SEL_BTN    0x20
-#define JOYP_BTN_MASK   0x0F
-
 // Serial Data Transfer
 
 #define PORT_SB         0x01    // serial transfer data (R/W)
