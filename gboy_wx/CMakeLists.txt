@@ -8,7 +8,7 @@ project(gboy_wx)
 
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(wxWidgets REQUIRED COMPONENTS gl core base)
+find_package(wxWidgets REQUIRED COMPONENTS gl core base adv)
 
 include(${wxWidgets_USE_FILE})
 
@@ -42,6 +42,6 @@ set(gboy_wx_lib
     gboy
 )
 
-add_executable(gboy_wx ${gboy_wx_src} ${gboy_wx_hdr})
+add_executable(gboy_wx ${MKPROP} ${gboy_wx_src} ${gboy_wx_hdr})
 target_link_libraries(gboy_wx ${gboy_wx_lib})
 

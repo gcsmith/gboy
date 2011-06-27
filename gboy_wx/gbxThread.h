@@ -18,7 +18,7 @@
 #ifndef GBOY_GBXTHREAD__H
 #define GBOY_GBXTHREAD__H
 
-#include "wx/wx.h"
+#include <wx/wx.h>
 #include "gbx.h"
 
 DECLARE_EVENT_TYPE(wxEVT_GBX_SYNC, -1)

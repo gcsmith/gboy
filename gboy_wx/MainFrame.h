@@ -18,8 +18,8 @@
 #ifndef GBOY_MAINFRAME__H
 #define GBOY_MAINFRAME__H
 
-#include "wx/config.h"
-#include "wx/docview.h"
+#include <wx/config.h>
+#include <wx/docview.h>
 #include "gbxThread.h"
 #include "RenderWidget.h"
 

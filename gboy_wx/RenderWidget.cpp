@@ -16,7 +16,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <GL/glew.h>
+#ifdef PLATFORM_WIN32
+#include <GL/wglew.h>
+#elif defined(PLATFORM_UNIX)
 #include <GL/glxew.h>
+#endif
 #include "RenderWidget.h"
 #include "gbx.h"
 
@@ -24,7 +28,7 @@
 // Return the nearest square, pow2 texture dimension >= MAX(width, height).
 unsigned int tex_pow2(unsigned int width, unsigned int height)
 {
-    unsigned int input = std::max(width, height);
+    unsigned int input = MAX(width, height);
     unsigned int value = 2;
 
     if (0 == (input & (input - 1)))
@@ -138,12 +142,12 @@ void RenderWidget::SetEmulator(gbxThread *gbx)
 void RenderWidget::SetSwapInterval(int interval)
 {
 #ifdef PLATFORM_WIN32
-    if (WGL_EXT_swap_control)
+    if (WGLEW_EXT_swap_control)
         wglSwapIntervalEXT(interval);
     else
         log_err("WGL_EXT_swap_control is not available\n");
 #elif defined(PLATFORM_UNIX)
-    if (GLX_SGI_swap_control)
+    if (GLXEW_SGI_swap_control)
         glXSwapIntervalSGI(interval);
     else
         log_err("GLX_SGI_swap_control is not available\n");

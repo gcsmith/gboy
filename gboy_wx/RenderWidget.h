@@ -19,8 +19,8 @@
 #define GBOY_RENDERWIDGET__H
 
 #include <map>
-#include "wx/wx.h"
-#include "wx/glcanvas.h"
+#include <wx/wx.h>
+#include <wx/glcanvas.h>
 #include "gbxThread.h"
 
 class RenderWidget: public wxGLCanvas

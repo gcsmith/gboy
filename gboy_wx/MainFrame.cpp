@@ -15,12 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#include "wx/wx.h"
+#include <wx/wx.h>
+#include <wx/aboutdlg.h>
 #include "MainFrame.h"
 
 // ----------------------------------------------------------------------------
 MainFrame::MainFrame(wxWindow *parent, const wxChar *title)
-: wxFrame(NULL, -1, title), m_config(NULL), m_recent(NULL), m_lastCycles(0)
+: wxFrame(NULL, -1, title), m_config(NULL), m_recent(NULL), m_perftimer(NULL),
+  m_gbx(NULL), m_render(NULL), m_lastCycles(0)
 {
     SetupStatusBar();
     SetupMainMenu();
@@ -162,7 +164,7 @@ void MainFrame::SetupMainMenu()
 
     m_helpMenu = new wxMenu();
     m_helpMenu->Append(ID_HELP_REPORTBUG,
-            wxT("&Report Bug"), wxT("Open browser to issue tracker"));
+            wxT("&Report Bug..."), wxT("Open browser to issue tracker"));
     m_helpMenu->Append(wxID_ABOUT,
             wxT("&About"), wxT("Display gboy about dialog"));
 
@@ -399,16 +401,34 @@ void MainFrame::OnToggleVsync(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnReportBug(wxCommandEvent &event)
 {
-    wxMessageBox(wxT("TODO"), wxT("Report Bug"), wxOK | wxICON_ERROR, this);
+    wxLaunchDefaultBrowser(wxT("http://code.google.com/p/gboy/issues/list"));
 }
+
+static const wxString License_GPLV2 =
+wxT("This program is free software; you can redistribute it and/or modify\n")
+wxT("it under the terms of the GNU General Public License as published by\n")
+wxT("the Free Software Foundation; either version 2 of the License, or (at\n")
+wxT("your option) any later version.\n\n")
+wxT("This program is distributed in the hope that it will be useful, but\n")
+wxT("WITHOUT ANY WARRANTY; without even the implied warranty of\n")
+wxT("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n")
+wxT("GNU General Public License for more details.\n\n")
+wxT("You should have received a copy of the GNU General Public License along\n")
+wxT("with this program; if not, write to the Free Software Foundation, Inc.,\n")
+wxT("51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.\n");
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnAbout(wxCommandEvent &event)
 {
-    wxMessageBox(wxT("gboy - a simple, cross platform game boy emulator\n"
-                     "v0.1-dev\n\n"
-                     "Garrett Smith 2011"),
-                 wxT("About gboy"), wxOK | wxICON_INFORMATION, this);
+    wxAboutDialogInfo info;
+    info.SetName(wxT("gboy"));
+    info.SetVersion(wxT("0.1-dev"));
+    info.SetDescription(wxT("A portable Nintendo Game Boy emulator."));
+    info.SetCopyright(wxT("(C) 2011 Garrett Smith"));
+    info.SetLicense(License_GPLV2);
+    info.SetWebSite(wxT("http://code.google.com/p/gboy"));
+    info.AddDeveloper(wxT("Garrett Smith <gcs2980@rit.edu>"));
+    wxAboutBox(info);
 }
 
 // ----------------------------------------------------------------------------
