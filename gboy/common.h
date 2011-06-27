@@ -46,6 +46,8 @@ typedef unsigned long long uint64_t;
 
 #define SAFE_CLOSE(x)   if (NULL != x) { fclose(x); x = NULL; }
 #define SAFE_FREE(x)    if (NULL != x) { free(x); x = NULL; }
+#define SAFE_DELETE(x)  if (NULL != x) { delete x; x = NULL; }
+#define SAFE_BDELETE(x) if (NULL != x) { delete[] x; x = NULL; }
 
 #ifndef MIN
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))

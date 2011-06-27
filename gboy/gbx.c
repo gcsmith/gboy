@@ -384,10 +384,17 @@ void gbx_get_framebuffer(gbx_context_t *ctx, uint32_t *dest)
 }
 
 // ----------------------------------------------------------------------------
-int gbx_get_clock_frequency(gbx_context_t *ctx)
+long gbx_get_clock_frequency(gbx_context_t *ctx)
 {
     assert(NULL != ctx);
     return ctx->cpu_speed;
+}
+
+// ----------------------------------------------------------------------------
+long gbx_get_cycle_count(gbx_context_t *ctx)
+{
+    assert(NULL != ctx);
+    return ctx->cycles;
 }
 
 // ----------------------------------------------------------------------------

@@ -12,6 +12,7 @@ project(gboy)
 
 option(BUILD_EGL "Build the gboy-egl frontend" OFF)
 option(BUILD_SDL "Build the gboy-sdl frontend" ON)
+option(BUILD_WX  "Build the gboy-wx frontend" ON)
 
 option(ENABLE_LOG_INFO "Enable 'info' level log messages" ON)
 option(ENABLE_LOG_ERR  "Enable 'error' level log messages" ON)
@@ -56,4 +57,8 @@ endif(BUILD_EGL)
 if(BUILD_SDL)
     add_subdirectory(gboy_sdl)
 endif(BUILD_SDL)
+
+if(BUILD_WX)
+    add_subdirectory(gboy_wx)
+endif(BUILD_WX)
 

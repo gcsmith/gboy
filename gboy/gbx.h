@@ -90,6 +90,10 @@ struct gbx_context {
     FILE *serial_log;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int  gbx_create_context(gbx_context_t **ctx, int system);
 void gbx_destroy_context(gbx_context_t *ctx);
 
@@ -107,7 +111,8 @@ void gbx_set_input_state(gbx_context_t *ctx, int input, int pressed);
 void gbx_get_framebuffer(gbx_context_t *ctx, uint32_t *dest);
 void gbx_get_tile_buffer(gbx_context_t *ctx, uint32_t *dest, int index);
 void gbx_get_tmap_buffer(gbx_context_t *ctx, uint32_t *dest, int index);
-int  gbx_get_clock_frequency(gbx_context_t *ctx);
+long gbx_get_clock_frequency(gbx_context_t *ctx);
+long gbx_get_cycle_count(gbx_context_t *ctx);
 
 int  gbx_disassemble_op(gbx_context_t *ctx, char *buffer, int size);
 void gbx_trace_instruction(gbx_context_t *ctx);
@@ -119,6 +124,10 @@ extern void ext_speed_change(void *data, int speed);
 extern void ext_lcd_enabled(void *data, int enabled);
 extern void ext_sound_write(void *data, uint16_t addr, uint8_t value);
 extern void ext_sound_read(void *data, uint16_t addr, uint8_t *value);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // GBOY_GBX__H
 
