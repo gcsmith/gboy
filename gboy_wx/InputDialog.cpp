@@ -15,20 +15,25 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef GBOY_RENDERWIDGET__H
-#define GBOY_RENDERWIDGET__H
-
 #include <wx/wx.h>
+#include <wx/notebook.h>
+#include <wx/xrc/xmlres.h>
+#include "InputDialog.h"
 
-class RenderWidget
+// ----------------------------------------------------------------------------
+InputDialog::InputDialog(wxWindow *parent)
+: InputDialog_XRC(parent)
 {
-public:
-    virtual void SetStretchFilter(bool enable) = 0;
-    virtual void SetSwapInterval(int interval) = 0;
-    virtual void UpdateFramebuffer(const uint32_t *fb) = 0;
-    virtual void ClearFramebuffer(uint8_t value) = 0;
-    virtual wxWindow *Window() = 0;
-};
+    m_joypadPage->SetFocus();
+}
 
-#endif // GBOY_RENDERWIDGET__H
+// ----------------------------------------------------------------------------
+void InputDialog::SetKeyMappings()
+{
+}
+
+// ----------------------------------------------------------------------------
+void InputDialog::GetKeyMappings()
+{
+}
 

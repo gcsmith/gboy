@@ -41,11 +41,11 @@ public:
 
     const uint32_t *Framebuffer() const;
     const wxString &BiosDir() const;
-    bool Running() const;
     bool Paused() const;
+    bool BatteryBacked() const;
     bool DebuggerEnabled() const;
-    long CycleCount();
-    long ClockFrequency();
+    long CycleCount() const;
+    long ClockFrequency() const;
 
     void Reset();
     void Terminate();
@@ -66,11 +66,12 @@ protected:
     wxEvtHandler *m_parent;
     wxMutex m_pauseLock;
     wxCondition m_pauseCond;
-    wxCriticalSection m_cs;
+    mutable wxCriticalSection m_cs;
     gbx_context_t *m_ctx;
     bool m_running;
     bool m_paused;
     bool m_throttle;
+    bool m_debugger;
     uint32_t m_framebuffer[GBX_LCD_XRES * GBX_LCD_YRES];
     float m_clockRate;
     float m_realPeriod;

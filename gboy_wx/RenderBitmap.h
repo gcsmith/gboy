@@ -15,20 +15,35 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef GBOY_RENDERWIDGET__H
-#define GBOY_RENDERWIDGET__H
+#ifndef GBOY_RENDERBITMAP__H
+#define GBOY_RENDERBITMAP__H
 
-#include <wx/wx.h>
+#include <wx/panel.h>
+#include "RenderWidget.h"
 
-class RenderWidget
+class RenderBitmap: public RenderWidget, public wxPanel
 {
 public:
-    virtual void SetStretchFilter(bool enable) = 0;
-    virtual void SetSwapInterval(int interval) = 0;
-    virtual void UpdateFramebuffer(const uint32_t *fb) = 0;
-    virtual void ClearFramebuffer(uint8_t value) = 0;
-    virtual wxWindow *Window() = 0;
+    RenderBitmap(wxWindow *parent);
+    virtual ~RenderBitmap();
+
+    virtual void SetStretchFilter(bool enable);
+    virtual void SetSwapInterval(int interval);
+    virtual void UpdateFramebuffer(const uint32_t *fb);
+    virtual void ClearFramebuffer(uint8_t value);
+    virtual wxWindow *Window() { return this; }
+
+protected:
+    void OnSize(wxSizeEvent &event);
+    void OnPaint(wxPaintEvent &event);
+    void OnEraseBackground(wxEraseEvent &event);
+
+protected:
+    wxBitmap *m_bmp;
+    double m_xscale;
+    double m_yscale;
+    bool m_filter;
 };
 
-#endif // GBOY_RENDERWIDGET__H
+#endif // GBOY_RENDERBITMAP__H
 

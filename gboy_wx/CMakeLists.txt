@@ -8,11 +8,12 @@ project(gboy_wx)
 
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(wxWidgets REQUIRED COMPONENTS gl core base adv)
+find_package(wxWidgets REQUIRED COMPONENTS gl core base adv xrc)
 
 include(${wxWidgets_USE_FILE})
 
 include_directories(
+    ${CMAKE_BINARY_DIR}/gboy_wx
     ${GLEW_INCLUDE_DIR}
     ${OPENGL_INCLUDE_DIR}
 )
@@ -23,17 +24,28 @@ add_definitions(
 
 set(gboy_wx_hdr
     gbxThread.h
+    DisplayDialog.h
     GboyApp.h
+    InputDialog.h
     MainFrame.h
+    RenderBitmap.h
+    RenderGL2.h
     RenderWidget.h
+    SoundDialog.h
 )
 
 set(gboy_wx_src
     gbxThread.cpp
+    DisplayDialog.cpp
     GboyApp.cpp
+    InputDialog.cpp
     MainFrame.cpp
-    RenderWidget.cpp
+    RenderBitmap.cpp
+    RenderGL2.cpp
+    SoundDialog.cpp
 )
+
+WXWIDGETS_ADD_RESOURCES(gboy_wx_src resource.xrc OPTIONS -c -e)
 
 set(gboy_wx_lib
     ${GLEW_LIBRARIES}

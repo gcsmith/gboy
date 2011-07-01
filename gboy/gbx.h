@@ -113,6 +113,7 @@ void gbx_get_tile_buffer(gbx_context_t *ctx, uint32_t *dest, int index);
 void gbx_get_tmap_buffer(gbx_context_t *ctx, uint32_t *dest, int index);
 long gbx_get_clock_frequency(gbx_context_t *ctx);
 long gbx_get_cycle_count(gbx_context_t *ctx);
+int  gbx_get_cart_features(gbx_context_t *ctx);
 
 int  gbx_disassemble_op(gbx_context_t *ctx, char *buffer, int size);
 void gbx_trace_instruction(gbx_context_t *ctx);

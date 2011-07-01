@@ -21,8 +21,14 @@
 #elif defined(PLATFORM_UNIX)
 #include <GL/glxew.h>
 #endif
-#include "RenderWidget.h"
 #include "gbx.h"
+#include "RenderGL2.h"
+
+typedef struct vertex {
+    float x, y, z;
+    float s, t;
+    float _padding[3];
+} vertex_t;
 
 // ----------------------------------------------------------------------------
 // Return the nearest square, pow2 texture dimension >= MAX(width, height).
@@ -40,40 +46,94 @@ unsigned int tex_pow2(unsigned int width, unsigned int height)
 }
 
 // ----------------------------------------------------------------------------
-RenderWidget::RenderWidget(wxWindow *parent, wxGLContext *context, int *attrib)
+RenderGL2::RenderGL2(wxWindow *parent, wxGLContext *context, int *attrib)
 : wxGLCanvas(parent, wxID_ANY, attrib, wxDefaultPosition, wxDefaultSize),
-  m_parent(parent), m_context(context), m_init(false), m_stretch(false)
+  m_context(context), m_init(false), m_stretch(false), m_filter(false)
 {
     if (!m_context)
         m_context = new wxGLContext(this);
 
-    Connect(GetId(), wxEVT_SIZE,
-            wxSizeEventHandler(RenderWidget::OnSize));
-    Connect(GetId(), wxEVT_PAINT,
-            wxPaintEventHandler(RenderWidget::OnPaint));
-    Connect(GetId(), wxEVT_ERASE_BACKGROUND,
-            wxEraseEventHandler(RenderWidget::OnEraseBackground));
-    Connect(GetId(), wxEVT_KEY_DOWN,
-            wxKeyEventHandler(RenderWidget::OnKeyDown));
-    Connect(GetId(), wxEVT_KEY_UP,
-            wxKeyEventHandler(RenderWidget::OnKeyUp));
+    Connect(wxID_ANY, wxEVT_SIZE,
+            wxSizeEventHandler(RenderGL2::OnSize));
+    Connect(wxID_ANY, wxEVT_PAINT,
+            wxPaintEventHandler(RenderGL2::OnPaint));
+    Connect(wxID_ANY, wxEVT_ERASE_BACKGROUND,
+            wxEraseEventHandler(RenderGL2::OnEraseBackground));
 
     m_width  = GBX_LCD_XRES;
     m_height = GBX_LCD_YRES;
-
-    // TODO: make key mapping configurable from settings dialog
-    m_keymap['Z']        = INPUT_A;
-    m_keymap['X']        = INPUT_B;
-    m_keymap[WXK_RETURN] = INPUT_START;
-    m_keymap[WXK_SPACE]  = INPUT_SELECT;
-    m_keymap[WXK_UP]     = INPUT_UP;
-    m_keymap[WXK_DOWN]   = INPUT_DOWN;
-    m_keymap[WXK_LEFT]   = INPUT_LEFT;
-    m_keymap[WXK_RIGHT]  = INPUT_RIGHT;
 }
 
 // ----------------------------------------------------------------------------
-void RenderWidget::InitGL()
+RenderGL2::~RenderGL2()
+{
+    glDeleteBuffers(1, &m_vbo);
+    glDeleteBuffers(1, &m_pbo);
+    glDeleteTextures(1, &m_texture);
+}
+
+// ----------------------------------------------------------------------------
+void RenderGL2::SetStretchFilter(bool enable)
+{
+    m_filter = enable;
+}
+
+// ----------------------------------------------------------------------------
+void RenderGL2::SetSwapInterval(int interval)
+{
+#ifdef PLATFORM_WIN32
+    if (WGLEW_EXT_swap_control)
+        wglSwapIntervalEXT(interval);
+    else
+        log_err("WGL_EXT_swap_control is not available\n");
+#elif defined(PLATFORM_UNIX)
+    if (GLXEW_SGI_swap_control)
+        glXSwapIntervalSGI(interval);
+    else
+        log_err("GLX_SGI_swap_control is not available\n");
+#else
+    log_err("vertical sync is not available on this platform\n");
+#endif 
+}
+
+// ----------------------------------------------------------------------------
+void RenderGL2::UpdateFramebuffer(const uint32_t *fb)
+{
+    // lock the pbo for write only access and copy over the framebuffer
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, m_pboSize, NULL, GL_DYNAMIC_DRAW);
+    void *pbuf = (void *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+
+    memcpy(pbuf, (const void *)fb, m_pboSize);
+
+    // unlock the pbo
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+            m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+    // force the widget to update its contents
+    Refresh(false);
+}
+
+// ----------------------------------------------------------------------------
+void RenderGL2::ClearFramebuffer(uint8_t value)
+{
+    // lock the pbo for write only access and copy over the framebuffer
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, m_pboSize, NULL, GL_DYNAMIC_DRAW);
+    void *pbuf = (void *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+
+    memset(pbuf, value, m_pboSize);
+
+    // unlock the pbo
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+            m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+    // force the widget to update its contents
+    Refresh(false);
+}
+
+// ----------------------------------------------------------------------------
+void RenderGL2::InitGL()
 {
     log_info("Initializing GLEW...\n");
 
@@ -121,82 +181,21 @@ void RenderWidget::InitGL()
     glGenBuffers(1, &m_pbo);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo);
 
+    // generate the vertex buffer
+    glGenBuffers(1, &m_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * 4, NULL, GL_STREAM_DRAW);
+
     ClearFramebuffer(0);
     SetSwapInterval(0);
 
+    UpdateDimensions();
     m_init = true;
 }
 
 // ----------------------------------------------------------------------------
-RenderWidget::~RenderWidget()
+void RenderGL2::UpdateDimensions()
 {
-}
-
-// ----------------------------------------------------------------------------
-void RenderWidget::SetEmulator(gbxThread *gbx)
-{
-    m_gbx = gbx;
-}
-
-// ----------------------------------------------------------------------------
-void RenderWidget::SetSwapInterval(int interval)
-{
-#ifdef PLATFORM_WIN32
-    if (WGLEW_EXT_swap_control)
-        wglSwapIntervalEXT(interval);
-    else
-        log_err("WGL_EXT_swap_control is not available\n");
-#elif defined(PLATFORM_UNIX)
-    if (GLXEW_SGI_swap_control)
-        glXSwapIntervalSGI(interval);
-    else
-        log_err("GLX_SGI_swap_control is not available\n");
-#else
-    log_err("vertical sync is not available on this platform\n");
-#endif 
-}
-
-// ----------------------------------------------------------------------------
-void RenderWidget::UpdateFramebuffer(const uint32_t *fb)
-{
-    // lock the pbo for write only access and copy over the framebuffer
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, m_pboSize, NULL, GL_DYNAMIC_DRAW);
-    void *pbuf = (void *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-
-    memcpy(pbuf, (const void *)fb, m_pboSize);
-
-    // unlock the pbo
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-            m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-    // force the widget to update its contents
-    Refresh(false);
-}
-
-// ----------------------------------------------------------------------------
-void RenderWidget::ClearFramebuffer(uint8_t value)
-{
-    // lock the pbo for write only access and copy over the framebuffer
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, m_pboSize, NULL, GL_DYNAMIC_DRAW);
-    void *pbuf = (void *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-
-    memset(pbuf, value, m_pboSize);
-
-    // unlock the pbo
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-            m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-    // force the widget to update its contents
-    Refresh(false);
-}
-
-// ----------------------------------------------------------------------------
-void RenderWidget::OnSize(wxSizeEvent &event)
-{
-    wxGLCanvas::OnSize(event);
-
     int client_width, client_height;
     GetClientSize(&client_width, &client_height);
     glViewport(0, 0, (GLint)client_width, (GLint)client_height);
@@ -220,18 +219,24 @@ void RenderWidget::OnSize(wxSizeEvent &event)
             m_y1 = ratio;
         }
     }
+}
 
+// ----------------------------------------------------------------------------
+void RenderGL2::OnSize(wxSizeEvent &event)
+{
+    wxGLCanvas::OnSize(event);
+    UpdateDimensions();
     Refresh(false);
 }
 
 // ----------------------------------------------------------------------------
-void RenderWidget::OnPaint(wxPaintEvent &event)
+void RenderGL2::OnPaint(wxPaintEvent &event)
 {
     SetCurrent(*m_context);
     if (!m_init)
         InitGL();
 
-    wxPaintDC(this);
+    wxPaintDC dc(this);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBegin(GL_QUADS);
@@ -245,23 +250,7 @@ void RenderWidget::OnPaint(wxPaintEvent &event)
 }
 
 // ----------------------------------------------------------------------------
-void RenderWidget::OnKeyDown(wxKeyEvent &event)
-{
-    KeyMap::iterator i = m_keymap.find(event.GetKeyCode());
-    if (m_keymap.end() != i)
-        m_gbx->SetInputState(i->second, 1);
-}
-
-// ----------------------------------------------------------------------------
-void RenderWidget::OnKeyUp(wxKeyEvent &event)
-{
-    KeyMap::iterator i = m_keymap.find(event.GetKeyCode());
-    if (m_keymap.end() != i)
-        m_gbx->SetInputState(i->second, 0);
-}
-
-// ----------------------------------------------------------------------------
-void RenderWidget::OnEraseBackground(wxEraseEvent &event)
+void RenderGL2::OnEraseBackground(wxEraseEvent &event)
 {
     // override EraseBackground to avoid flickering on some platforms
 }

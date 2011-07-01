@@ -18,57 +18,35 @@
 #ifndef GBOY_MAINFRAME__H
 #define GBOY_MAINFRAME__H
 
+#include <map>
 #include <wx/config.h>
 #include <wx/docview.h>
+#include <wx/notebook.h>
+#include <wx/xrc/xmlres.h>
 #include "gbxThread.h"
+#include "InputDialog.h"
 #include "RenderWidget.h"
+#include "resource.h"
 
-enum
+class MainFrame: public MainFrame_XRC
 {
-    ID_FILE_RECENT = wxID_HIGHEST + 1, 
-    ID_FILE_LOADSTATE,
-    ID_FILE_SAVESTATE,
-    ID_FILE_LOADQUICKSTATE,
-    ID_FILE_SAVEQUICKSTATE,
+    typedef std::map<int, int> KeyMap;
 
-    ID_FILE_SAVESLOT,
-    ID_FILE_SAVESLOT_LAST = ID_FILE_SAVESLOT + 9,
-
-    ID_RECENT_CLEAR,
-    ID_RECENT_LOCK,
-
-    ID_MACHINE_RESET,
-    ID_MACHINE_PAUSE,
-    ID_MACHINE_TURBO,
-    ID_MACHINE_STEP,
-
-    ID_SETTINGS_INPUT,
-    ID_SETTINGS_SOUND,
-    ID_SETTINGS_VIDEO,
-    ID_SETTINGS_FS,
-    ID_SETTINGS_VSYNC,
-
-    ID_VIEW_STATUSBAR,
-    ID_VIEW_TOOLBAR,
-    
-    ID_HELP_REPORTBUG,
-};
-
-class MainFrame: public wxFrame
-{
 public:
-    MainFrame(wxWindow *parent, const wxChar *title);
+    MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title);
     virtual ~MainFrame();
-
-    void SetConfig(wxConfig *config);
-    void SetEmulatorThread(gbxThread *gbx);
 
 protected:
     void SetupStatusBar();
-    void SetupMainMenu();
+    void SetupToolBar();
+    void SetupRecentList();
     void SetupEventHandlers();
 
+    void LoadConfiguration();
+    void SaveConfiguration();
+
     void LoadFile(const wxString &path);
+    void CreateRenderWidget(int type);
     void CreateEmulatorContext();
     void EmulatorEnabled(bool enable);
 
@@ -85,6 +63,10 @@ protected:
     void OnMachineToggleTurbo(wxCommandEvent &event);
     void OnMachineStep(wxCommandEvent &event);
 
+    void OnDisplayDialog(wxCommandEvent &event);
+    void OnInputDialog(wxCommandEvent &event);
+    void OnSoundDialog(wxCommandEvent &event);
+
     void OnToggleStatusbar(wxCommandEvent &event);
     void OnToggleToolbar(wxCommandEvent &event);
     void OnToggleFullscreen(wxCommandEvent &event);
@@ -97,24 +79,22 @@ protected:
     void OnGbxSpeedChange(wxCommandEvent &event);
     void OnGbxLcdEnabled(wxCommandEvent &event);
 
+    void OnKeyDown(wxKeyEvent &event);
+    void OnKeyUp(wxKeyEvent &event);
     void OnPerfTimerTick(wxTimerEvent &event);
     void OnEraseBackground(wxEraseEvent &event);
 
 protected:
-    wxMenuBar     *m_menuBar;
-    wxMenu        *m_fileMenu;
-    wxMenu        *m_recentMenu;
-    wxMenu        *m_slotMenu;
-    wxMenu        *m_machineMenu;
-    wxMenu        *m_settingsMenu;
-    wxMenu        *m_viewMenu;
-    wxMenu        *m_helpMenu;
     wxConfig      *m_config;
     wxFileHistory *m_recent;
     wxTimer       *m_perftimer;
     gbxThread     *m_gbx;
     RenderWidget  *m_render;
+    KeyMap         m_keymap;
     long           m_lastCycles;
+    int            m_outputModule;
+    int            m_filterType;
+    int            m_scaleType;
 };
 
 #endif // GBOY_MAINFRAME__H

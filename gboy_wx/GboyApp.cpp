@@ -17,12 +17,16 @@
 
 #include <wx/wx.h>
 #include <wx/cmdline.h>
+#include <wx/xrc/xmlres.h>
 #include "gbx.h"
 #include "GboyApp.h"
 #include "MainFrame.h"
 #include "gbxThread.h"
 
 IMPLEMENT_APP(GboyApp);
+
+// generated from the XRC compiler
+extern void InitXmlResource();
 
 static const wxCmdLineEntryDesc g_cmdLineDesc [] = {
     { wxCMD_LINE_SWITCH, wxT("b"), wxT("bios-dir"),
@@ -54,11 +58,13 @@ bool GboyApp::OnInit()
     if (!wxApp::OnInit())
         return false;
 
+    // initialize the xml resource system
+    wxXmlResource::Get()->InitAllHandlers();
+    InitXmlResource();
+
     wxConfig *config = new wxConfig(wxT("gboy_wx"));
 
-    MainFrame *frame = new MainFrame(NULL, wxT("gboy"));
-    frame->SetClientSize(wxSize(GBX_LCD_XRES << 1, GBX_LCD_YRES << 1));
-    frame->SetConfig(config);
+    MainFrame *frame = new MainFrame(NULL, config, wxT("gboy"));
     frame->Show(true);
 
     SetTopWindow(frame);

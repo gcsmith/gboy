@@ -15,20 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef GBOY_RENDERWIDGET__H
-#define GBOY_RENDERWIDGET__H
+#ifndef GBOY_SOUNDDIALOG__H
+#define GBOY_SOUNDDIALOG__H
 
-#include <wx/wx.h>
+#include "resource.h"
 
-class RenderWidget
+class SoundDialog: public SoundDialog_XRC
 {
 public:
-    virtual void SetStretchFilter(bool enable) = 0;
-    virtual void SetSwapInterval(int interval) = 0;
-    virtual void UpdateFramebuffer(const uint32_t *fb) = 0;
-    virtual void ClearFramebuffer(uint8_t value) = 0;
-    virtual wxWindow *Window() = 0;
+    SoundDialog(wxWindow *parent);
 };
 
-#endif // GBOY_RENDERWIDGET__H
+#endif // GBOY_SOUNDDIALOG__H
+
 

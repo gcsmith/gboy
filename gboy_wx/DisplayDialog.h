@@ -15,20 +15,26 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef GBOY_RENDERWIDGET__H
-#define GBOY_RENDERWIDGET__H
+#ifndef GBOY_DISPLAYDIALOG__H
+#define GBOY_DISPLAYDIALOG__H
 
-#include <wx/wx.h>
+#include "resource.h"
 
-class RenderWidget
+class DisplayDialog: public DisplayDialog_XRC
 {
 public:
-    virtual void SetStretchFilter(bool enable) = 0;
-    virtual void SetSwapInterval(int interval) = 0;
-    virtual void UpdateFramebuffer(const uint32_t *fb) = 0;
-    virtual void ClearFramebuffer(uint8_t value) = 0;
-    virtual wxWindow *Window() = 0;
+    DisplayDialog(wxWindow *parent);
+
+    void SetOutpoutModule(int index);
+    void SetFilterType(int index);
+    void SetScalingType(int index);
+    void SetFilterEnabled(bool enabled);
+
+    int OutputModule() const;
+    int FilterType() const;
+    int ScalingType() const;
+    bool FilterEnabled() const;
 };
 
-#endif // GBOY_RENDERWIDGET__H
+#endif // GBOY_DISPLAYDIALOG__H
 

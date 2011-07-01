@@ -54,7 +54,8 @@ void ext_sound_read(void *data, uint16_t addr, uint8_t *value)
 // ----------------------------------------------------------------------------
 gbxThread::gbxThread(wxEvtHandler *parent, int system)
 : wxThread(wxTHREAD_JOINABLE), m_parent(parent), m_pauseCond(m_pauseLock),
-  m_ctx(NULL), m_running(false), m_paused(false), m_throttle(true), m_error(0)
+  m_ctx(NULL), m_running(false), m_paused(false), m_throttle(true),
+  m_debugger(false), m_error(0)
 {
     if (gbx_create_context(&m_ctx, system))
         log_err("failed to create gbx context\n");
@@ -204,6 +205,7 @@ void gbxThread::SetDebuggerEnabled(bool enabled)
 {
     wxCriticalSectionLocker locker(m_cs);
     gbx_set_debugger(m_ctx, enabled ? 1 : 0);
+    m_debugger = enabled;
 }
 
 // ----------------------------------------------------------------------------
@@ -220,14 +222,28 @@ const uint32_t *gbxThread::Framebuffer() const
 }
 
 // ----------------------------------------------------------------------------
-long gbxThread::CycleCount()
+bool gbxThread::BatteryBacked() const
+{
+    wxCriticalSectionLocker locker(m_cs);
+    return (gbx_get_cart_features(m_ctx) & CART_BATTERY) ? true : false;
+}
+
+// ----------------------------------------------------------------------------
+bool gbxThread::DebuggerEnabled() const
+{
+    wxCriticalSectionLocker locker(m_cs);
+    return m_debugger;
+}
+
+// ----------------------------------------------------------------------------
+long gbxThread::CycleCount() const
 {
     wxCriticalSectionLocker locker(m_cs);
     return gbx_get_cycle_count(m_ctx);
 }
 
 // ----------------------------------------------------------------------------
-long gbxThread::ClockFrequency()
+long gbxThread::ClockFrequency() const
 {
     wxCriticalSectionLocker locker(m_cs);
     return gbx_get_clock_frequency(m_ctx);
@@ -238,12 +254,6 @@ void gbxThread::Reset()
 {
     wxCriticalSectionLocker locker(m_cs);
     gbx_power_on(m_ctx);
-}
-
-// ----------------------------------------------------------------------------
-bool gbxThread::Running() const
-{
-    return m_running;
 }
 
 // ----------------------------------------------------------------------------

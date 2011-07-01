@@ -15,20 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef GBOY_RENDERWIDGET__H
-#define GBOY_RENDERWIDGET__H
-
 #include <wx/wx.h>
+#include <wx/notebook.h>
+#include <wx/xrc/xmlres.h>
+#include "SoundDialog.h"
 
-class RenderWidget
+SoundDialog::SoundDialog(wxWindow *parent)
+: SoundDialog_XRC(parent)
 {
-public:
-    virtual void SetStretchFilter(bool enable) = 0;
-    virtual void SetSwapInterval(int interval) = 0;
-    virtual void UpdateFramebuffer(const uint32_t *fb) = 0;
-    virtual void ClearFramebuffer(uint8_t value) = 0;
-    virtual wxWindow *Window() = 0;
-};
-
-#endif // GBOY_RENDERWIDGET__H
+    m_outputModule->Append(wxT("Null"));
+    m_outputModule->Append(wxT("SDL"));
+    m_outputModule->SetFocus();
+}
 

@@ -398,6 +398,13 @@ long gbx_get_cycle_count(gbx_context_t *ctx)
 }
 
 // ----------------------------------------------------------------------------
+int gbx_get_cart_features(gbx_context_t *ctx)
+{
+    assert(NULL != ctx);
+    return ctx->cart_features;
+}
+
+// ----------------------------------------------------------------------------
 static void simulate_starting_state(gbx_context_t *ctx)
 {
     cpu_registers_t *r = &ctx->reg;
