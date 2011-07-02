@@ -8,7 +8,7 @@ project(gboy_wx)
 
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(wxWidgets REQUIRED COMPONENTS gl core base adv xrc)
+find_package(wxWidgets REQUIRED COMPONENTS gl core base adv xrc xml html)
 
 include(${wxWidgets_USE_FILE})
 
