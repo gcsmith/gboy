@@ -38,7 +38,7 @@ DisplayDialog::DisplayDialog(wxWindow *parent)
 }
 
 // ----------------------------------------------------------------------------
-void DisplayDialog::SetOutpoutModule(int index)
+void DisplayDialog::SetOutputModule(int index)
 {
     m_outputModule->SetSelection(index);
 }

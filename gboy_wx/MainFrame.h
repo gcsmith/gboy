@@ -91,10 +91,11 @@ protected:
     gbxThread     *m_gbx;
     RenderWidget  *m_render;
     KeyMap         m_keymap;
+    bool           m_filterEnable;
     long           m_lastCycles;
     int            m_outputModule;
     int            m_filterType;
-    int            m_scaleType;
+    int            m_scalingType;
 };
 
 #endif // GBOY_MAINFRAME__H

@@ -22,8 +22,8 @@
 
 // ----------------------------------------------------------------------------
 RenderBitmap::RenderBitmap(wxWindow *parent)
-: wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize),
-  m_xscale(1.0), m_yscale(1.0), m_filter(false)
+: wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize), m_xscale(1.0),
+  m_yscale(1.0), m_filterEnable(false), m_filterType(0), m_scalingType(0)
 {
     m_bmp = new wxBitmap(GBX_LCD_XRES, GBX_LCD_YRES);
     ClearFramebuffer(0);
@@ -34,6 +34,8 @@ RenderBitmap::RenderBitmap(wxWindow *parent)
             wxPaintEventHandler(RenderBitmap::OnPaint));
     Connect(wxID_ANY, wxEVT_ERASE_BACKGROUND,
             wxEraseEventHandler(RenderBitmap::OnEraseBackground));
+
+    log_info("Software renderer successfully initialized\n");
 }
 
 // ----------------------------------------------------------------------------
@@ -44,7 +46,19 @@ RenderBitmap::~RenderBitmap()
 // ----------------------------------------------------------------------------
 void RenderBitmap::SetStretchFilter(bool enable)
 {
-    m_filter = enable;
+    m_filterEnable = enable;
+}
+
+// ----------------------------------------------------------------------------
+void RenderBitmap::SetFilterType(int index)
+{
+    m_filterType = index;
+}
+
+// ----------------------------------------------------------------------------
+void RenderBitmap::SetScalingType(int index)
+{
+    m_scalingType = index;
 }
 
 // ----------------------------------------------------------------------------
@@ -113,7 +127,7 @@ void RenderBitmap::OnPaint(wxPaintEvent &event)
 {
     wxPaintDC dc(this);
 
-    if (m_filter) {
+    if (m_filterEnable) {
         dc.SetUserScale(m_xscale, m_yscale);
         dc.DrawBitmap(*m_bmp, 0, 0, false);
     }

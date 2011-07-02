@@ -23,10 +23,18 @@
 class RenderWidget
 {
 public:
-    virtual void SetStretchFilter(bool enable) = 0;
-    virtual void SetSwapInterval(int interval) = 0;
     virtual void UpdateFramebuffer(const uint32_t *fb) = 0;
     virtual void ClearFramebuffer(uint8_t value) = 0;
+
+    virtual void SetStretchFilter(bool enable) = 0;
+    virtual void SetFilterType(int index) = 0;
+    virtual void SetScalingType(int index) = 0;
+    virtual void SetSwapInterval(int interval) = 0;
+
+    virtual bool StretchFilter() = 0;
+    virtual int FilterType() = 0;
+    virtual int ScalingType() = 0;
+    virtual int SwapInterval() = 0;
     virtual wxWindow *Window() = 0;
 };
 

@@ -27,10 +27,18 @@ public:
     RenderBitmap(wxWindow *parent);
     virtual ~RenderBitmap();
 
-    virtual void SetStretchFilter(bool enable);
-    virtual void SetSwapInterval(int interval);
     virtual void UpdateFramebuffer(const uint32_t *fb);
     virtual void ClearFramebuffer(uint8_t value);
+
+    virtual void SetStretchFilter(bool enable);
+    virtual void SetFilterType(int index);
+    virtual void SetScalingType(int index);
+    virtual void SetSwapInterval(int interval);
+
+    virtual bool StretchFilter() { return m_filterEnable; }
+    virtual int FilterType() { return m_filterType; }
+    virtual int ScalingType() { return m_scalingType; }
+    virtual int SwapInterval() { return 0; }
     virtual wxWindow *Window() { return this; }
 
 protected:
@@ -42,7 +50,9 @@ protected:
     wxBitmap *m_bmp;
     double m_xscale;
     double m_yscale;
-    bool m_filter;
+    bool m_filterEnable;
+    int m_filterType;
+    int m_scalingType;
 };
 
 #endif // GBOY_RENDERBITMAP__H

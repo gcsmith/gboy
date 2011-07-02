@@ -27,10 +27,18 @@ public:
     RenderGL2(wxWindow *parent, wxGLContext *context, int *attrib);
     virtual ~RenderGL2();
 
-    virtual void SetStretchFilter(bool enable);
-    virtual void SetSwapInterval(int interval);
     virtual void UpdateFramebuffer(const uint32_t *fb);
     virtual void ClearFramebuffer(uint8_t value);
+
+    virtual void SetStretchFilter(bool enable);
+    virtual void SetFilterType(int index);
+    virtual void SetScalingType(int index);
+    virtual void SetSwapInterval(int interval);
+
+    virtual bool StretchFilter() { return m_filterEnable; }
+    virtual int FilterType() { return m_filterType; }
+    virtual int ScalingType() { return m_scalingType; }
+    virtual int SwapInterval() { return 0; }
     virtual wxWindow *Window() { return this; }
 
 protected:
@@ -43,15 +51,16 @@ protected:
 
 protected:
     wxGLContext *m_context;
-    bool m_init;
     bool m_stretch;
-    bool m_filter;
+    bool m_filterEnable;
     GLuint m_vbo;
     GLuint m_pbo;
     GLuint m_texture;
     int m_width, m_height;
     int m_pboSize;
     int m_textureDim;
+    int m_filterType;
+    int m_scalingType;
     float m_tu, m_tv;
     float m_x0, m_y0, m_x1, m_y1;
 };

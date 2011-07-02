@@ -25,7 +25,7 @@ class DisplayDialog: public DisplayDialog_XRC
 public:
     DisplayDialog(wxWindow *parent);
 
-    void SetOutpoutModule(int index);
+    void SetOutputModule(int index);
     void SetFilterType(int index);
     void SetScalingType(int index);
     void SetFilterEnabled(bool enabled);

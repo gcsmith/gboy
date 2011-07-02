@@ -48,7 +48,8 @@ unsigned int tex_pow2(unsigned int width, unsigned int height)
 // ----------------------------------------------------------------------------
 RenderGL2::RenderGL2(wxWindow *parent, wxGLContext *context, int *attrib)
 : wxGLCanvas(parent, wxID_ANY, attrib, wxDefaultPosition, wxDefaultSize),
-  m_context(context), m_init(false), m_stretch(false), m_filter(false)
+  m_context(context), m_stretch(false), m_filterEnable(false), m_filterType(0),
+  m_scalingType(0)
 {
     if (!m_context)
         m_context = new wxGLContext(this);
@@ -62,11 +63,16 @@ RenderGL2::RenderGL2(wxWindow *parent, wxGLContext *context, int *attrib)
 
     m_width  = GBX_LCD_XRES;
     m_height = GBX_LCD_YRES;
+
+    SetCurrent(*m_context);
+    InitGL();
 }
 
 // ----------------------------------------------------------------------------
 RenderGL2::~RenderGL2()
 {
+    SetCurrent(*m_context);
+
     glDeleteBuffers(1, &m_vbo);
     glDeleteBuffers(1, &m_pbo);
     glDeleteTextures(1, &m_texture);
@@ -75,12 +81,26 @@ RenderGL2::~RenderGL2()
 // ----------------------------------------------------------------------------
 void RenderGL2::SetStretchFilter(bool enable)
 {
-    m_filter = enable;
+    m_filterEnable = enable;
+}
+
+// ----------------------------------------------------------------------------
+void RenderGL2::SetFilterType(int index)
+{
+    m_filterType = index;
+}
+
+// ----------------------------------------------------------------------------
+void RenderGL2::SetScalingType(int index)
+{
+    m_scalingType = index;
 }
 
 // ----------------------------------------------------------------------------
 void RenderGL2::SetSwapInterval(int interval)
 {
+    SetCurrent(*m_context);
+
 #ifdef PLATFORM_WIN32
     if (WGLEW_EXT_swap_control)
         wglSwapIntervalEXT(interval);
@@ -99,6 +119,8 @@ void RenderGL2::SetSwapInterval(int interval)
 // ----------------------------------------------------------------------------
 void RenderGL2::UpdateFramebuffer(const uint32_t *fb)
 {
+    SetCurrent(*m_context);
+
     // lock the pbo for write only access and copy over the framebuffer
     glBufferData(GL_PIXEL_UNPACK_BUFFER, m_pboSize, NULL, GL_DYNAMIC_DRAW);
     void *pbuf = (void *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
@@ -117,6 +139,8 @@ void RenderGL2::UpdateFramebuffer(const uint32_t *fb)
 // ----------------------------------------------------------------------------
 void RenderGL2::ClearFramebuffer(uint8_t value)
 {
+    SetCurrent(*m_context);
+
     // lock the pbo for write only access and copy over the framebuffer
     glBufferData(GL_PIXEL_UNPACK_BUFFER, m_pboSize, NULL, GL_DYNAMIC_DRAW);
     void *pbuf = (void *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
@@ -135,8 +159,6 @@ void RenderGL2::ClearFramebuffer(uint8_t value)
 // ----------------------------------------------------------------------------
 void RenderGL2::InitGL()
 {
-    log_info("Initializing GLEW...\n");
-
     GLint rc = glewInit();
     if (GLEW_OK != rc)
         log_err("failed to initialize GLEW (%s)\n", glewGetErrorString(rc));
@@ -186,11 +208,11 @@ void RenderGL2::InitGL()
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * 4, NULL, GL_STREAM_DRAW);
 
-    ClearFramebuffer(0);
-    SetSwapInterval(0);
+    log_info("OpenGL2 renderer successfully initialized\n");
 
+    SetSwapInterval(0);
+    ClearFramebuffer(0);
     UpdateDimensions();
-    m_init = true;
 }
 
 // ----------------------------------------------------------------------------
@@ -198,6 +220,8 @@ void RenderGL2::UpdateDimensions()
 {
     int client_width, client_height;
     GetClientSize(&client_width, &client_height);
+
+    SetCurrent(*m_context);
     glViewport(0, 0, (GLint)client_width, (GLint)client_height);
 
     m_x0 = m_y0 = -1.0f;
@@ -232,11 +256,9 @@ void RenderGL2::OnSize(wxSizeEvent &event)
 // ----------------------------------------------------------------------------
 void RenderGL2::OnPaint(wxPaintEvent &event)
 {
-    SetCurrent(*m_context);
-    if (!m_init)
-        InitGL();
-
     wxPaintDC dc(this);
+
+    SetCurrent(*m_context);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBegin(GL_QUADS);

@@ -194,6 +194,13 @@ void gbxThread::SetPaused(bool paused)
 }
 
 // ----------------------------------------------------------------------------
+bool gbxThread::Paused() const
+{
+    wxCriticalSectionLocker locker(m_cs);
+    return m_paused;
+}
+
+// ----------------------------------------------------------------------------
 void gbxThread::SetThrottleEnabled(bool throttle)
 {
     wxCriticalSectionLocker locker(m_cs);

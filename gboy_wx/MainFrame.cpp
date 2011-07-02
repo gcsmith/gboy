@@ -27,8 +27,7 @@
 // ----------------------------------------------------------------------------
 MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title)
 : MainFrame_XRC(parent), m_config(config), m_recent(NULL), m_perftimer(NULL),
-  m_gbx(NULL), m_render(NULL), m_lastCycles(0), m_outputModule(0),
-  m_filterType(0), m_scaleType(0)
+  m_gbx(NULL), m_render(NULL), m_lastCycles(0)
 {
     SetTitle(title);
     SetupStatusBar();
@@ -36,11 +35,11 @@ MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title)
     SetupRecentList();
     SetupEventHandlers();
 
+    EmulatorEnabled(false);
     LoadConfiguration();
 
     CreateRenderWidget(m_outputModule);
     CreateEmulatorContext();
-    EmulatorEnabled(false);
 
     // create a timer firing at one second intervals to report cycles/second
     m_perftimer = new wxTimer(this);
@@ -86,10 +85,10 @@ void MainFrame::LoadConfiguration()
 
     // load window related settings
     m_config->SetPath(wxT("/window"));
-    m_config->Read(wxT("show_statusbar"), &showStatusBar);
-    m_config->Read(wxT("show_toolbar"), &showToolBar);
-    m_config->Read(wxT("resolution_x"), &width);
-    m_config->Read(wxT("resolution_y"), &height);
+    m_config->Read(wxT("show_statusbar"), &showStatusBar, true);
+    m_config->Read(wxT("show_toolbar"), &showToolBar, true);
+    m_config->Read(wxT("resolution_x"), &width, GBX_LCD_XRES * 3);
+    m_config->Read(wxT("resolution_y"), &height, GBX_LCD_YRES * 3);
 
     GetMenuBar()->Check(XRCID("menu_view_statusbar"), showStatusBar);
     GetMenuBar()->Check(XRCID("menu_view_toolbar"), showToolBar);
@@ -101,9 +100,10 @@ void MainFrame::LoadConfiguration()
 
     // load display related settings
     m_config->SetPath(wxT("/display"));
-    m_config->Read(wxT("output_module"), &m_outputModule);
-    m_config->Read(wxT("filter_type"), &m_filterType);
-    m_config->Read(wxT("scale_type"), &m_scaleType);
+    m_config->Read(wxT("output_module"), &m_outputModule, 0);
+    m_config->Read(wxT("filter_enable"), &m_filterEnable, false);
+    m_config->Read(wxT("filter_type"), &m_filterType, 0);
+    m_config->Read(wxT("scale_type"), &m_scalingType, 0);
 
     // load recent file list
     m_config->SetPath(wxT("/mru"));
@@ -129,8 +129,9 @@ void MainFrame::SaveConfiguration()
     // save display related settings
     m_config->SetPath(wxT("/display"));
     m_config->Write(wxT("output_module"), m_outputModule);
-    m_config->Write(wxT("filter_type"), m_filterType);
-    m_config->Write(wxT("scale_type"), m_scaleType);
+    m_config->Write(wxT("filter_enable"), m_render->StretchFilter());
+    m_config->Write(wxT("filter_type"), m_render->FilterType());
+    m_config->Write(wxT("scale_type"), m_render->ScalingType());
 
     // save recent file list
     m_config->SetPath(wxT("/mru"));
@@ -255,21 +256,38 @@ void MainFrame::CreateRenderWidget(int type)
 {
     int attrib_list[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, 0 };
 
+    if (m_render) {
+        // XXX: this is ugly, but delete operator is unsafe on a wxWindow
+        m_filterEnable = m_render->StretchFilter();
+        m_filterType = m_render->FilterType();
+        m_scalingType = m_render->ScalingType();
+        m_render->Window()->Destroy();
+    }
+
+
     switch (type) {
     default:
     case 0:
         m_render = new RenderBitmap(this);
         break;
     case 1:
+        // need to force window visibility here so the GL context can be used
+        Show(true);
         m_render = new RenderGL2(this, NULL, attrib_list);
         break;
     }
+
+    m_render->SetStretchFilter(m_filterEnable);
+    m_render->SetFilterType(m_filterType);
+    m_render->SetScalingType(m_scalingType);
 
     // have the main frame handle keyboard events sent to the render panel
     m_render->Window()->Connect(wxID_ANY, wxEVT_KEY_DOWN,
             wxKeyEventHandler(MainFrame::OnKeyDown), NULL, this);
     m_render->Window()->Connect(wxID_ANY, wxEVT_KEY_UP,
             wxKeyEventHandler(MainFrame::OnKeyUp), NULL, this);
+
+    m_render->Window()->SetSize(GetClientSize());
     m_render->Window()->SetFocus();
 }
 
@@ -408,10 +426,30 @@ void MainFrame::OnSoundDialog(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnDisplayDialog(wxCommandEvent &event)
 {
+    bool paused = m_gbx->Paused();
+    m_gbx->SetPaused(true);
+
+    // create and initialize display dialog based on current settings
     DisplayDialog *dialog = new DisplayDialog(this);
+
+    dialog->SetOutputModule(m_outputModule);
+    dialog->SetFilterEnabled(m_render->StretchFilter());
+    dialog->SetFilterType(m_render->FilterType());
+    dialog->SetScalingType(m_render->ScalingType());
+
     if (wxID_OK == dialog->ShowModal()) {
-        // commit display settings
+        // commit updated settings
+        if (m_outputModule != dialog->OutputModule()) {
+            m_outputModule = dialog->OutputModule();
+            CreateRenderWidget(m_outputModule);
+        }
+
+        m_render->SetStretchFilter(dialog->FilterEnabled());
+        m_render->SetFilterType(dialog->FilterType());
+        m_render->SetScalingType(dialog->ScalingType());
     }
+
+    m_gbx->SetPaused(paused);
 }
 
 // ----------------------------------------------------------------------------
