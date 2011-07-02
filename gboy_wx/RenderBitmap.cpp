@@ -92,7 +92,7 @@ BitmapWidget::BitmapWidget(wxWindow *parent)
 : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize), m_xscale(1.0),
   m_yscale(1.0), m_filterEnable(false), m_filterType(0), m_scalingType(0)
 {
-    m_bmp = new wxBitmap(GBX_LCD_XRES, GBX_LCD_YRES);
+    m_bmp = new wxBitmap(GBX_LCD_XRES, GBX_LCD_YRES, 24);
     ClearFramebuffer(0);
 
     Connect(wxID_ANY, wxEVT_SIZE,

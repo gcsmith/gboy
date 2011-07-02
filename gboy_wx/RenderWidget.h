@@ -24,6 +24,8 @@
 class RenderWidget
 {
 public:
+    virtual ~RenderWidget() { }
+
     virtual void Create(wxWindow *parent) = 0;
     virtual void UpdateFramebuffer(const uint32_t *fb) = 0;
     virtual void ClearFramebuffer(uint8_t value) = 0;
