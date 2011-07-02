@@ -64,7 +64,7 @@ bool GboyApp::OnInit()
 
     wxConfig *config = new wxConfig(wxT("gboy_wx"));
 
-    MainFrame *frame = new MainFrame(NULL, config, wxT("gboy"));
+    MainFrame *frame = new MainFrame(NULL, config, wxT("gboy " GBOY_VER_STR));
     frame->Show(true);
 
     SetTopWindow(frame);

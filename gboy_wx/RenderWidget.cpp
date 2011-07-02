@@ -15,32 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef GBOY_RENDERWIDGET__H
-#define GBOY_RENDERWIDGET__H
+#include "RenderWidget.h"
 
-#include "common.h"
-#include <wx/wx.h>
+extern RenderWidget *AllocateRenderBitmap();
+extern RenderWidget *AllocateRenderGL2();
 
-class RenderWidget
+RenderWidget *RenderWidget::Allocate(int index)
 {
-public:
-    virtual void Create(wxWindow *parent) = 0;
-    virtual void UpdateFramebuffer(const uint32_t *fb) = 0;
-    virtual void ClearFramebuffer(uint8_t value) = 0;
-
-    virtual void SetStretchFilter(bool enable) = 0;
-    virtual void SetFilterType(int index) = 0;
-    virtual void SetScalingType(int index) = 0;
-    virtual void SetSwapInterval(int interval) = 0;
-
-    virtual bool StretchFilter() = 0;
-    virtual int FilterType() = 0;
-    virtual int ScalingType() = 0;
-    virtual int SwapInterval() = 0;
-    virtual wxWindow *Window() = 0;
-
-    static RenderWidget *Allocate(int index);
-};
-
-#endif // GBOY_RENDERWIDGET__H
+    switch (index) {
+    default:
+    case 0:
+        return AllocateRenderBitmap();
+    case 1:
+        return AllocateRenderGL2();
+    }
+}
 

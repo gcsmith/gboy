@@ -28,8 +28,6 @@ set(gboy_wx_hdr
     GboyApp.h
     InputDialog.h
     MainFrame.h
-    RenderBitmap.h
-    RenderGL2.h
     RenderWidget.h
     SoundDialog.h
 )
@@ -40,6 +38,7 @@ set(gboy_wx_src
     GboyApp.cpp
     InputDialog.cpp
     MainFrame.cpp
+    RenderWidget.cpp
     RenderBitmap.cpp
     RenderGL2.cpp
     SoundDialog.cpp

@@ -18,11 +18,6 @@
 #ifndef GBOY_CMDLINE__H
 #define GBOY_CMDLINE__H
 
-extern const char *gboy_desc;
-extern const char *gboy_usage;
-extern const char *gboy_ver;
-extern const char *gboy_title;
-
 typedef struct cmdargs {
     int system;         // type of system to emulate
     int debugger;       // enable debugging interface

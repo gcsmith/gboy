@@ -21,8 +21,9 @@
 #elif defined(PLATFORM_UNIX)
 #include <GL/glxew.h>
 #endif
+#include <wx/glcanvas.h>
 #include "gbx.h"
-#include "RenderGL2.h"
+#include "RenderWidget.h"
 
 typedef struct vertex {
     float x, y, z;
@@ -45,8 +46,92 @@ unsigned int tex_pow2(unsigned int width, unsigned int height)
     return value;
 }
 
+class GL2Widget: public wxGLCanvas
+{
+public:
+    GL2Widget(wxWindow *parent, wxGLContext *context, int *attrib);
+    virtual ~GL2Widget();
+
+    void UpdateFramebuffer(const uint32_t *fb);
+    void ClearFramebuffer(uint8_t value);
+
+    void SetStretchFilter(bool enable) { m_filterEnable = enable; }
+    void SetFilterType(int index) { m_filterType = index; }
+    void SetScalingType(int index) { m_scalingType = index; }
+    void SetSwapInterval(int interval);
+
+    bool StretchFilter() { return m_filterEnable; }
+    int FilterType() { return m_filterType; }
+    int ScalingType() { return m_scalingType; }
+    int SwapInterval() { return m_swapInterval; }
+
+protected:
+    void InitGL();
+    void UpdateDimensions();
+
+    void OnSize(wxSizeEvent &event);
+    void OnPaint(wxPaintEvent &event);
+    void OnEraseBackground(wxEraseEvent &event);
+
+protected:
+    wxGLContext *m_context;
+    bool m_stretch;
+    bool m_filterEnable;
+    GLuint m_vbo;
+    GLuint m_pbo;
+    GLuint m_texture;
+    int m_width, m_height;
+    int m_pboSize;
+    int m_textureDim;
+    int m_filterType;
+    int m_scalingType;
+    int m_swapInterval;
+    float m_tu, m_tv;
+    float m_x0, m_y0, m_x1, m_y1;
+};
+
+class RenderGL2: public RenderWidget
+{
+public:
+    RenderGL2() : m_panel(NULL) { }
+    virtual ~RenderGL2() { m_panel->Destroy(); }
+
+    virtual void Create(wxWindow *parent) {
+        int attrib_list[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, 0 };
+        parent->Show(true); // XXX: must be visible to access context
+        m_panel = new GL2Widget(parent, NULL, attrib_list);
+    }
+    virtual void UpdateFramebuffer(const uint32_t *fb) {
+        m_panel->UpdateFramebuffer(fb);
+    }
+    virtual void ClearFramebuffer(uint8_t value) {
+        m_panel->ClearFramebuffer(value);
+    }
+    virtual void SetStretchFilter(bool enable) {
+        m_panel->SetStretchFilter(enable);
+    }
+    virtual void SetFilterType(int index) {
+        m_panel->SetFilterType(index);
+    }
+    virtual void SetScalingType(int index) {
+        m_panel->SetScalingType(index);
+    }
+    virtual void SetSwapInterval(int interval) {
+        m_panel->SetSwapInterval(interval);
+    }
+
+    virtual bool StretchFilter() { return m_panel->StretchFilter(); }
+    virtual int FilterType()     { return m_panel->FilterType(); }
+    virtual int ScalingType()    { return m_panel->ScalingType(); }
+    virtual int SwapInterval()   { return m_panel->SwapInterval(); }
+    virtual wxWindow *Window()   { return m_panel; }
+
+protected:
+    GL2Widget *m_panel;
+};
+
 // ----------------------------------------------------------------------------
-RenderGL2::RenderGL2(wxWindow *parent, wxGLContext *context, int *attrib)
+GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context, int *attrib)
 : wxGLCanvas(parent, wxID_ANY, attrib, wxDefaultPosition, wxDefaultSize),
   m_context(context), m_stretch(false), m_filterEnable(false), m_filterType(0),
   m_scalingType(0)
@@ -55,11 +140,11 @@ RenderGL2::RenderGL2(wxWindow *parent, wxGLContext *context, int *attrib)
         m_context = new wxGLContext(this);
 
     Connect(wxID_ANY, wxEVT_SIZE,
-            wxSizeEventHandler(RenderGL2::OnSize));
+            wxSizeEventHandler(GL2Widget::OnSize));
     Connect(wxID_ANY, wxEVT_PAINT,
-            wxPaintEventHandler(RenderGL2::OnPaint));
+            wxPaintEventHandler(GL2Widget::OnPaint));
     Connect(wxID_ANY, wxEVT_ERASE_BACKGROUND,
-            wxEraseEventHandler(RenderGL2::OnEraseBackground));
+            wxEraseEventHandler(GL2Widget::OnEraseBackground));
 
     m_width  = GBX_LCD_XRES;
     m_height = GBX_LCD_YRES;
@@ -69,7 +154,7 @@ RenderGL2::RenderGL2(wxWindow *parent, wxGLContext *context, int *attrib)
 }
 
 // ----------------------------------------------------------------------------
-RenderGL2::~RenderGL2()
+GL2Widget::~GL2Widget()
 {
     SetCurrent(*m_context);
 
@@ -79,27 +164,10 @@ RenderGL2::~RenderGL2()
 }
 
 // ----------------------------------------------------------------------------
-void RenderGL2::SetStretchFilter(bool enable)
-{
-    m_filterEnable = enable;
-}
-
-// ----------------------------------------------------------------------------
-void RenderGL2::SetFilterType(int index)
-{
-    m_filterType = index;
-}
-
-// ----------------------------------------------------------------------------
-void RenderGL2::SetScalingType(int index)
-{
-    m_scalingType = index;
-}
-
-// ----------------------------------------------------------------------------
-void RenderGL2::SetSwapInterval(int interval)
+void GL2Widget::SetSwapInterval(int interval)
 {
     SetCurrent(*m_context);
+    m_swapInterval = interval;
 
 #ifdef PLATFORM_WIN32
     if (WGLEW_EXT_swap_control)
@@ -117,7 +185,7 @@ void RenderGL2::SetSwapInterval(int interval)
 }
 
 // ----------------------------------------------------------------------------
-void RenderGL2::UpdateFramebuffer(const uint32_t *fb)
+void GL2Widget::UpdateFramebuffer(const uint32_t *fb)
 {
     SetCurrent(*m_context);
 
@@ -137,7 +205,7 @@ void RenderGL2::UpdateFramebuffer(const uint32_t *fb)
 }
 
 // ----------------------------------------------------------------------------
-void RenderGL2::ClearFramebuffer(uint8_t value)
+void GL2Widget::ClearFramebuffer(uint8_t value)
 {
     SetCurrent(*m_context);
 
@@ -157,7 +225,7 @@ void RenderGL2::ClearFramebuffer(uint8_t value)
 }
 
 // ----------------------------------------------------------------------------
-void RenderGL2::InitGL()
+void GL2Widget::InitGL()
 {
     GLint rc = glewInit();
     if (GLEW_OK != rc)
@@ -216,7 +284,7 @@ void RenderGL2::InitGL()
 }
 
 // ----------------------------------------------------------------------------
-void RenderGL2::UpdateDimensions()
+void GL2Widget::UpdateDimensions()
 {
     int client_width, client_height;
     GetClientSize(&client_width, &client_height);
@@ -246,7 +314,7 @@ void RenderGL2::UpdateDimensions()
 }
 
 // ----------------------------------------------------------------------------
-void RenderGL2::OnSize(wxSizeEvent &event)
+void GL2Widget::OnSize(wxSizeEvent &event)
 {
     wxGLCanvas::OnSize(event);
     UpdateDimensions();
@@ -254,7 +322,7 @@ void RenderGL2::OnSize(wxSizeEvent &event)
 }
 
 // ----------------------------------------------------------------------------
-void RenderGL2::OnPaint(wxPaintEvent &event)
+void GL2Widget::OnPaint(wxPaintEvent &event)
 {
     wxPaintDC dc(this);
 
@@ -272,8 +340,14 @@ void RenderGL2::OnPaint(wxPaintEvent &event)
 }
 
 // ----------------------------------------------------------------------------
-void RenderGL2::OnEraseBackground(wxEraseEvent &event)
+void GL2Widget::OnEraseBackground(wxEraseEvent &event)
 {
     // override EraseBackground to avoid flickering on some platforms
+}
+
+// ----------------------------------------------------------------------------
+RenderWidget *AllocateRenderGL2()
+{
+    return new RenderGL2();
 }
 

@@ -27,3 +27,11 @@
 #cmakedefine ENABLE_LOG_DBG
 #cmakedefine ENABLE_LOG_SPEW
 
+#define GBOY_VER_MAJ  "@GBOY_VER_MAJ@"
+#define GBOY_VER_MIN  "@GBOY_VER_MIN@"
+#define GBOY_VER_REV  "@GBOY_VER_REV@"
+#define GBOY_VER_HGID "@GBOY_VER_HGID@"
+
+#define GBOY_VER_STR  GBOY_VER_MAJ "." GBOY_VER_MIN "." GBOY_VER_REV
+#define GBOY_ID_STR   GBOY_VER_STR ":" GBOY_VER_HGID
+

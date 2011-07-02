@@ -21,8 +21,7 @@
 #include "DisplayDialog.h"
 #include "InputDialog.h"
 #include "SoundDialog.h"
-#include "RenderBitmap.h"
-#include "RenderGL2.h"
+#include "RenderWidget.h"
 
 // ----------------------------------------------------------------------------
 MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title)
@@ -254,28 +253,15 @@ void MainFrame::LoadFile(const wxString &path)
 // ----------------------------------------------------------------------------
 void MainFrame::CreateRenderWidget(int type)
 {
-    int attrib_list[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, 0 };
-
     if (m_render) {
-        // XXX: this is ugly, but delete operator is unsafe on a wxWindow
         m_filterEnable = m_render->StretchFilter();
         m_filterType = m_render->FilterType();
         m_scalingType = m_render->ScalingType();
-        m_render->Window()->Destroy();
+        delete m_render;
     }
 
-
-    switch (type) {
-    default:
-    case 0:
-        m_render = new RenderBitmap(this);
-        break;
-    case 1:
-        // need to force window visibility here so the GL context can be used
-        Show(true);
-        m_render = new RenderGL2(this, NULL, attrib_list);
-        break;
-    }
+    m_render = RenderWidget::Allocate(type);
+    m_render->Create(this);
 
     m_render->SetStretchFilter(m_filterEnable);
     m_render->SetFilterType(m_filterType);
@@ -507,7 +493,7 @@ void MainFrame::OnAbout(wxCommandEvent &event)
 {
     wxAboutDialogInfo info;
     info.SetName(wxT("gboy"));
-    info.SetVersion(wxT("0.1-dev"));
+    info.SetVersion(wxT(GBOY_ID_STR));
     info.SetDescription(wxT("A portable Nintendo Game Boy emulator."));
     info.SetCopyright(wxT("(C) 2011 Garrett Smith"));
     info.SetLicense(License_GPLV2);

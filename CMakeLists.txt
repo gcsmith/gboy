@@ -30,10 +30,28 @@ set(GBOY_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 set(CMAKE_MODULE_PATH ${GBOY_MODULE_PATH} ${CMAKE_MODULE_PATH})
 set(GNULIB_DIR "${CMAKE_SOURCE_DIR}/gnulib")
 
+# detect the platform and architecture
+
 include(${GBOY_MODULE_PATH}/DetectPlatform.cmake)
 include(${GBOY_MODULE_PATH}/DetectArchitecture.cmake)
-include(CheckIncludeFiles)
 
+# encode version number as <major>.<minor>.<revision>:<changeset>
+
+set(GBOY_VER_MAJ "0")
+set(GBOY_VER_MIN "0")
+set(GBOY_VER_REV "1")
+
+find_package(Mercurial)
+if (MERCURIAL_FOUND)
+    MERCURIAL_HG_INFO(${PROJECT_SOURCE_DIR} gboy)
+    set(GBOY_VER_HGID ${gboy_HG_ID})
+else(MERCURIAL_FOUND)
+    set(GBOY_VER_HGID "?hgid?")
+endif(MERCURIAL_FOUND)
+
+# perform configuration and generate config.h file
+
+include(CheckIncludeFiles)
 check_include_files(intrin.h HAVE_INTRIN_H)
 check_include_files(stdint.h HAVE_STDINT_H)
 

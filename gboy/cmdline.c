@@ -32,10 +32,8 @@
 #define CMDLINE_LOG_SERIAL      1006
 #define CMDLINE_NO_SOUND        1007
 
-const char *gboy_desc  = "gboy - a portable gameboy emulator";
-const char *gboy_usage = "usage: gboy [options] [file]";
-const char *gboy_ver   = "0.1-dev";
-const char *gboy_title = "gboy 0.1-dev";
+const char *gboy_desc   = "gboy - a portable gameboy emulator";
+const char *gboy_usage  = "usage: gboy [options] [file]";
 
 // ----------------------------------------------------------------------------
 void cmdline_display_usage(void)
@@ -65,7 +63,7 @@ void cmdline_display_usage(void)
 // ----------------------------------------------------------------------------
 void cmdline_display_version(void)
 {
-    log_info("gboy %s\n", gboy_ver);
+    log_info("gboy %s\n", GBOY_ID_STR);
     log_info("compiled %s %s\n", __DATE__, __TIME__);
     exit(EXIT_FAILURE);
 }

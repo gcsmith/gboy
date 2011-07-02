@@ -25,6 +25,8 @@
 #include "graphics.h"
 #include "sound.h"
 
+#define GBOY_TITLE "gboy " GBOY_VER_STR
+
 #define GBOY_EVENT_SYNC 0
 #define GBOY_EVENT_PERF 1
 
@@ -271,7 +273,7 @@ int create_sdl_window(window_state_t *ws, cmdargs_t *ca)
         flags |= SDL_WINDOW_FULLSCREEN;
 
     // create the application window
-    ws->wnd = SDL_CreateWindow(gboy_title, SDL_WINDOWPOS_UNDEFINED,
+    ws->wnd = SDL_CreateWindow(GBOY_TITLE, SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, ws->width, ws->height, flags);
     if (NULL == ws->wnd) {
         log_err("failed to create SDL window (%s)\n", SDL_GetError());
@@ -330,7 +332,7 @@ int process_window_events(gbx_thread_t *gt, window_state_t *ws)
                 // report frequency and % target speed in window title
                 cps = (size_t)event.user.data1;
                 pct = (long)(100.0f * cps / 4194304.0f + 0.5f);
-                snprintf(buffer, 64, "%s [%ldHz %ld%%]", gboy_title, cps, pct);
+                snprintf(buffer, 64, "%s [%ldHz %ld%%]", GBOY_TITLE, cps, pct);
                 SDL_SetWindowTitle(ws->wnd, buffer);
                 break;
             case GBOY_EVENT_SYNC:
