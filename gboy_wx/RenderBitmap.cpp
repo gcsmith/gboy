@@ -16,6 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <wx/bitmap.h>
+#include <wx/brush.h>
+#include <wx/dcbuffer.h>
 #include <wx/rawbmp.h>
 #include "gbx.h"
 #include "RenderWidget.h"
@@ -45,8 +47,6 @@ protected:
 
 protected:
     wxBitmap *m_bmp;
-    double m_xscale;
-    double m_yscale;
     bool m_filterEnable;
     int m_filterType;
     int m_scalingType;
@@ -93,11 +93,13 @@ protected:
 
 // ----------------------------------------------------------------------------
 BitmapWidget::BitmapWidget(wxWindow *parent)
-: wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize), m_xscale(1.0),
-  m_yscale(1.0), m_filterEnable(false), m_filterType(0), m_scalingType(0)
+: wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS),
+  m_filterEnable(false), m_filterType(0), m_scalingType(0)
 {
     m_bmp = new wxBitmap(GBX_LCD_XRES, GBX_LCD_YRES, 24);
     ClearFramebuffer(0);
+
+    SetBackgroundStyle(wxBG_STYLE_CUSTOM);
     SetBackgroundColour(wxColour(0, 0, 0));
 
     Connect(wxID_ANY, wxEVT_SIZE,
@@ -155,7 +157,7 @@ void BitmapWidget::UpdateFramebuffer(const uint32_t *fb)
         p.OffsetY(data, 1);
     }
 
-    Refresh(false);
+    Refresh(true);
 }
 
 // ----------------------------------------------------------------------------
@@ -176,7 +178,7 @@ void BitmapWidget::ClearFramebuffer(uint8_t value)
         p.OffsetY(data, 1);
     }
 
-    Refresh(false);
+    Refresh(true);
 }
 
 // ----------------------------------------------------------------------------
@@ -208,9 +210,6 @@ void BitmapWidget::UpdateDimensions()
             ComputeAspectCorrectDimensions(cx, cy);
         }
     }
-
-    m_xscale = (double)m_w / m_width;
-    m_yscale = (double)m_h / m_height;
 }
 
 // ----------------------------------------------------------------------------
@@ -233,25 +232,19 @@ void BitmapWidget::ComputeAspectCorrectDimensions(int cx, int cy)
 void BitmapWidget::OnSize(wxSizeEvent &event)
 {
     UpdateDimensions();
-    Refresh(false);
+    Refresh(true);
 }
 
 // ----------------------------------------------------------------------------
 void BitmapWidget::OnPaint(wxPaintEvent &event)
 {
-    wxPaintDC dc(this);
+    wxAutoBufferedPaintDC dc(this);
 
-    if (m_filterEnable) {
-        // this scaling method seems to apply filter under GTK but not windows
-        dc.SetUserScale(m_xscale, m_yscale);
-        int x = (int)(m_x / m_xscale);
-        int y = (int)(m_y / m_yscale);
-        dc.DrawBitmap(*m_bmp, x, y, false);
-    }
-    else {
-        wxImage img(m_bmp->ConvertToImage());
-        dc.DrawBitmap(wxBitmap(img.Scale(m_w, m_h)), m_x, m_y, false);
-    }
+    dc.SetBackground(*wxBLACK_BRUSH);
+    dc.Clear();
+
+    wxImage img(m_bmp->ConvertToImage());
+    dc.DrawBitmap(wxBitmap(img.Scale(m_w, m_h)), m_x, m_y, false);
 }
 
 // ----------------------------------------------------------------------------

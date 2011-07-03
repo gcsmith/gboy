@@ -133,8 +133,9 @@ protected:
 
 // ----------------------------------------------------------------------------
 GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context, int *attrib)
-: wxGLCanvas(parent, wxID_ANY, attrib, wxDefaultPosition, wxDefaultSize),
-  m_context(context), m_filterEnable(false), m_filterType(0), m_scalingType(0)
+: wxGLCanvas(parent, wxID_ANY, attrib, wxDefaultPosition, wxDefaultSize,
+  wxWANTS_CHARS), m_context(context), m_filterEnable(false), m_filterType(0),
+  m_scalingType(0)
 {
     if (!m_context)
         m_context = new wxGLContext(this);
