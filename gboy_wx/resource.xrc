@@ -2,7 +2,7 @@
 <resource xmlns="http://www.wxwindows.org/wxxrc" version="2.3.0.1">
 	<object class="wxFrame" name="MainFrame_XRC">
 		<style>wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL</style>
-		<size>406,358</size>
+		<size>372,329</size>
 		<title></title>
 		<centered>1</centered>
 		<object class="wxMenuBar" name="m_menuBar">
@@ -68,7 +68,7 @@
 					<help>Disable CPU speed limiting</help>
 					<checkable>1</checkable>
 				</object>
-				<object class="wxMenuItem" name="menu_machine_framestep">
+				<object class="wxMenuItem" name="menu_machine_step">
 					<label>_Frame Step\tCtrl+F</label>
 					<help>Single step through frames</help>
 				</object>

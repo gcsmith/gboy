@@ -18,13 +18,34 @@
 #ifndef GBOY_GBOYAPP__H
 #define GBOY_GBOYAPP__H
 
+// some helper macros to make the command line entry table more readable
+
+#define cmd_help(s, l, d) { wxCMD_LINE_SWITCH, wxT(s), wxT(l), wxT(d),    \
+                            wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP }
+#define cmd_optb(s, l, d) { wxCMD_LINE_SWITCH, wxT(s), wxT(l), wxT(d),    \
+                            wxCMD_LINE_VAL_NONE }
+#define cmd_opts(s, l, d) { wxCMD_LINE_OPTION, wxT(s), wxT(l), wxT(d),    \
+                            wxCMD_LINE_VAL_STRING }
+#define cmd_parm(d)       { wxCMD_LINE_PARAM, NULL, NULL, wxT(d),         \
+                            wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL }
+#define cmd_term          { wxCMD_LINE_NONE }
+
 class GboyApp: public wxApp
 {
 public:
+    GboyApp();
+
     virtual bool OnInit();
     virtual int  OnExit();
     virtual void OnInitCmdLine(wxCmdLineParser& parser);
     virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
+
+protected:
+    wxString m_romfile;
+    bool m_fullscreen;
+    bool m_vsync;
+    bool m_turbo;
+    int m_system;
 };
 
 #endif // GBOY_GBOYAPP__H

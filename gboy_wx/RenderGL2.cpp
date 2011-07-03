@@ -55,9 +55,9 @@ public:
     void UpdateFramebuffer(const uint32_t *fb);
     void ClearFramebuffer(uint8_t value);
 
-    void SetStretchFilter(bool enable) { m_filterEnable = enable; }
-    void SetFilterType(int index) { m_filterType = index; }
-    void SetScalingType(int index) { m_scalingType = index; }
+    void SetStretchFilter(bool enable);
+    void SetFilterType(int index);
+    void SetScalingType(int index);
     void SetSwapInterval(int interval);
 
     bool StretchFilter() { return m_filterEnable; }
@@ -68,6 +68,7 @@ public:
 protected:
     void InitGL();
     void UpdateDimensions();
+    void ComputeAspectCorrectDimensions(int cx, int cy);
 
     void OnSize(wxSizeEvent &event);
     void OnPaint(wxPaintEvent &event);
@@ -75,7 +76,6 @@ protected:
 
 protected:
     wxGLContext *m_context;
-    bool m_stretch;
     bool m_filterEnable;
     GLuint m_vbo;
     GLuint m_pbo;
@@ -86,6 +86,7 @@ protected:
     int m_filterType;
     int m_scalingType;
     int m_swapInterval;
+    float m_aspect;
     float m_tu, m_tv;
     float m_x0, m_y0, m_x1, m_y1;
 };
@@ -133,8 +134,7 @@ protected:
 // ----------------------------------------------------------------------------
 GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context, int *attrib)
 : wxGLCanvas(parent, wxID_ANY, attrib, wxDefaultPosition, wxDefaultSize),
-  m_context(context), m_stretch(false), m_filterEnable(false), m_filterType(0),
-  m_scalingType(0)
+  m_context(context), m_filterEnable(false), m_filterType(0), m_scalingType(0)
 {
     if (!m_context)
         m_context = new wxGLContext(this);
@@ -148,6 +148,7 @@ GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context, int *attrib)
 
     m_width  = GBX_LCD_XRES;
     m_height = GBX_LCD_YRES;
+    m_aspect = (float)m_width / m_height;
 
     SetCurrent(*m_context);
     InitGL();
@@ -161,6 +162,25 @@ GL2Widget::~GL2Widget()
     glDeleteBuffers(1, &m_vbo);
     glDeleteBuffers(1, &m_pbo);
     glDeleteTextures(1, &m_texture);
+}
+
+// ----------------------------------------------------------------------------
+void GL2Widget::SetStretchFilter(bool enable)
+{
+    m_filterEnable = enable;
+}
+
+// ----------------------------------------------------------------------------
+void GL2Widget::SetFilterType(int index)
+{
+    m_filterType = index;
+}
+
+// ----------------------------------------------------------------------------
+void GL2Widget::SetScalingType(int index)
+{
+    m_scalingType = index;
+    UpdateDimensions();
 }
 
 // ----------------------------------------------------------------------------
@@ -286,30 +306,49 @@ void GL2Widget::InitGL()
 // ----------------------------------------------------------------------------
 void GL2Widget::UpdateDimensions()
 {
-    int client_width, client_height;
-    GetClientSize(&client_width, &client_height);
+    int cx, cy;
+    GetClientSize(&cx, &cy);
 
     SetCurrent(*m_context);
-    glViewport(0, 0, (GLint)client_width, (GLint)client_height);
+    glViewport(0, 0, (GLint)cx, (GLint)cy);
 
     m_x0 = m_y0 = -1.0f;
     m_x1 = m_y1 = 1.0f;
 
-    if (!m_stretch) {
+    if (m_scalingType == 1) {
         // fit the viewport while maintaining proper aspect ratio
-        float wnd_aspect = (float)client_width / client_height;
-        float gbx_aspect = (float)m_width / m_height;
-
-        if (wnd_aspect > gbx_aspect) {
-            float ratio = gbx_aspect / wnd_aspect;
-            m_x0 = -ratio;
-            m_x1 = ratio;
+        ComputeAspectCorrectDimensions(cx, cy);
+    }
+    else if (m_scalingType == 2) {
+        // maintain aspect ratio and scale only by integer multiples
+        float wnd_aspect = (float)cx / cy;
+        int scale = wnd_aspect > m_aspect ? (cy / m_height) : (cx / m_width);
+        if (scale > 0) {
+            float sx = (scale * m_width) / (float)cx;
+            float sy = (scale * m_height) / (float)cy;
+            m_x0 = -sx; m_x1 = sx;
+            m_y0 = -sy; m_y1 = sy;
         }
         else {
-            float ratio = wnd_aspect / gbx_aspect;
-            m_y0 = -ratio;
-            m_y1 = ratio;
+            // if viewport smaller than LCD resolution, just keep aspect
+            ComputeAspectCorrectDimensions(cx, cy);
         }
+    }
+}
+
+// ----------------------------------------------------------------------------
+void GL2Widget::ComputeAspectCorrectDimensions(int cx, int cy)
+{
+    float wnd_aspect = (float)cx / cy;
+    if (wnd_aspect > m_aspect) {
+        float ratio = m_aspect / wnd_aspect;
+        m_x0 = -ratio;
+        m_x1 = ratio;
+    }
+    else {
+        float ratio = wnd_aspect / m_aspect;
+        m_y0 = -ratio;
+        m_y1 = ratio;
     }
 }
 

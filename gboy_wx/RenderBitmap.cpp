@@ -29,18 +29,19 @@ public:
     void UpdateFramebuffer(const uint32_t *fb);
     void ClearFramebuffer(uint8_t value);
 
-    void SetStretchFilter(bool enable) { m_filterEnable = enable; }
-    void SetFilterType(int index) { m_filterType = index; }
-    void SetScalingType(int index) { m_scalingType = index; }
+    void SetStretchFilter(bool enable);
+    void SetFilterType(int index);
+    void SetScalingType(int index);
 
     bool StretchFilter() { return m_filterEnable; }
     int FilterType() { return m_filterType; }
     int ScalingType() { return m_scalingType; }
 
 protected:
+    void UpdateDimensions();
+    void ComputeAspectCorrectDimensions(int cx, int cy);
     void OnSize(wxSizeEvent &event);
     void OnPaint(wxPaintEvent &event);
-    void OnEraseBackground(wxEraseEvent &event);
 
 protected:
     wxBitmap *m_bmp;
@@ -49,6 +50,9 @@ protected:
     bool m_filterEnable;
     int m_filterType;
     int m_scalingType;
+    int m_x, m_y, m_w, m_h;
+    int m_width, m_height;
+    float m_aspect;
 };
 
 class RenderBitmap: public RenderWidget
@@ -94,13 +98,16 @@ BitmapWidget::BitmapWidget(wxWindow *parent)
 {
     m_bmp = new wxBitmap(GBX_LCD_XRES, GBX_LCD_YRES, 24);
     ClearFramebuffer(0);
+    SetBackgroundColour(wxColour(0, 0, 0));
 
     Connect(wxID_ANY, wxEVT_SIZE,
             wxSizeEventHandler(BitmapWidget::OnSize));
     Connect(wxID_ANY, wxEVT_PAINT,
             wxPaintEventHandler(BitmapWidget::OnPaint));
-    Connect(wxID_ANY, wxEVT_ERASE_BACKGROUND,
-            wxEraseEventHandler(BitmapWidget::OnEraseBackground));
+
+    m_width  = GBX_LCD_XRES;
+    m_height = GBX_LCD_YRES;
+    m_aspect = (float)m_width / m_height;
 
     log_info("Software renderer successfully initialized\n");
 }
@@ -108,6 +115,25 @@ BitmapWidget::BitmapWidget(wxWindow *parent)
 // ----------------------------------------------------------------------------
 BitmapWidget::~BitmapWidget()
 {
+}
+
+// ----------------------------------------------------------------------------
+void BitmapWidget::SetStretchFilter(bool enable)
+{
+    m_filterEnable = enable;
+}
+
+// ----------------------------------------------------------------------------
+void BitmapWidget::SetFilterType(int index)
+{
+    m_filterType = index;
+}
+
+// ----------------------------------------------------------------------------
+void BitmapWidget::SetScalingType(int index)
+{
+    m_scalingType = index;
+    UpdateDimensions();
 }
 
 // ----------------------------------------------------------------------------
@@ -154,14 +180,59 @@ void BitmapWidget::ClearFramebuffer(uint8_t value)
 }
 
 // ----------------------------------------------------------------------------
-void BitmapWidget::OnSize(wxSizeEvent &event)
+void BitmapWidget::UpdateDimensions()
 {
     int cx, cy;
     GetClientSize(&cx, &cy);
 
-    m_xscale = (double)cx / GBX_LCD_XRES;
-    m_yscale = (double)cy / GBX_LCD_YRES;
+    m_x = m_y = 0;
+    m_w = cx;
+    m_h = cy;
 
+    if (m_scalingType == 1) {
+        // fit the viewport while maintaining proper aspect ratio
+        ComputeAspectCorrectDimensions(cx, cy);
+    }
+    else if (m_scalingType == 2) {
+        // maintain aspect ratio and scale only by integer multiples
+        float wnd_aspect = (float)cx / cy;
+        int scale = wnd_aspect > m_aspect ? (cy / m_height) : (cx / m_width);
+        if (scale > 0) {
+            m_w = scale * m_width;
+            m_h = scale * m_height;
+            m_x = (cx - m_w) / 2;
+            m_y = (cy - m_h) / 2;
+        }
+        else {
+            // if viewport smaller than LCD resolution, just keep aspect
+            ComputeAspectCorrectDimensions(cx, cy);
+        }
+    }
+
+    m_xscale = (double)m_w / m_width;
+    m_yscale = (double)m_h / m_height;
+}
+
+// ----------------------------------------------------------------------------
+void BitmapWidget::ComputeAspectCorrectDimensions(int cx, int cy)
+{
+    float wnd_aspect = (float)cx / cy;
+    if (wnd_aspect > m_aspect) {
+        m_w = (int)(cy * m_aspect);
+        m_h = cy;
+        m_x = (cx - m_w) / 2;
+    }
+    else {
+        m_w = cx;
+        m_h = (int)(cx / m_aspect);
+        m_y = (cy - m_h) / 2;
+    }
+}
+
+// ----------------------------------------------------------------------------
+void BitmapWidget::OnSize(wxSizeEvent &event)
+{
+    UpdateDimensions();
     Refresh(false);
 }
 
@@ -171,22 +242,16 @@ void BitmapWidget::OnPaint(wxPaintEvent &event)
     wxPaintDC dc(this);
 
     if (m_filterEnable) {
+        // this scaling method seems to apply filter under GTK but not windows
         dc.SetUserScale(m_xscale, m_yscale);
-        dc.DrawBitmap(*m_bmp, 0, 0, false);
+        int x = (int)(m_x / m_xscale);
+        int y = (int)(m_y / m_yscale);
+        dc.DrawBitmap(*m_bmp, x, y, false);
     }
     else {
-        int cx, cy;
-        GetClientSize(&cx, &cy);
-
         wxImage img(m_bmp->ConvertToImage());
-        dc.DrawBitmap(wxBitmap(img.Scale(cx, cy)), 0, 0, false);
+        dc.DrawBitmap(wxBitmap(img.Scale(m_w, m_h)), m_x, m_y, false);
     }
-}
-
-// ----------------------------------------------------------------------------
-void BitmapWidget::OnEraseBackground(wxEraseEvent &event)
-{
-    // override EraseBackground to avoid flickering on some platforms
 }
 
 // ----------------------------------------------------------------------------

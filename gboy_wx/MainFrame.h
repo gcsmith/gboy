@@ -36,6 +36,8 @@ public:
     MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title);
     virtual ~MainFrame();
 
+    void LoadFile(const wxString &path);
+
 protected:
     void SetupStatusBar();
     void SetupToolBar();
@@ -45,10 +47,27 @@ protected:
     void LoadConfiguration();
     void SaveConfiguration();
 
-    void LoadFile(const wxString &path);
     void CreateRenderWidget(int type);
     void CreateEmulatorContext();
-    void EmulatorEnabled(bool enable);
+
+    void SetStatusBarEnabled(bool enable);
+    void SetToolBarEnabled(bool enable);
+    void SetEmulatorEnabled(bool enable);
+    void SetFullscreenEnabled(bool enable);
+    void SetVsyncEnabled(bool enable);
+
+    bool StatusBarEnabled() const {
+        return GetMenuBar()->IsChecked(XRCID("menu_view_statusbar"));
+    }
+    bool ToolBarEnabled() const {
+        return GetMenuBar()->IsChecked(XRCID("menu_view_toolbar"));
+    }
+    bool FullscreenEnabled() const {
+        return GetMenuBar()->IsChecked(XRCID("menu_settings_fs"));
+    }
+    bool VsyncEnabled() const {
+        return GetMenuBar()->IsChecked(XRCID("menu_settings_vsync"));
+    }
 
     void OnOpen(wxCommandEvent &event);
     void OnLoadState(wxCommandEvent &event);
@@ -91,6 +110,7 @@ protected:
     gbxThread     *m_gbx;
     RenderWidget  *m_render;
     KeyMap         m_keymap;
+    bool           m_vsync;
     bool           m_filterEnable;
     long           m_lastCycles;
     int            m_outputModule;

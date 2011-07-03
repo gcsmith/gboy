@@ -33,8 +33,9 @@ MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title)
     SetupToolBar();
     SetupRecentList();
     SetupEventHandlers();
+    SetMinSize(wxSize(80, 80));
 
-    EmulatorEnabled(false);
+    SetEmulatorEnabled(false);
     LoadConfiguration();
 
     CreateRenderWidget(m_outputModule);
@@ -79,7 +80,7 @@ MainFrame::~MainFrame()
 // ----------------------------------------------------------------------------
 void MainFrame::LoadConfiguration()
 {
-    bool showStatusBar, showToolBar;
+    bool showStatusBar, showToolBar, fullscreen, vsync;
     int width, height;
 
     // load window related settings
@@ -88,14 +89,7 @@ void MainFrame::LoadConfiguration()
     m_config->Read(wxT("show_toolbar"), &showToolBar, true);
     m_config->Read(wxT("resolution_x"), &width, GBX_LCD_XRES * 3);
     m_config->Read(wxT("resolution_y"), &height, GBX_LCD_YRES * 3);
-
-    GetMenuBar()->Check(XRCID("menu_view_statusbar"), showStatusBar);
-    GetMenuBar()->Check(XRCID("menu_view_toolbar"), showToolBar);
-
-    GetStatusBar()->Show(showStatusBar);
-    // GetToolBar()->Show(showToolBar);
-
-    SetClientSize(width, height);
+    m_config->Read(wxT("fullscreen"), &fullscreen, false);
 
     // load display related settings
     m_config->SetPath(wxT("/display"));
@@ -103,27 +97,33 @@ void MainFrame::LoadConfiguration()
     m_config->Read(wxT("filter_enable"), &m_filterEnable, false);
     m_config->Read(wxT("filter_type"), &m_filterType, 0);
     m_config->Read(wxT("scale_type"), &m_scalingType, 0);
+    m_config->Read(wxT("vsync_enable"), &vsync, false);
 
     // load recent file list
     m_config->SetPath(wxT("/mru"));
     m_recent->Load(*m_config);
+
+    SetStatusBarEnabled(showStatusBar);
+    SetToolBarEnabled(showToolBar);
+    SetFullscreenEnabled(fullscreen);
+    SetVsyncEnabled(vsync);
+
+    SetClientSize(width, height);
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::SaveConfiguration()
 {
     int width, height;
+    GetClientSize(&width, &height);
 
     // save window related settings
     m_config->SetPath(wxT("/window"));
-    m_config->Write(wxT("show_statusbar"), 
-            GetMenuBar()->IsChecked(XRCID("menu_view_statusbar")));
-    m_config->Write(wxT("show_toolbar"),
-            GetMenuBar()->IsChecked(XRCID("menu_view_toolbar")));
-
-    GetClientSize(&width, &height);
+    m_config->Write(wxT("show_statusbar"), StatusBarEnabled());
+    m_config->Write(wxT("show_toolbar"), ToolBarEnabled());
     m_config->Write(wxT("resolution_x"), width);
     m_config->Write(wxT("resolution_y"), height);
+    m_config->Write(wxT("fullscreen"), FullscreenEnabled());
 
     // save display related settings
     m_config->SetPath(wxT("/display"));
@@ -131,6 +131,7 @@ void MainFrame::SaveConfiguration()
     m_config->Write(wxT("filter_enable"), m_render->StretchFilter());
     m_config->Write(wxT("filter_type"), m_render->FilterType());
     m_config->Write(wxT("scale_type"), m_render->ScalingType());
+    m_config->Write(wxT("vsync_enable"), VsyncEnabled());
 
     // save recent file list
     m_config->SetPath(wxT("/mru"));
@@ -171,52 +172,39 @@ void MainFrame::SetupRecentList()
             wxCommandEventHandler(MainFrame::OnRecentOpen));
 }
 
+// some helper macros to make the event handler setup more readable
+
+#define xrc_menu_evt(id, fn) \
+    Connect(XRCID(id), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(fn))
+#define gbx_emu_evt(evt, fn) \
+    Connect(wxID_ANY, evt, wxCommandEventHandler(fn))
+
 // ----------------------------------------------------------------------------
 void MainFrame::SetupEventHandlers()
 {
-    Connect(XRCID("menu_file_open"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnOpen));
-    Connect(XRCID("menu_file_loadstate"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnLoadState));
-    Connect(XRCID("menu_file_savestate"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnSaveState));
-    Connect(XRCID("menu_file_quit"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnQuit));
-    Connect(XRCID("menu_recent_clear"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnRecentClear));
-    Connect(XRCID("menu_machine_reset"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnMachineReset));
-    Connect(XRCID("menu_machine_pause"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnMachineTogglePause));
-    Connect(XRCID("menu_machine_turbo"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnMachineToggleTurbo));
-    Connect(XRCID("menu_machine_framestep"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnMachineStep));
-    Connect(XRCID("menu_settings_input"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnInputDialog));
-    Connect(XRCID("menu_settings_sound"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnSoundDialog));
-    Connect(XRCID("menu_settings_display"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnDisplayDialog));
-    Connect(XRCID("menu_settings_fs"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnToggleFullscreen));
-    Connect(XRCID("menu_settings_vsync"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnToggleVsync));
-    Connect(XRCID("menu_view_statusbar"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnToggleStatusbar));
-    Connect(XRCID("menu_view_toolbar"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnToggleToolbar));
-    Connect(XRCID("menu_help_reportbug"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnReportBug));
-    Connect(XRCID("menu_help_about"), wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnAbout));
+    xrc_menu_evt("menu_file_open",        MainFrame::OnOpen);
+    xrc_menu_evt("menu_file_loadstate",   MainFrame::OnLoadState);
+    xrc_menu_evt("menu_file_savestate",   MainFrame::OnSaveState);
+    xrc_menu_evt("menu_file_quit",        MainFrame::OnQuit);
+    xrc_menu_evt("menu_recent_clear",     MainFrame::OnRecentClear);
+    xrc_menu_evt("menu_machine_reset",    MainFrame::OnMachineReset);
+    xrc_menu_evt("menu_machine_pause",    MainFrame::OnMachineTogglePause);
+    xrc_menu_evt("menu_machine_turbo",    MainFrame::OnMachineToggleTurbo);
+    xrc_menu_evt("menu_machine_step",     MainFrame::OnMachineStep);
+    xrc_menu_evt("menu_settings_input",   MainFrame::OnInputDialog);
+    xrc_menu_evt("menu_settings_sound",   MainFrame::OnSoundDialog);
+    xrc_menu_evt("menu_settings_display", MainFrame::OnDisplayDialog);
+    xrc_menu_evt("menu_settings_fs",      MainFrame::OnToggleFullscreen);
+    xrc_menu_evt("menu_settings_vsync",   MainFrame::OnToggleVsync);
+    xrc_menu_evt("menu_view_statusbar",   MainFrame::OnToggleStatusbar);
+    xrc_menu_evt("menu_view_toolbar",     MainFrame::OnToggleToolbar);
+    xrc_menu_evt("menu_help_reportbug",   MainFrame::OnReportBug);
+    xrc_menu_evt("menu_help_about",       MainFrame::OnAbout);
 
-    Connect(wxID_ANY, wxEVT_GBX_SYNC,
-            wxCommandEventHandler(MainFrame::OnGbxVideoSync));
-    Connect(wxID_ANY, wxEVT_GBX_SPEED,
-            wxCommandEventHandler(MainFrame::OnGbxSpeedChange));
-    Connect(wxID_ANY, wxEVT_GBX_LCD,
-            wxCommandEventHandler(MainFrame::OnGbxLcdEnabled));
+    gbx_emu_evt(wxEVT_GBX_SYNC,  MainFrame::OnGbxVideoSync);
+    gbx_emu_evt(wxEVT_GBX_SPEED, MainFrame::OnGbxSpeedChange);
+    gbx_emu_evt(wxEVT_GBX_LCD,   MainFrame::OnGbxLcdEnabled);
+
     Connect(wxID_ANY, wxEVT_KEY_DOWN,
             wxKeyEventHandler(MainFrame::OnKeyDown));
     Connect(wxID_ANY, wxEVT_KEY_UP,
@@ -234,7 +222,7 @@ void MainFrame::LoadFile(const wxString &path)
     if (!m_gbx->LoadFile(path)) {
         wxString error = wxT("Failed to open file:\n") + path;
         wxMessageBox(error, wxT("Error"), wxICON_ERROR);
-        EmulatorEnabled(false);
+        SetEmulatorEnabled(false);
         return;
     }
 
@@ -242,7 +230,7 @@ void MainFrame::LoadFile(const wxString &path)
 
     m_lastCycles = 0;
     m_perftimer->Start(1000, false);
-    EmulatorEnabled(true);
+    SetEmulatorEnabled(true);
 
     if (!GetMenuBar()->IsChecked(XRCID("menu_recent_lock"))) {
         // add the selected file to the MRU list (unless list is locked)
@@ -266,6 +254,7 @@ void MainFrame::CreateRenderWidget(int type)
     m_render->SetStretchFilter(m_filterEnable);
     m_render->SetFilterType(m_filterType);
     m_render->SetScalingType(m_scalingType);
+    m_render->SetSwapInterval(VsyncEnabled() ? 1 : 0);
 
     // have the main frame handle keyboard events sent to the render panel
     m_render->Window()->Connect(wxID_ANY, wxEVT_KEY_DOWN,
@@ -291,17 +280,54 @@ void MainFrame::CreateEmulatorContext()
 }
 
 // ----------------------------------------------------------------------------
-void MainFrame::EmulatorEnabled(bool enable)
+void MainFrame::SetEmulatorEnabled(bool enable)
 {
     GetMenuBar()->Enable(XRCID("menu_machine_reset"), enable);
     GetMenuBar()->Enable(XRCID("menu_machine_pause"), enable);
     GetMenuBar()->Enable(XRCID("menu_machine_turbo"), enable);
-    GetMenuBar()->Enable(XRCID("menu_machine_framestep"), enable);
+    GetMenuBar()->Enable(XRCID("menu_machine_step"), enable);
 
     GetMenuBar()->Check(XRCID("menu_machine_pause"), false);
     GetMenuBar()->Check(XRCID("menu_machine_turbo"), false);
     
     SetStatusText(enable ? wxT("Running") : wxT("Stopped"), 0);
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::SetStatusBarEnabled(bool enable)
+{
+    if (GetStatusBar())
+        GetStatusBar()->Show(enable);
+    if (m_render)
+        m_render->Window()->SetSize(GetClientSize());
+    GetMenuBar()->Check(XRCID("menu_view_statusbar"), enable);
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::SetToolBarEnabled(bool enable)
+{
+    if (GetToolBar())
+        GetToolBar()->Show(enable);
+    if (m_render)
+        m_render->Window()->SetSize(GetClientSize());
+    GetMenuBar()->Check(XRCID("menu_view_toolbar"), enable);
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::SetFullscreenEnabled(bool enable)
+{
+    log_info("Full screen %s.\n", enable ? "enabled" : "disabled");
+    ShowFullScreen(enable);
+    GetMenuBar()->Check(XRCID("menu_settings_fs"), enable);
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::SetVsyncEnabled(bool enable)
+{
+    log_info("Vertical sync %s.\n", enable ? "enabled" : "disabled");
+    if (m_render)
+        m_render->SetSwapInterval(enable ? 1 : 0);
+    GetMenuBar()->Check(XRCID("menu_settings_vsync"), enable);
 }
 
 // ----------------------------------------------------------------------------
@@ -441,32 +467,25 @@ void MainFrame::OnDisplayDialog(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnToggleStatusbar(wxCommandEvent &event)
 {
-    bool checked = GetMenuBar()->IsChecked(XRCID("menu_view_statusbar"));
-    GetStatusBar()->Show(checked);
-    m_render->Window()->SetSize(GetClientSize());
+    SetStatusBarEnabled(GetMenuBar()->IsChecked(XRCID("menu_view_statusbar")));
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnToggleToolbar(wxCommandEvent &event)
 {
+    SetToolBarEnabled(GetMenuBar()->IsChecked(XRCID("menu_view_toolbar")));
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnToggleFullscreen(wxCommandEvent &event)
 {
-    bool fullscreen = GetMenuBar()->IsChecked(XRCID("menu_settings_fs"));
-
-    log_info("Full screen %s.\n", fullscreen ? "enabled" : "disabled");
-    ShowFullScreen(fullscreen);
+    SetFullscreenEnabled(GetMenuBar()->IsChecked(XRCID("menu_settings_fs")));
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnToggleVsync(wxCommandEvent &event)
 {
-    bool vsync = GetMenuBar()->IsChecked(XRCID("menu_settings_vsync"));
-
-    log_info("Vertical sync %s.\n", vsync ? "enabled" : "disabled");
-    m_render->SetSwapInterval(vsync ? 1 : 0);
+    SetVsyncEnabled(GetMenuBar()->IsChecked(XRCID("menu_settings_vsync")));
 }
 
 // ----------------------------------------------------------------------------
