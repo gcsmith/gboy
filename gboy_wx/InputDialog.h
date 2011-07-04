@@ -18,15 +18,36 @@
 #ifndef GBOY_INPUTDIALOG__H
 #define GBOY_INPUTDIALOG__H
 
+#include <map>
 #include "resource.h"
+
+#define NUM_INPUTS 8
 
 class InputDialog: public InputDialog_XRC
 {
 public:
     InputDialog(wxWindow *parent);
 
-    void SetKeyMappings();
-    void GetKeyMappings();
+    void SetKeyMappings(std::map<int, int> &keymap);
+    void GetKeyMappings(std::map<int, int> &keymap);
+
+protected:
+    void SetupField(wxTextCtrl *field, int key);
+    wxString KeyToString(int keycode);
+
+    void OnSetFocus(wxFocusEvent &event);
+    void OnKillFocus(wxFocusEvent &event);
+    void OnKeyDown(wxKeyEvent &event);
+    void OnKeyUp(wxKeyEvent &event);
+
+protected:
+    struct TextCtrlData {
+        int input_index;
+        int keycode;
+    };
+
+    TextCtrlData m_fieldData[NUM_INPUTS];
+    wxTextCtrl *m_fields[NUM_INPUTS];
 };
 
 #endif // GBOY_INPUTDIALOG__H

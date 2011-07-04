@@ -175,6 +175,7 @@
 													<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 													<border>5</border>
 													<object class="wxTextCtrl" name="m_upEdit">
+														<style>wxTE_READONLY</style>
 														<value></value>
 														<maxlength>0</maxlength>
 													</object>
@@ -202,6 +203,7 @@
 													<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 													<border>5</border>
 													<object class="wxTextCtrl" name="m_downEdit">
+														<style>wxTE_READONLY</style>
 														<value></value>
 														<maxlength>0</maxlength>
 													</object>
@@ -229,6 +231,7 @@
 													<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 													<border>5</border>
 													<object class="wxTextCtrl" name="m_leftEdit">
+														<style>wxTE_READONLY</style>
 														<value></value>
 														<maxlength>0</maxlength>
 													</object>
@@ -256,6 +259,7 @@
 													<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 													<border>5</border>
 													<object class="wxTextCtrl" name="m_rightEdit">
+														<style>wxTE_READONLY</style>
 														<value></value>
 														<maxlength>0</maxlength>
 													</object>
@@ -297,6 +301,7 @@
 													<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 													<border>5</border>
 													<object class="wxTextCtrl" name="m_AEdit">
+														<style>wxTE_READONLY</style>
 														<value></value>
 														<maxlength>0</maxlength>
 													</object>
@@ -324,6 +329,7 @@
 													<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 													<border>5</border>
 													<object class="wxTextCtrl" name="m_BEdit">
+														<style>wxTE_READONLY</style>
 														<value></value>
 														<maxlength>0</maxlength>
 													</object>
@@ -351,6 +357,7 @@
 													<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 													<border>5</border>
 													<object class="wxTextCtrl" name="m_selectEdit">
+														<style>wxTE_READONLY</style>
 														<value></value>
 														<maxlength>0</maxlength>
 													</object>
@@ -378,6 +385,7 @@
 													<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 													<border>5</border>
 													<object class="wxTextCtrl" name="m_startEdit">
+														<style>wxTE_READONLY</style>
 														<value></value>
 														<maxlength>0</maxlength>
 													</object>

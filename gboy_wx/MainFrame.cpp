@@ -45,16 +45,6 @@ MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title)
     m_perftimer = new wxTimer(this);
     Connect(m_perftimer->GetId(), wxEVT_TIMER,
             wxTimerEventHandler(MainFrame::OnPerfTimerTick));
-
-    // TODO: make key mapping configurable from settings dialog
-    m_keymap['Z']        = INPUT_A;
-    m_keymap['X']        = INPUT_B;
-    m_keymap[WXK_RETURN] = INPUT_START;
-    m_keymap[WXK_SPACE]  = INPUT_SELECT;
-    m_keymap[WXK_UP]     = INPUT_UP;
-    m_keymap[WXK_DOWN]   = INPUT_DOWN;
-    m_keymap[WXK_LEFT]   = INPUT_LEFT;
-    m_keymap[WXK_RIGHT]  = INPUT_RIGHT;
 }
 
 // ----------------------------------------------------------------------------
@@ -81,7 +71,7 @@ MainFrame::~MainFrame()
 void MainFrame::LoadConfiguration()
 {
     bool showStatusBar, showToolBar, fullscreen, vsync;
-    int width, height;
+    int width, height, keycode;
 
     // load window related settings
     m_config->SetPath(wxT("/window"));
@@ -98,6 +88,20 @@ void MainFrame::LoadConfiguration()
     m_config->Read(wxT("filter_type"), &m_filterType, 0);
     m_config->Read(wxT("scale_type"), &m_scalingType, 0);
     m_config->Read(wxT("vsync_enable"), &vsync, false);
+
+    // load key mappings
+    static const int default_keycodes[8] = {
+        WXK_RIGHT, WXK_LEFT, WXK_UP, WXK_DOWN, 'Z', 'X', WXK_SPACE, WXK_RETURN
+    };
+
+    m_config->SetPath(wxT("/input"));
+    for (int i = 0; i < 8; i++) {
+        wxString input_str = wxString::Format(wxT("input_keycode_%d"), i);
+        if (m_config->Read(input_str, &keycode))
+            m_keymap[keycode] = i;
+        else
+            m_keymap[default_keycodes[i]] = i;
+    }
 
     // load recent file list
     m_config->SetPath(wxT("/mru"));
@@ -132,6 +136,20 @@ void MainFrame::SaveConfiguration()
     m_config->Write(wxT("filter_type"), m_render->FilterType());
     m_config->Write(wxT("scale_type"), m_render->ScalingType());
     m_config->Write(wxT("vsync_enable"), VsyncEnabled());
+
+    // save key mappings
+    m_config->SetPath(wxT("/input"));
+    for (int i = 0; i < 8; i++) {
+        // need to scan the map values rather than keys, but map is small...
+        int keycode = -1;
+        KeyMap::iterator iter;
+        for (iter = m_keymap.begin(); iter != m_keymap.end(); ++iter) {
+            if (iter->second == i) keycode = iter->first;
+        }
+
+        wxString input_str = wxString::Format(wxT("input_keycode_%d"), i);
+        m_config->Write(input_str, keycode);
+    }
 
     // save recent file list
     m_config->SetPath(wxT("/mru"));
@@ -216,6 +234,8 @@ void MainFrame::SetupEventHandlers()
 // ----------------------------------------------------------------------------
 void MainFrame::LoadFile(const wxString &path)
 {
+    wxFileName filename(path);
+
     if (m_gbx->IsRunning())
         CreateEmulatorContext();
 
@@ -234,11 +254,10 @@ void MainFrame::LoadFile(const wxString &path)
 
     if (!GetMenuBar()->IsChecked(XRCID("menu_recent_lock"))) {
         // add the selected file to the MRU list (unless list is locked)
-        m_recent->AddFileToHistory(path);
+        m_recent->AddFileToHistory(filename.GetFullPath());
     }
 
-    wxFileName file(path);
-    SetTitle(file.GetFullName());
+    SetTitle(filename.GetFullName());
 }
 
 // ----------------------------------------------------------------------------
@@ -423,19 +442,32 @@ void MainFrame::OnMachineStep(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnInputDialog(wxCommandEvent &event)
 {
+    bool paused = m_gbx->Paused();
+    m_gbx->SetPaused(true);
+
     InputDialog *dialog = new InputDialog(this);
+    dialog->SetKeyMappings(m_keymap);
+
     if (wxID_OK == dialog->ShowModal()) {
         // commit input settings
+        dialog->GetKeyMappings(m_keymap);
     }
+
+    m_gbx->SetPaused(paused);
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnSoundDialog(wxCommandEvent &event)
 {
+    bool paused = m_gbx->Paused();
+    m_gbx->SetPaused(true);
+
     SoundDialog *dialog = new SoundDialog(this);
     if (wxID_OK == dialog->ShowModal()) {
         // commit sound settings
     }
+
+    m_gbx->SetPaused(paused);
 }
 
 // ----------------------------------------------------------------------------
