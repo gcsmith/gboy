@@ -236,6 +236,9 @@ void MainFrame::LoadFile(const wxString &path)
         // add the selected file to the MRU list (unless list is locked)
         m_recent->AddFileToHistory(path);
     }
+
+    wxFileName file(path);
+    SetTitle(file.GetFullName());
 }
 
 // ----------------------------------------------------------------------------
@@ -249,7 +252,7 @@ void MainFrame::CreateRenderWidget(int type)
     }
 
     m_render = RenderWidget::Allocate(type);
-    m_render->Create(this);
+    m_render->Create(this, GBX_LCD_XRES, GBX_LCD_YRES);
 
     m_render->SetStretchFilter(m_filterEnable);
     m_render->SetFilterType(m_filterType);

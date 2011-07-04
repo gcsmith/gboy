@@ -35,6 +35,7 @@ static const wxCmdLineEntryDesc g_cmdlineDesc[] = {
     cmd_opts("",  "log-serial",  "log serial output to file"),
     cmd_optb("",  "no-sound",    "disable sound playback"),
     cmd_opts("r", "rom-file",    "load and execute specified rom file"),
+    cmd_opti("s", "scale",       "set size to multiple of lcd resolution"),
     cmd_optb("",  "system-dmg",  "force system type to original game boy"),
     cmd_optb("",  "system-cgb",  "force system type to game boy color"),
     cmd_optb("",  "system-sgb",  "force system type to super game boy"),
@@ -50,7 +51,7 @@ static const wxCmdLineEntryDesc g_cmdlineDesc[] = {
 
 // ----------------------------------------------------------------------------
 GboyApp::GboyApp()
-: m_vsync(false), m_turbo(false), m_system(SYSTEM_AUTO)
+: m_vsync(false), m_turbo(false), m_scale(0), m_system(SYSTEM_AUTO)
 {
 }
 
@@ -73,6 +74,10 @@ bool GboyApp::OnInit()
         config->Write(wxT("/display/vsync_enable"), true);
     if (m_turbo)
         config->Write(wxT("/machine/turbo"), true);
+    if (m_scale) {
+        config->Write(wxT("/window/resolution_x"), GBX_LCD_XRES * m_scale);
+        config->Write(wxT("/window/resolution_y"), GBX_LCD_YRES * m_scale);
+    }
 
     MainFrame *frame = new MainFrame(NULL, config, wxT("gboy " GBOY_VER_STR));
     frame->Show(true);
@@ -117,6 +122,14 @@ bool GboyApp::OnCmdLineParsed(wxCmdLineParser &parser)
             return false;
         }
         m_romfile = params[0];
+    }
+
+    if (parser.Found(wxT("scale"), &m_scale)) {
+        // make sure the scale is a reasonable value
+        if (m_scale <= 0 || m_scale > 10) {
+            log_err("Scale should be between 1 and 10\n");
+            return false;
+        }
     }
 
     // check the remaining switches

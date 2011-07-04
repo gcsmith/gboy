@@ -22,7 +22,6 @@
 #include <GL/glxew.h>
 #endif
 #include <wx/glcanvas.h>
-#include "gbx.h"
 #include "RenderWidget.h"
 
 typedef struct vertex {
@@ -49,7 +48,8 @@ unsigned int tex_pow2(unsigned int width, unsigned int height)
 class GL2Widget: public wxGLCanvas
 {
 public:
-    GL2Widget(wxWindow *parent, wxGLContext *context, int *attrib);
+    GL2Widget(wxWindow *parent, wxGLContext *context,
+              int *attrib, int width, int height);
     virtual ~GL2Widget();
 
     void UpdateFramebuffer(const uint32_t *fb);
@@ -97,10 +97,10 @@ public:
     RenderGL2() : m_panel(NULL) { }
     virtual ~RenderGL2() { m_panel->Destroy(); }
 
-    virtual void Create(wxWindow *parent) {
+    virtual void Create(wxWindow *parent, int width, int height) {
         int attrib_list[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, 0 };
         parent->Show(true); // XXX: must be visible to access context
-        m_panel = new GL2Widget(parent, NULL, attrib_list);
+        m_panel = new GL2Widget(parent, NULL, attrib_list, width, height);
     }
     virtual void UpdateFramebuffer(const uint32_t *fb) {
         m_panel->UpdateFramebuffer(fb);
@@ -132,7 +132,8 @@ protected:
 };
 
 // ----------------------------------------------------------------------------
-GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context, int *attrib)
+GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context,
+                     int *attrib, int width, int height)
 : wxGLCanvas(parent, wxID_ANY, attrib, wxDefaultPosition, wxDefaultSize,
   wxWANTS_CHARS), m_context(context), m_filterEnable(false), m_filterType(0),
   m_scalingType(0)
@@ -147,8 +148,8 @@ GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context, int *attrib)
     Connect(wxID_ANY, wxEVT_ERASE_BACKGROUND,
             wxEraseEventHandler(GL2Widget::OnEraseBackground));
 
-    m_width  = GBX_LCD_XRES;
-    m_height = GBX_LCD_YRES;
+    m_width  = width;
+    m_height = height;
     m_aspect = (float)m_width / m_height;
 
     SetCurrent(*m_context);
@@ -169,6 +170,10 @@ GL2Widget::~GL2Widget()
 void GL2Widget::SetStretchFilter(bool enable)
 {
     m_filterEnable = enable;
+    GLint filter = enable ? GL_LINEAR : GL_NEAREST;
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
 }
 
 // ----------------------------------------------------------------------------

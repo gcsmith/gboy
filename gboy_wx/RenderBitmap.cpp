@@ -19,13 +19,12 @@
 #include <wx/brush.h>
 #include <wx/dcbuffer.h>
 #include <wx/rawbmp.h>
-#include "gbx.h"
 #include "RenderWidget.h"
 
 class BitmapWidget: public wxPanel
 {
 public:
-    BitmapWidget(wxWindow *parent);
+    BitmapWidget(wxWindow *parent, int width, int height);
     virtual ~BitmapWidget();
 
     void UpdateFramebuffer(const uint32_t *fb);
@@ -61,8 +60,8 @@ public:
     RenderBitmap() : m_panel(NULL) { }
     virtual ~RenderBitmap() { m_panel->Destroy(); }
 
-    virtual void Create(wxWindow *parent) {
-        m_panel = new BitmapWidget(parent);
+    virtual void Create(wxWindow *parent, int width, int height) {
+        m_panel = new BitmapWidget(parent, width, height);
     }
     virtual void UpdateFramebuffer(const uint32_t *fb) {
         m_panel->UpdateFramebuffer(fb);
@@ -92,11 +91,15 @@ protected:
 };
 
 // ----------------------------------------------------------------------------
-BitmapWidget::BitmapWidget(wxWindow *parent)
+BitmapWidget::BitmapWidget(wxWindow *parent, int width, int height)
 : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS),
   m_filterEnable(false), m_filterType(0), m_scalingType(0)
 {
-    m_bmp = new wxBitmap(GBX_LCD_XRES, GBX_LCD_YRES, 24);
+    m_width  = width;
+    m_height = height;
+    m_aspect = (float)m_width / m_height;
+
+    m_bmp = new wxBitmap(m_width, m_height, 24);
     ClearFramebuffer(0);
 
     SetBackgroundStyle(wxBG_STYLE_CUSTOM);
@@ -106,10 +109,6 @@ BitmapWidget::BitmapWidget(wxWindow *parent)
             wxSizeEventHandler(BitmapWidget::OnSize));
     Connect(wxID_ANY, wxEVT_PAINT,
             wxPaintEventHandler(BitmapWidget::OnPaint));
-
-    m_width  = GBX_LCD_XRES;
-    m_height = GBX_LCD_YRES;
-    m_aspect = (float)m_width / m_height;
 
     log_info("Software renderer successfully initialized\n");
 }
@@ -144,10 +143,10 @@ void BitmapWidget::UpdateFramebuffer(const uint32_t *fb)
     wxNativePixelData data(*m_bmp);
     wxNativePixelData::Iterator p(data);
 
-    for ( int y = 0; y < GBX_LCD_YRES; ++y ) {
+    for ( int y = 0; y < m_height; ++y ) {
         wxNativePixelData::Iterator rowStart = p;
-        for ( int x = 0; x < GBX_LCD_XRES; ++x, ++p ) {
-            uint32_t color = fb[y * GBX_LCD_XRES + x];
+        for ( int x = 0; x < m_width; ++x, ++p ) {
+            uint32_t color = fb[y * m_width + x];
             p.Red()   = color & 0xFF;
             p.Green() = (color >> 8) & 0xFF;
             p.Blue()  = (color >> 16) & 0xFF;
@@ -166,9 +165,9 @@ void BitmapWidget::ClearFramebuffer(uint8_t value)
     wxNativePixelData data(*m_bmp);
     wxNativePixelData::Iterator p(data);
 
-    for (int y = 0; y < GBX_LCD_YRES; ++y) {
+    for (int y = 0; y < m_height; ++y) {
         wxNativePixelData::Iterator rowStart = p;
-        for (int x = 0; x < GBX_LCD_XRES; ++x, ++p) {
+        for (int x = 0; x < m_width; ++x, ++p) {
             p.Red()   = value;
             p.Green() = value;
             p.Blue()  = value;

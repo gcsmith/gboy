@@ -24,6 +24,8 @@
                             wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP }
 #define cmd_optb(s, l, d) { wxCMD_LINE_SWITCH, wxT(s), wxT(l), wxT(d),    \
                             wxCMD_LINE_VAL_NONE }
+#define cmd_opti(s, l, d) { wxCMD_LINE_OPTION, wxT(s), wxT(l), wxT(d),    \
+                            wxCMD_LINE_VAL_NUMBER }
 #define cmd_opts(s, l, d) { wxCMD_LINE_OPTION, wxT(s), wxT(l), wxT(d),    \
                             wxCMD_LINE_VAL_STRING }
 #define cmd_parm(d)       { wxCMD_LINE_PARAM, NULL, NULL, wxT(d),         \
@@ -45,6 +47,7 @@ protected:
     bool m_fullscreen;
     bool m_vsync;
     bool m_turbo;
+    long m_scale;
     int m_system;
 };
 
