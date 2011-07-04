@@ -183,14 +183,16 @@ void gbxThread::SetBiosDir(const wxString &path)
 }
 
 // ----------------------------------------------------------------------------
-void gbxThread::SetPaused(bool paused)
+bool gbxThread::SetPaused(bool paused)
 {
     wxCriticalSectionLocker locker(m_cs);
+    bool old_value = m_paused;
     m_paused = paused;
     
     // if the thread is running and blocked on pause, signal it to wake up
     wxMutexLocker pauseLocker(m_pauseLock);
     m_pauseCond.Broadcast();
+    return old_value;
 }
 
 // ----------------------------------------------------------------------------
@@ -201,18 +203,24 @@ bool gbxThread::Paused() const
 }
 
 // ----------------------------------------------------------------------------
-void gbxThread::SetThrottleEnabled(bool throttle)
+bool gbxThread::SetThrottleEnabled(bool throttle)
 {
     wxCriticalSectionLocker locker(m_cs);
+    bool old_value = m_throttle;
+
     m_throttle = throttle;
+    return old_value;
 }
 
 // ----------------------------------------------------------------------------
-void gbxThread::SetDebuggerEnabled(bool enabled)
+bool gbxThread::SetDebuggerEnabled(bool enabled)
 {
     wxCriticalSectionLocker locker(m_cs);
-    gbx_set_debugger(m_ctx, enabled ? 1 : 0);
+    bool old_value = m_debugger;
+
     m_debugger = enabled;
+    gbx_set_debugger(m_ctx, enabled ? 1 : 0);
+    return old_value;
 }
 
 // ----------------------------------------------------------------------------

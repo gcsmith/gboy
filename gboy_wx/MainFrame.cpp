@@ -235,6 +235,7 @@ void MainFrame::SetupEventHandlers()
 void MainFrame::LoadFile(const wxString &path)
 {
     wxFileName filename(path);
+    filename.MakeAbsolute();
 
     if (m_gbx->IsRunning())
         CreateEmulatorContext();
@@ -442,8 +443,7 @@ void MainFrame::OnMachineStep(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnInputDialog(wxCommandEvent &event)
 {
-    bool paused = m_gbx->Paused();
-    m_gbx->SetPaused(true);
+    bool was_paused = m_gbx->SetPaused(true);
 
     InputDialog *dialog = new InputDialog(this);
     dialog->SetKeyMappings(m_keymap);
@@ -453,32 +453,30 @@ void MainFrame::OnInputDialog(wxCommandEvent &event)
         dialog->GetKeyMappings(m_keymap);
     }
 
-    m_gbx->SetPaused(paused);
+    m_gbx->SetPaused(was_paused);
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnSoundDialog(wxCommandEvent &event)
 {
-    bool paused = m_gbx->Paused();
-    m_gbx->SetPaused(true);
+    bool was_paused = m_gbx->SetPaused(true);
 
     SoundDialog *dialog = new SoundDialog(this);
+
     if (wxID_OK == dialog->ShowModal()) {
         // commit sound settings
     }
 
-    m_gbx->SetPaused(paused);
+    m_gbx->SetPaused(was_paused);
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnDisplayDialog(wxCommandEvent &event)
 {
-    bool paused = m_gbx->Paused();
-    m_gbx->SetPaused(true);
+    bool was_paused = m_gbx->SetPaused(true);
 
     // create and initialize display dialog based on current settings
     DisplayDialog *dialog = new DisplayDialog(this);
-
     dialog->SetOutputModule(m_outputModule);
     dialog->SetFilterEnabled(m_render->StretchFilter());
     dialog->SetFilterType(m_render->FilterType());
@@ -496,7 +494,7 @@ void MainFrame::OnDisplayDialog(wxCommandEvent &event)
         m_render->SetScalingType(dialog->ScalingType());
     }
 
-    m_gbx->SetPaused(paused);
+    m_gbx->SetPaused(was_paused);
 }
 
 // ----------------------------------------------------------------------------

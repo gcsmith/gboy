@@ -34,17 +34,6 @@ InputDialog::InputDialog(wxWindow *parent)
     SetupField(m_selectEdit, INPUT_SELECT);
     SetupField(m_startEdit,  INPUT_START);
 
-    for (int i = 0; i < NUM_INPUTS; i++) {
-        m_fields[i]->Connect(wxID_ANY, wxEVT_KEY_DOWN,
-                wxKeyEventHandler(InputDialog::OnKeyDown), NULL, this);
-        m_fields[i]->Connect(wxID_ANY, wxEVT_KEY_UP,
-                wxKeyEventHandler(InputDialog::OnKeyUp), NULL, this);
-        m_fields[i]->Connect(wxID_ANY, wxEVT_SET_FOCUS,
-                wxFocusEventHandler(InputDialog::OnSetFocus), NULL, this);
-        m_fields[i]->Connect(wxID_ANY, wxEVT_KILL_FOCUS,
-                wxFocusEventHandler(InputDialog::OnKillFocus), NULL, this);
-    }
-
     m_joypadPage->SetFocus();
 }
 
@@ -84,6 +73,15 @@ void InputDialog::GetKeyMappings(std::map<int, int> &keymap)
 // ----------------------------------------------------------------------------
 void InputDialog::SetupField(wxTextCtrl *field, int input_index)
 {
+    field->Connect(wxID_ANY, wxEVT_KEY_DOWN,
+            wxKeyEventHandler(InputDialog::OnKeyDown), NULL, this);
+    field->Connect(wxID_ANY, wxEVT_KEY_UP,
+            wxKeyEventHandler(InputDialog::OnKeyUp), NULL, this);
+    field->Connect(wxID_ANY, wxEVT_SET_FOCUS,
+            wxFocusEventHandler(InputDialog::OnSetFocus), NULL, this);
+    field->Connect(wxID_ANY, wxEVT_KILL_FOCUS,
+            wxFocusEventHandler(InputDialog::OnKillFocus), NULL, this);
+
     m_fieldData[input_index].input_index = input_index;
     m_fieldData[input_index].keycode = -1;
 

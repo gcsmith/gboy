@@ -34,9 +34,9 @@ public:
 
     bool LoadFile(const wxString &path);
     void SetBiosDir(const wxString &path);
-    void SetPaused(bool paused);
-    void SetDebuggerEnabled(bool enabled);
-    void SetThrottleEnabled(bool throttle);
+    bool SetPaused(bool paused);
+    bool SetDebuggerEnabled(bool enabled);
+    bool SetThrottleEnabled(bool throttle);
     void SetInputState(int key, int pressed);
 
     const uint32_t *Framebuffer() const;
