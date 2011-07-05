@@ -22,6 +22,7 @@ elseif(UNIX)
         -D_GNU_SOURCE
         -Wall -Werror
     )
+set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} rt m)
 else()
     message(FATAL_ERROR "Unsupported platform detected")
 endif()

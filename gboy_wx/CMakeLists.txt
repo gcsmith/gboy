@@ -28,6 +28,7 @@ set(gboy_wx_hdr
     GboyApp.h
     InputDialog.h
     MainFrame.h
+    PrecisionTimer.h
     RenderWidget.h
     SoundDialog.h
 )

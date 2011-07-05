@@ -17,9 +17,13 @@
 
 #undef HAVE_INTRIN_H
 #undef HAVE_STDINT_H
+#undef HAVE_CLOCK_GETTIME
+#undef HAVE_WINDOWS_H
 
 #cmakedefine HAVE_INTRIN_H
 #cmakedefine HAVE_STDINT_H
+#cmakedefine HAVE_CLOCK_GETTIME
+#cmakedefine HAVE_WINDOWS_H
 
 #cmakedefine ENABLE_LOG_INFO
 #cmakedefine ENABLE_LOG_ERR

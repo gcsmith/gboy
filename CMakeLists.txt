@@ -54,6 +54,10 @@ endif(MERCURIAL_FOUND)
 include(CheckIncludeFiles)
 check_include_files(intrin.h HAVE_INTRIN_H)
 check_include_files(stdint.h HAVE_STDINT_H)
+check_include_files(windows.h HAVE_WINDOWS_H)
+
+include(CheckFunctionExists)
+check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
 
 configure_file(
     ${CMAKE_SOURCE_DIR}/gboy/config.h.cmake

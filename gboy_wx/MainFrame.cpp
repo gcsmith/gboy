@@ -594,17 +594,22 @@ void MainFrame::OnPerfTimerTick(wxTimerEvent &event)
 {
     if (m_lastCycles <= 0) {
         m_lastCycles = m_gbx->CycleCount();
+        m_timer.Start();
         return;
     }
 
-    long cycles = m_gbx->CycleCount();
-    float cps = cycles - m_lastCycles;
-    m_lastCycles = cycles;
+    long curr_cycles = m_gbx->CycleCount();
+    long cycle_delta = curr_cycles - m_lastCycles;
 
-    float mhz = cps / 1000000.0f;
-    int percent = (int)(0.5f + 100.0f * cps / CPU_FREQ_DMG);
+    PrecisionTimer::Real hz = cycle_delta / m_timer.Elapsed();
+    PrecisionTimer::Real mhz = hz / 1000000;
+
+    int percent = (int)(0.5 + 100 * hz / CPU_FREQ_DMG);
     wxString label = wxString::Format(wxT("%.2f MHz / %d%%"), mhz, percent);
     SetStatusText(label, 1);
+
+    m_lastCycles = curr_cycles;
+    m_timer.Start();
 }
 
 // ----------------------------------------------------------------------------

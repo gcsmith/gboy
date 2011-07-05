@@ -25,6 +25,7 @@
 #include <wx/xrc/xmlres.h>
 #include "gbxThread.h"
 #include "InputDialog.h"
+#include "PrecisionTimer.h"
 #include "RenderWidget.h"
 #include "resource.h"
 
@@ -116,6 +117,7 @@ protected:
     int            m_outputModule;
     int            m_filterType;
     int            m_scalingType;
+    PrecisionTimer m_timer;
 };
 
 #endif // GBOY_MAINFRAME__H

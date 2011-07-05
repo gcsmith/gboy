@@ -55,7 +55,7 @@ void ext_sound_read(void *data, uint16_t addr, uint8_t *value)
 gbxThread::gbxThread(wxEvtHandler *parent, int system)
 : wxThread(wxTHREAD_JOINABLE), m_parent(parent), m_pauseCond(m_pauseLock),
   m_ctx(NULL), m_running(false), m_paused(false), m_throttle(true),
-  m_debugger(false), m_error(0)
+  m_debugger(false), m_lcdEnabled(true), m_turboTicks(0), m_error(0)
 {
     if (gbx_create_context(&m_ctx, system))
         log_err("failed to create gbx context\n");
@@ -77,37 +77,31 @@ gbxThread::~gbxThread()
 // ----------------------------------------------------------------------------
 wxThread::ExitCode gbxThread::Entry()
 {
-    std::cerr << "Powering on system...\n";
-
+    log_info("Powering on system...\n");
     gbx_power_on(m_ctx);
+
+    static const int execute_cycles = 100000;
     SetThrottleFrequency(CPU_FREQ_DMG);
 
-    wxStopWatch ws;
-    ws.Start();
-
-    int turbo_ticks = 0;
     m_running = true;
-
     while (m_running) {
-        // if paused, block until next pause toggle event is fired
+
         if (m_paused) {
+            // if paused, block until next pause toggle event is fired
             wxMutexLocker locker(m_pauseLock);
             m_pauseCond.Wait();
+
+            // reset the timer so there's no lurching when unpaused
+            m_timer.Start();
             continue;
         }
 
-        m_cs.Enter();
-        long startClock = ws.Time();
-        gbx_execute_cycles(m_ctx, m_cyclesPerSec);
-        float elapsed = (ws.Time() - startClock);
-        m_cs.Leave();
+        wxCriticalSectionLocker locker(m_cs);
+        gbx_execute_cycles(m_ctx, execute_cycles);
 
-        if (m_throttle)
-            DynamicSleep(elapsed);
-        else if (++turbo_ticks >= 50) {
-            // give GUI thread a chance to access the CS every now and then
-            turbo_ticks = 0;
-            Sleep(1);
+        if (!m_lcdEnabled) {
+            // sleep here when the LCD is disabled, as there will be no vblank
+            DynamicSleep();
         }
     }
 
@@ -117,30 +111,40 @@ wxThread::ExitCode gbxThread::Entry()
 // ----------------------------------------------------------------------------
 void gbxThread::SetThrottleFrequency(int hz)
 {
-    const float update_period_ms = 16.666667f;
-    m_clockRate = (float)hz;
-    m_cyclesPerSec = (int)(update_period_ms * m_clockRate / 1000.0f);
-    m_realPeriod = m_cyclesPerSec * 1000.0f / m_clockRate;
+    m_clockHz = (PrecisionTimer::Real)hz;
+    m_lastCycles = gbx_get_cycle_count(m_ctx);
+    m_timer.Start();
 }
 
 // ----------------------------------------------------------------------------
-void gbxThread::DynamicSleep(float elapsed)
+void gbxThread::DynamicSleep()
 {
-    float delay_period = m_realPeriod - elapsed;
-    if (delay_period <= 0) {
-        // delay unnecessary if emulator can't perform at full speed
-        m_error = 0.0f;
-        return;
-    }
+    long curr_cycles = gbx_get_cycle_count(m_ctx);
 
-    // compensate for millisecond precision (XXX: could be better)
-    m_error += (delay_period - (int)delay_period);
-    if (m_error >= 1.0f) {
-        delay_period += (int)m_error;
-        m_error -= (int)m_error;
-    }
+    m_cs.Leave();
+    if (m_throttle) {
+        long cycle_delta = curr_cycles - m_lastCycles;
 
-    Sleep((int)delay_period);
+        PrecisionTimer::Real elapsed_ms = m_timer.ElapsedMS();
+        PrecisionTimer::Real target_ms = 1000 * cycle_delta / m_clockHz;
+        PrecisionTimer::Real delay_ms = target_ms - elapsed_ms + m_error;
+
+        if (delay_ms > 0) {
+            wxMilliSleep((int)(delay_ms + 0.5));
+            m_error += target_ms - m_timer.ElapsedMS();
+        }
+    }
+    else if (++m_turboTicks > 50) {
+        // sleep every now and then even if cpu throttling is disabled so
+        // that the GUI thread isn't starved
+        wxMilliSleep(1);
+        m_turboTicks = 0;
+    }
+    m_cs.Enter();
+
+    // reset the timer for the next iteration
+    m_lastCycles = curr_cycles;
+    m_timer.Start();
 }
 
 // ----------------------------------------------------------------------------
@@ -149,6 +153,8 @@ void gbxThread::PostVideoSync()
     gbx_get_framebuffer(m_ctx, m_framebuffer);
     wxCommandEvent event(wxEVT_GBX_SYNC, wxID_ANY);
     m_parent->AddPendingEvent(event);
+
+    DynamicSleep();
 }
 
 // ----------------------------------------------------------------------------
@@ -166,6 +172,7 @@ void gbxThread::PostLCDEnabled(int enabled)
     wxCommandEvent event(wxEVT_GBX_LCD, wxID_ANY);
     event.SetInt(enabled);
     m_parent->AddPendingEvent(event);
+    m_lcdEnabled = (bool)enabled;
 }
 
 // ----------------------------------------------------------------------------

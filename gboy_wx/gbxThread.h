@@ -19,6 +19,7 @@
 #define GBOY_GBXTHREAD__H
 
 #include <wx/wx.h>
+#include "PrecisionTimer.h"
 #include "gbx.h"
 
 DECLARE_EVENT_TYPE(wxEVT_GBX_SYNC, -1)
@@ -52,7 +53,7 @@ public:
 
 protected:
     void SetThrottleFrequency(int hz);
-    void DynamicSleep(float elapsed);
+    void DynamicSleep();
 
     void PostVideoSync();
     void PostSpeedChange(int speed);
@@ -68,15 +69,18 @@ protected:
     wxCondition m_pauseCond;
     mutable wxCriticalSection m_cs;
     gbx_context_t *m_ctx;
+    uint32_t m_framebuffer[GBX_LCD_XRES * GBX_LCD_YRES];
     bool m_running;
     bool m_paused;
     bool m_throttle;
     bool m_debugger;
-    uint32_t m_framebuffer[GBX_LCD_XRES * GBX_LCD_YRES];
-    float m_clockRate;
-    float m_realPeriod;
-    float m_error;
-    int m_cyclesPerSec;
+    bool m_lcdEnabled;
+    long m_turboTicks;
+    long m_lastCycles;
+    long m_cyclesPerUpdate;
+    PrecisionTimer m_timer;
+    PrecisionTimer::Real m_clockHz;
+    PrecisionTimer::Real m_error;
 };
 
 #endif // GBOY_GBXTHREAD__H
