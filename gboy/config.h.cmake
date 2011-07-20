@@ -20,22 +20,29 @@
 #undef HAVE_CLOCK_GETTIME
 #undef HAVE_WINDOWS_H
 
+#cmakedefine ARCH_X86
+#cmakedefine ARCH_X86_64
+#cmakedefine ARCH_ARM
+
+#cmakedefine PLATFORM_WIN32
+#cmakedefine PLATFORM_UNIX
+
 #cmakedefine HAVE_INTRIN_H
 #cmakedefine HAVE_STDINT_H
 #cmakedefine HAVE_CLOCK_GETTIME
 #cmakedefine HAVE_WINDOWS_H
 
 #cmakedefine ENABLE_LOG_INFO
-#cmakedefine ENABLE_LOG_ERR
-#cmakedefine ENABLE_LOG_WARN
-#cmakedefine ENABLE_LOG_DBG
-#cmakedefine ENABLE_LOG_SPEW
+#cmakedefine ENABLE_LOG_ERROR
+#cmakedefine ENABLE_LOG_WARNING
+#cmakedefine ENABLE_LOG_DEBUG
+#cmakedefine ENABLE_LOG_DEBUGSPEW
 
-#define GBOY_VER_MAJ  "@GBOY_VER_MAJ@"
-#define GBOY_VER_MIN  "@GBOY_VER_MIN@"
-#define GBOY_VER_REV  "@GBOY_VER_REV@"
+#define GBOY_VER_MAJ  @GBOY_VER_MAJ@
+#define GBOY_VER_MIN  @GBOY_VER_MIN@
+#define GBOY_VER_REV  @GBOY_VER_REV@
+
 #define GBOY_VER_HGID "@GBOY_VER_HGID@"
-
-#define GBOY_VER_STR  GBOY_VER_MAJ "." GBOY_VER_MIN "." GBOY_VER_REV
+#define GBOY_VER_STR  "@GBOY_VER_MAJ@.@GBOY_VER_MIN@.@GBOY_VER_REV@"
 #define GBOY_ID_STR   GBOY_VER_STR ":" GBOY_VER_HGID
 

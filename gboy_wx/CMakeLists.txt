@@ -8,7 +8,7 @@ project(gboy_wx)
 
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(wxWidgets REQUIRED COMPONENTS gl core base adv xrc xml html)
+find_package(wxWidgets REQUIRED COMPONENTS gl core base adv xrc xml html stc scintilla)
 
 include(${wxWidgets_USE_FILE})
 
@@ -24,6 +24,8 @@ add_definitions(
 
 set(gboy_wx_hdr
     gbxThread.h
+    xrc_wrapper.h
+    ConsoleFrame.h
     DisplayDialog.h
     GboyApp.h
     InputDialog.h
@@ -35,6 +37,7 @@ set(gboy_wx_hdr
 
 set(gboy_wx_src
     gbxThread.cpp
+    ConsoleFrame.cpp
     DisplayDialog.cpp
     GboyApp.cpp
     InputDialog.cpp

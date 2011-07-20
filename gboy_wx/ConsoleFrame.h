@@ -15,26 +15,28 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef GBOY_DISPLAYDIALOG__H
-#define GBOY_DISPLAYDIALOG__H
+#ifndef GBOY_CONSOLEFRAME__H
+#define GBOY_CONSOLEFRAME__H
 
+#include <wx/stc/stc.h>
 #include "xrc_wrapper.h"
 
-class DisplayDialog: public DisplayDialog_XRC
+#define NUM_INPUTS 8
+
+class ConsoleFrame: public ConsoleFrame_XRC
 {
 public:
-    DisplayDialog(wxWindow *parent);
+    ConsoleFrame(wxWindow *parent);
+    virtual ~ConsoleFrame();
 
-    void SetOutputModule(int index);
-    void SetFilterType(int index);
-    void SetScalingType(int index);
-    void SetFilterEnabled(bool enabled);
+    void OnCloseWindow(wxCloseEvent &evt);
 
-    int OutputModule() const;
-    int FilterType() const;
-    int ScalingType() const;
-    bool FilterEnabled() const;
+    void Write(const wxString &msg);
+    void WriteLn(const wxString &msg);
+
+protected:
+    wxStyledTextCtrl *m_text;
 };
 
-#endif // GBOY_DISPLAYDIALOG__H
+#endif // GBOY_CONSOLEFRAME__H
 

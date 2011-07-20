@@ -18,7 +18,12 @@
 #ifndef GBOY_GBX__H
 #define GBOY_GBX__H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "cpu.h"
+#include "logging.h"
 #include "memory.h"
 #include "romfile.h"
 #include "video.h"
@@ -89,10 +94,6 @@ struct gbx_context {
     void *userdata;
     FILE *serial_log;
 };
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 int  gbx_create_context(gbx_context_t **ctx, int system);
 void gbx_destroy_context(gbx_context_t *ctx);

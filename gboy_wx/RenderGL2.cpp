@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#include "gbx.h"
 #include <GL/glew.h>
 #ifdef PLATFORM_WIN32
 #include <GL/wglew.h>
@@ -70,6 +71,7 @@ protected:
     void UpdateDimensions();
     void ComputeAspectCorrectDimensions(int cx, int cy);
 
+    void OnCloseWindow(wxCloseEvent &evt);
     void OnSize(wxSizeEvent &event);
     void OnPaint(wxPaintEvent &event);
     void OnEraseBackground(wxEraseEvent &event);
@@ -141,6 +143,8 @@ GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context,
     if (!m_context)
         m_context = new wxGLContext(this);
 
+    Connect(wxEVT_CLOSE_WINDOW,
+            wxCloseEventHandler(GL2Widget::OnCloseWindow));
     Connect(wxID_ANY, wxEVT_SIZE,
             wxSizeEventHandler(GL2Widget::OnSize));
     Connect(wxID_ANY, wxEVT_PAINT,
@@ -159,11 +163,6 @@ GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context,
 // ----------------------------------------------------------------------------
 GL2Widget::~GL2Widget()
 {
-    SetCurrent(*m_context);
-
-    glDeleteBuffers(1, &m_vbo);
-    glDeleteBuffers(1, &m_pbo);
-    glDeleteTextures(1, &m_texture);
 }
 
 // ----------------------------------------------------------------------------
@@ -198,15 +197,15 @@ void GL2Widget::SetSwapInterval(int interval)
 #ifdef PLATFORM_WIN32
     if (WGLEW_EXT_swap_control)
         wglSwapIntervalEXT(interval);
-    else
-        log_err("WGL_EXT_swap_control is not available\n");
+    //else
+    //    log_err("WGL_EXT_swap_control is not available\n");
 #elif defined(PLATFORM_UNIX)
     if (GLXEW_SGI_swap_control)
         glXSwapIntervalSGI(interval);
-    else
-        log_err("GLX_SGI_swap_control is not available\n");
+    //else
+    //    log_err("GLX_SGI_swap_control is not available\n");
 #else
-    log_err("vertical sync is not available on this platform\n");
+    //log_err("vertical sync is not available on this platform\n");
 #endif 
 }
 
@@ -254,14 +253,14 @@ void GL2Widget::ClearFramebuffer(uint8_t value)
 void GL2Widget::InitGL()
 {
     GLint rc = glewInit();
-    if (GLEW_OK != rc)
-        log_err("failed to initialize GLEW (%s)\n", glewGetErrorString(rc));
+    //if (GLEW_OK != rc)
+    //    log_err("failed to initialize GLEW (%s)\n", glewGetErrorString(rc));
 
     m_pboSize = m_width * m_height * 4;
     m_textureDim = tex_pow2(m_width, m_height);
 
-    m_tu = m_width  / (float)(m_textureDim + 1);
-    m_tv = m_height / (float)(m_textureDim + 1);
+    m_tu = m_width  / (float)m_textureDim;
+    m_tv = m_height / (float)m_textureDim;
 
     m_x0 = m_y0 = -1.0f;
     m_x1 = m_y1 = 1.0f;
@@ -302,7 +301,7 @@ void GL2Widget::InitGL()
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * 4, NULL, GL_STREAM_DRAW);
 
-    log_info("OpenGL2 renderer successfully initialized\n");
+    //log_info("OpenGL2 renderer successfully initialized\n");
 
     SetSwapInterval(0);
     ClearFramebuffer(0);
@@ -356,6 +355,18 @@ void GL2Widget::ComputeAspectCorrectDimensions(int cx, int cy)
         m_y0 = -ratio;
         m_y1 = ratio;
     }
+}
+
+// ----------------------------------------------------------------------------
+void GL2Widget::OnCloseWindow(wxCloseEvent &evt)
+{
+    SetCurrent(*m_context);
+
+    glDeleteBuffers(1, &m_vbo);
+    glDeleteBuffers(1, &m_pbo);
+    glDeleteTextures(1, &m_texture);
+
+    evt.Skip();
 }
 
 // ----------------------------------------------------------------------------

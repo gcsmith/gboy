@@ -16,15 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <wx/wx.h>
-#include <wx/notebook.h>
-#include <wx/xrc/xmlres.h>
 #include "SoundDialog.h"
 
 SoundDialog::SoundDialog(wxWindow *parent)
 : SoundDialog_XRC(parent)
 {
-    m_outputModule->Append(wxT("Null"));
-    m_outputModule->Append(wxT("SDL"));
+    m_outputModule->Append("Null");
+    m_outputModule->Append("SDL");
     m_outputModule->SetFocus();
 }
 

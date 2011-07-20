@@ -22,9 +22,10 @@
 #include "PrecisionTimer.h"
 #include "gbx.h"
 
-DECLARE_EVENT_TYPE(wxEVT_GBX_SYNC, -1)
-DECLARE_EVENT_TYPE(wxEVT_GBX_SPEED, -1)
-DECLARE_EVENT_TYPE(wxEVT_GBX_LCD, -1)
+wxDECLARE_EVENT(wxEVT_GBX_LOG, wxThreadEvent);
+wxDECLARE_EVENT(wxEVT_GBX_SYNC, wxThreadEvent);
+wxDECLARE_EVENT(wxEVT_GBX_SPEED, wxThreadEvent);
+wxDECLARE_EVENT(wxEVT_GBX_LCD, wxThreadEvent);
 
 class gbxThread: public wxThread
 {

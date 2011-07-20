@@ -9,9 +9,15 @@ project(libgboy_project)
 set(gboy_hdr
     cmdline.h
     common.h
+    cpu.h
     gbx.h
+    interp.h
+    logging.h
+    memory.h
+    memory_util.h
     ports.h
     romfile.h
+    video.h
 )
 
 set(gboy_src

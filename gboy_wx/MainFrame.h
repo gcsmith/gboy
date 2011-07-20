@@ -24,20 +24,22 @@
 #include <wx/notebook.h>
 #include <wx/xrc/xmlres.h>
 #include "gbxThread.h"
+#include "ConsoleFrame.h"
 #include "InputDialog.h"
 #include "PrecisionTimer.h"
 #include "RenderWidget.h"
-#include "resource.h"
+#include "xrc_wrapper.h"
 
 class MainFrame: public MainFrame_XRC
 {
     typedef std::map<int, int> KeyMap;
 
 public:
-    MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title);
+    MainFrame(wxWindow *parent, wxConfig *config, const char *title);
     virtual ~MainFrame();
 
     void LoadFile(const wxString &path);
+    void Shutdown();
 
 protected:
     void SetupStatusBar();
@@ -89,16 +91,19 @@ protected:
 
     void OnToggleStatusbar(wxCommandEvent &event);
     void OnToggleToolbar(wxCommandEvent &event);
+    void OnToggleConsoleWindow(wxCommandEvent &event);
     void OnToggleFullscreen(wxCommandEvent &event);
     void OnToggleVsync(wxCommandEvent &event);
 
     void OnReportBug(wxCommandEvent &event);
     void OnAbout(wxCommandEvent &event);
+    
+    void OnGbxLogMessage(wxThreadEvent &event);
+    void OnGbxVideoSync(wxThreadEvent &event);
+    void OnGbxSpeedChange(wxThreadEvent &event);
+    void OnGbxLcdEnabled(wxThreadEvent &event);
 
-    void OnGbxVideoSync(wxCommandEvent &event);
-    void OnGbxSpeedChange(wxCommandEvent &event);
-    void OnGbxLcdEnabled(wxCommandEvent &event);
-
+    void OnCloseWindow(wxCloseEvent &evt);
     void OnKeyDown(wxKeyEvent &event);
     void OnKeyUp(wxKeyEvent &event);
     void OnPerfTimerTick(wxTimerEvent &event);
@@ -108,6 +113,7 @@ protected:
     wxConfig      *m_config;
     wxFileHistory *m_recent;
     wxTimer       *m_perftimer;
+    ConsoleFrame  *m_console;
     gbxThread     *m_gbx;
     RenderWidget  *m_render;
     KeyMap         m_keymap;

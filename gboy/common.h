@@ -78,58 +78,6 @@ typedef unsigned long long uint64_t;
 
 #endif // _MSC_VER
 
-#include <stdarg.h>
-
-INLINE void log_info(const char *fmt, ...)
-{
-#ifdef ENABLE_LOG_INFO
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stdout, fmt, ap);
-    va_end(ap);
-#endif
-}
-
-INLINE void log_dbg(const char *fmt, ...)
-{
-#ifdef ENABLE_LOG_DBG
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-#endif
-}
-
-INLINE void log_err(const char *fmt, ...)
-{
-#ifdef ENABLE_LOG_ERR
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-#endif
-}
-
-INLINE void log_warn(const char *fmt, ...)
-{
-#ifdef ENABLE_LOG_WARN
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-#endif
-}
-
-INLINE void log_spew(const char *fmt, ...)
-{
-#ifdef ENABLE_LOG_SPEW
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-#endif
-}
-
 // forward declare gbx_context and its typedef, as it is used everywhere
 struct gbx_context;
 typedef struct gbx_context gbx_context_t;

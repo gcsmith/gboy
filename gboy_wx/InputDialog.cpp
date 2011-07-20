@@ -16,8 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <wx/wx.h>
-#include <wx/notebook.h>
-#include <wx/xrc/xmlres.h>
 #include "InputDialog.h"
 #include "gbx.h"
 
@@ -93,11 +91,11 @@ void InputDialog::SetupField(wxTextCtrl *field, int input_index)
 wxString InputDialog::KeyToString(int keycode)
 {
     if (keycode == WXK_ALT)
-        return wxT("ALT");
+        return "ALT";
     else if (keycode == WXK_CONTROL)
-        return wxT("CONTROL");
+        return "CONTROL";
     else if (keycode == WXK_SHIFT)
-        return wxT("SHIFT");
+        return "SHIFT";
     else {
         wxAcceleratorEntry accel(0, keycode);
         return accel.ToString();
@@ -108,7 +106,7 @@ wxString InputDialog::KeyToString(int keycode)
 void InputDialog::OnSetFocus(wxFocusEvent &event)
 {
     wxTextCtrl *child = (wxTextCtrl *)event.GetEventObject();
-    child->SetValue(wxT("<press key>"));
+    child->SetValue("<press key>");
 }
 
 // ----------------------------------------------------------------------------
@@ -120,7 +118,7 @@ void InputDialog::OnKillFocus(wxFocusEvent &event)
     if (-1 != data->keycode)
         child->SetValue(KeyToString(data->keycode));
     else
-        child->SetValue(wxT(""));
+        child->SetValue("");
 }
 
 // ----------------------------------------------------------------------------
@@ -138,7 +136,7 @@ void InputDialog::OnKeyDown(wxKeyEvent &event)
         // scan fields for duplicate assignments and clear them
         for (int i = 0; i < NUM_INPUTS; i++) {
             if (i != data->input_index && m_fieldData[i].keycode == keycode) {
-                m_fields[i]->SetValue(wxT(""));
+                m_fields[i]->SetValue("");
                 m_fieldData[i].keycode = -1;
             }
         }

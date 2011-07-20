@@ -15,26 +15,15 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef GBOY_DISPLAYDIALOG__H
-#define GBOY_DISPLAYDIALOG__H
+#ifndef GBOY_XRC_WRAPPERS__H
+#define GBOY_XRC_WRAPPERS__H
 
-#include "xrc_wrapper.h"
+#include <wx/html/htmlwin.h>
+#include <wx/notebook.h>
+#include <wx/richtext/richtextctrl.h>
+#include <wx/xrc/xmlres.h>
 
-class DisplayDialog: public DisplayDialog_XRC
-{
-public:
-    DisplayDialog(wxWindow *parent);
+#include "resource.h"
 
-    void SetOutputModule(int index);
-    void SetFilterType(int index);
-    void SetScalingType(int index);
-    void SetFilterEnabled(bool enabled);
-
-    int OutputModule() const;
-    int FilterType() const;
-    int ScalingType() const;
-    bool FilterEnabled() const;
-};
-
-#endif // GBOY_DISPLAYDIALOG__H
+#endif // GBOY_XRC_WRAPPERS__H
 

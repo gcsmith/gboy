@@ -19,7 +19,7 @@
 #define GBOY_INPUTDIALOG__H
 
 #include <map>
-#include "resource.h"
+#include "xrc_wrapper.h"
 
 #define NUM_INPUTS 8
 

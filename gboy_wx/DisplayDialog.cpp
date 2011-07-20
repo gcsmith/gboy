@@ -16,19 +16,17 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <wx/wx.h>
-#include <wx/notebook.h>
-#include <wx/xrc/xmlres.h>
 #include "DisplayDialog.h"
 
 // ----------------------------------------------------------------------------
 DisplayDialog::DisplayDialog(wxWindow *parent)
 : DisplayDialog_XRC(parent)
 {
-    m_outputModule->Append(wxT("Software"));
-    m_outputModule->Append(wxT("OpenGL"));
+    m_outputModule->Append("Software");
+    m_outputModule->Append("OpenGL");
     m_outputModule->SetSelection(0);
 
-    m_filterType->Append(wxT("None"));
+    m_filterType->Append("None");
     m_filterType->SetSelection(0);
 
     m_videoScaling->SetSelection(0);

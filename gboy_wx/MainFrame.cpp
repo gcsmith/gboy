@@ -24,7 +24,7 @@
 #include "RenderWidget.h"
 
 // ----------------------------------------------------------------------------
-MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title)
+MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const char *title)
 : MainFrame_XRC(parent), m_config(config), m_recent(NULL), m_perftimer(NULL),
   m_gbx(NULL), m_render(NULL), m_lastCycles(0)
 {
@@ -45,10 +45,19 @@ MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const wxChar *title)
     m_perftimer = new wxTimer(this);
     Connect(m_perftimer->GetId(), wxEVT_TIMER,
             wxTimerEventHandler(MainFrame::OnPerfTimerTick));
+
+    m_console = new ConsoleFrame(this);
+    m_console->Show(false);
 }
 
 // ----------------------------------------------------------------------------
 MainFrame::~MainFrame()
+{
+    Shutdown();
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::Shutdown()
 {
     if (m_perftimer) {
         m_perftimer->Stop();
@@ -74,29 +83,29 @@ void MainFrame::LoadConfiguration()
     int width, height, keycode;
 
     // load window related settings
-    m_config->SetPath(wxT("/window"));
-    m_config->Read(wxT("show_statusbar"), &showStatusBar, true);
-    m_config->Read(wxT("show_toolbar"), &showToolBar, true);
-    m_config->Read(wxT("resolution_x"), &width, GBX_LCD_XRES * 3);
-    m_config->Read(wxT("resolution_y"), &height, GBX_LCD_YRES * 3);
-    m_config->Read(wxT("fullscreen"), &fullscreen, false);
+    m_config->SetPath("/window");
+    m_config->Read("show_statusbar", &showStatusBar, true);
+    m_config->Read("show_toolbar", &showToolBar, true);
+    m_config->Read("resolution_x", &width, GBX_LCD_XRES * 3);
+    m_config->Read("resolution_y", &height, GBX_LCD_YRES * 3);
+    m_config->Read("fullscreen", &fullscreen, false);
 
     // load display related settings
-    m_config->SetPath(wxT("/display"));
-    m_config->Read(wxT("output_module"), &m_outputModule, 0);
-    m_config->Read(wxT("filter_enable"), &m_filterEnable, false);
-    m_config->Read(wxT("filter_type"), &m_filterType, 0);
-    m_config->Read(wxT("scale_type"), &m_scalingType, 0);
-    m_config->Read(wxT("vsync_enable"), &vsync, false);
+    m_config->SetPath("/display");
+    m_config->Read("output_module", &m_outputModule, 0);
+    m_config->Read("filter_enable", &m_filterEnable, false);
+    m_config->Read("filter_type", &m_filterType, 0);
+    m_config->Read("scale_type", &m_scalingType, 0);
+    m_config->Read("vsync_enable", &vsync, false);
 
     // load key mappings
     static const int default_keycodes[8] = {
         WXK_RIGHT, WXK_LEFT, WXK_UP, WXK_DOWN, 'Z', 'X', WXK_SPACE, WXK_RETURN
     };
 
-    m_config->SetPath(wxT("/input"));
+    m_config->SetPath("/input");
     for (int i = 0; i < 8; i++) {
-        wxString input_str = wxString::Format(wxT("input_keycode_%d"), i);
+        wxString input_str = wxString::Format("input_keycode_%d", i);
         if (m_config->Read(input_str, &keycode))
             m_keymap[keycode] = i;
         else
@@ -104,7 +113,7 @@ void MainFrame::LoadConfiguration()
     }
 
     // load recent file list
-    m_config->SetPath(wxT("/mru"));
+    m_config->SetPath("/mru");
     m_recent->Load(*m_config);
 
     SetStatusBarEnabled(showStatusBar);
@@ -122,23 +131,23 @@ void MainFrame::SaveConfiguration()
     GetClientSize(&width, &height);
 
     // save window related settings
-    m_config->SetPath(wxT("/window"));
-    m_config->Write(wxT("show_statusbar"), StatusBarEnabled());
-    m_config->Write(wxT("show_toolbar"), ToolBarEnabled());
-    m_config->Write(wxT("resolution_x"), width);
-    m_config->Write(wxT("resolution_y"), height);
-    m_config->Write(wxT("fullscreen"), FullscreenEnabled());
+    m_config->SetPath("/window");
+    m_config->Write("show_statusbar", StatusBarEnabled());
+    m_config->Write("show_toolbar", ToolBarEnabled());
+    m_config->Write("resolution_x", width);
+    m_config->Write("resolution_y", height);
+    m_config->Write("fullscreen", FullscreenEnabled());
 
     // save display related settings
-    m_config->SetPath(wxT("/display"));
-    m_config->Write(wxT("output_module"), m_outputModule);
-    m_config->Write(wxT("filter_enable"), m_render->StretchFilter());
-    m_config->Write(wxT("filter_type"), m_render->FilterType());
-    m_config->Write(wxT("scale_type"), m_render->ScalingType());
-    m_config->Write(wxT("vsync_enable"), VsyncEnabled());
+    m_config->SetPath("/display");
+    m_config->Write("output_module", m_outputModule);
+    m_config->Write("filter_enable", m_render->StretchFilter());
+    m_config->Write("filter_type", m_render->FilterType());
+    m_config->Write("scale_type", m_render->ScalingType());
+    m_config->Write("vsync_enable", VsyncEnabled());
 
     // save key mappings
-    m_config->SetPath(wxT("/input"));
+    m_config->SetPath("/input");
     for (int i = 0; i < 8; i++) {
         // need to scan the map values rather than keys, but map is small...
         int keycode = -1;
@@ -147,12 +156,12 @@ void MainFrame::SaveConfiguration()
             if (iter->second == i) keycode = iter->first;
         }
 
-        wxString input_str = wxString::Format(wxT("input_keycode_%d"), i);
+        wxString input_str = wxString::Format("input_keycode_%d", i);
         m_config->Write(input_str, keycode);
     }
 
     // save recent file list
-    m_config->SetPath(wxT("/mru"));
+    m_config->SetPath("/mru");
     m_recent->Save(*m_config);
 }
 
@@ -176,7 +185,7 @@ void MainFrame::SetupRecentList()
     // locate the submenu where the recent file list will be placed
     wxMenu *recentMenu;
     if (!GetMenuBar()->FindItem(XRCID("menu_recent_lock"), &recentMenu)) {
-        log_err("failed to locate submenu for recent file list\n");
+        //log_err("failed to locate submenu for recent file list\n");
         return;
     }
 
@@ -195,7 +204,7 @@ void MainFrame::SetupRecentList()
 #define xrc_menu_evt(id, fn) \
     Connect(XRCID(id), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(fn))
 #define gbx_emu_evt(evt, fn) \
-    Connect(wxID_ANY, evt, wxCommandEventHandler(fn))
+    Connect(wxID_ANY, evt, wxThreadEventHandler(fn))
 
 // ----------------------------------------------------------------------------
 void MainFrame::SetupEventHandlers()
@@ -216,13 +225,17 @@ void MainFrame::SetupEventHandlers()
     xrc_menu_evt("menu_settings_vsync",   MainFrame::OnToggleVsync);
     xrc_menu_evt("menu_view_statusbar",   MainFrame::OnToggleStatusbar);
     xrc_menu_evt("menu_view_toolbar",     MainFrame::OnToggleToolbar);
+    xrc_menu_evt("menu_view_console",     MainFrame::OnToggleConsoleWindow);
     xrc_menu_evt("menu_help_reportbug",   MainFrame::OnReportBug);
     xrc_menu_evt("menu_help_about",       MainFrame::OnAbout);
-
+    
+    gbx_emu_evt(wxEVT_GBX_LOG,   MainFrame::OnGbxLogMessage);
     gbx_emu_evt(wxEVT_GBX_SYNC,  MainFrame::OnGbxVideoSync);
     gbx_emu_evt(wxEVT_GBX_SPEED, MainFrame::OnGbxSpeedChange);
     gbx_emu_evt(wxEVT_GBX_LCD,   MainFrame::OnGbxLcdEnabled);
 
+    Connect(wxID_ANY, wxEVT_CLOSE_WINDOW,
+            wxCloseEventHandler(MainFrame::OnCloseWindow));
     Connect(wxID_ANY, wxEVT_KEY_DOWN,
             wxKeyEventHandler(MainFrame::OnKeyDown));
     Connect(wxID_ANY, wxEVT_KEY_UP,
@@ -241,8 +254,8 @@ void MainFrame::LoadFile(const wxString &path)
         CreateEmulatorContext();
 
     if (!m_gbx->LoadFile(path)) {
-        wxString error = wxT("Failed to open file:\n") + path;
-        wxMessageBox(error, wxT("Error"), wxICON_ERROR);
+        wxString error = "Failed to open file:\n" + path;
+        wxMessageBox(error, "Error", wxICON_ERROR);
         SetEmulatorEnabled(false);
         return;
     }
@@ -299,7 +312,7 @@ void MainFrame::CreateEmulatorContext()
 
     m_gbx = new gbxThread(this, SYSTEM_AUTO);
     if (wxTHREAD_NO_ERROR != m_gbx->Create())
-        wxLogError(wxT("Failed to create gbx thread!"));
+        wxLogError("Failed to create gbx thread!");
 }
 
 // ----------------------------------------------------------------------------
@@ -313,7 +326,7 @@ void MainFrame::SetEmulatorEnabled(bool enable)
     GetMenuBar()->Check(XRCID("menu_machine_pause"), false);
     GetMenuBar()->Check(XRCID("menu_machine_turbo"), false);
     
-    SetStatusText(enable ? wxT("Running") : wxT("Stopped"), 0);
+    SetStatusText(enable ? "Running" : "Stopped", 0);
 }
 
 // ----------------------------------------------------------------------------
@@ -339,7 +352,7 @@ void MainFrame::SetToolBarEnabled(bool enable)
 // ----------------------------------------------------------------------------
 void MainFrame::SetFullscreenEnabled(bool enable)
 {
-    log_info("Full screen %s.\n", enable ? "enabled" : "disabled");
+    //log_info("Full screen %s.\n", enable ? "enabled" : "disabled");
     ShowFullScreen(enable);
     GetMenuBar()->Check(XRCID("menu_settings_fs"), enable);
 }
@@ -347,7 +360,7 @@ void MainFrame::SetFullscreenEnabled(bool enable)
 // ----------------------------------------------------------------------------
 void MainFrame::SetVsyncEnabled(bool enable)
 {
-    log_info("Vertical sync %s.\n", enable ? "enabled" : "disabled");
+    //log_info("Vertical sync %s.\n", enable ? "enabled" : "disabled");
     if (m_render)
         m_render->SetSwapInterval(enable ? 1 : 0);
     GetMenuBar()->Check(XRCID("menu_settings_vsync"), enable);
@@ -356,14 +369,14 @@ void MainFrame::SetVsyncEnabled(bool enable)
 // ----------------------------------------------------------------------------
 void MainFrame::OnOpen(wxCommandEvent &event)
 {
-    static const wxChar *SupportedFileTypes = wxT(
+    static const char *SupportedFileTypes =
             "Game Boy Images|*.dmg;*.gb;*.gbc;*.cgb;*.sgb|"
             "DMG Game Boy Images|*.dmg;*.gb|"
             "Color Game Boy Images|*.gbc;*.cgb|"
-            "All Files|*.*");
+            "All Files|*.*";
 
-    wxFileDialog *fd = new wxFileDialog(this, wxT("Open"),
-            wxT(""), wxT(""), SupportedFileTypes, wxOPEN);
+    wxFileDialog *fd = new wxFileDialog(this,
+        "Open", "", "", SupportedFileTypes, wxFD_OPEN);
 
     if (wxID_OK == fd->ShowModal()) {
         LoadFile(fd->GetPath());
@@ -387,13 +400,13 @@ void MainFrame::OnRecentClear(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnLoadState(wxCommandEvent &event)
 {
-    wxMessageBox(wxT("TODO"), wxT("Load State"), wxOK | wxICON_ERROR, this);
+    wxMessageBox("TODO", "Load State", wxOK | wxICON_ERROR, this);
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnSaveState(wxCommandEvent &event)
 {
-    wxMessageBox(wxT("TODO"), wxT("Save State"), wxOK | wxICON_ERROR, this);
+    wxMessageBox("TODO", "Save State", wxOK | wxICON_ERROR, this);
 }
 
 // ----------------------------------------------------------------------------
@@ -416,13 +429,13 @@ void MainFrame::OnMachineTogglePause(wxCommandEvent &event)
     m_lastCycles = 0;
 
     if (paused) {
-        log_info("Emulator paused.\n");
-        SetStatusText(wxT("Paused"), 0);
+        //log_info("Emulator paused.\n");
+        SetStatusText("Paused", 0);
         m_perftimer->Stop();
     }
     else {
-        log_info("Emulator unpaused.\n");
-        SetStatusText(wxT("Running"), 0);
+        //log_info("Emulator unpaused.\n");
+        SetStatusText("Running", 0);
         m_perftimer->Start();
     }
 }
@@ -437,7 +450,7 @@ void MainFrame::OnMachineToggleTurbo(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnMachineStep(wxCommandEvent &event)
 {
-    wxMessageBox(wxT("TODO"), wxT("Frame Step"), wxOK | wxICON_ERROR, this);
+    wxMessageBox("TODO", "Frame Step", wxOK | wxICON_ERROR, this);
 }
 
 // ----------------------------------------------------------------------------
@@ -510,6 +523,12 @@ void MainFrame::OnToggleToolbar(wxCommandEvent &event)
 }
 
 // ----------------------------------------------------------------------------
+void MainFrame::OnToggleConsoleWindow(wxCommandEvent &event)
+{
+    m_console->Show(true);
+}
+
+// ----------------------------------------------------------------------------
 void MainFrame::OnToggleFullscreen(wxCommandEvent &event)
 {
     SetFullscreenEnabled(GetMenuBar()->IsChecked(XRCID("menu_settings_fs")));
@@ -524,53 +543,67 @@ void MainFrame::OnToggleVsync(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnReportBug(wxCommandEvent &event)
 {
-    wxLaunchDefaultBrowser(wxT("http://code.google.com/p/gboy/issues/list"));
+    wxLaunchDefaultBrowser("http://code.google.com/p/gboy/issues/list");
 }
 
 static const wxString License_GPLV2 =
-wxT("This program is free software; you can redistribute it and/or modify\n")
-wxT("it under the terms of the GNU General Public License as published by\n")
-wxT("the Free Software Foundation; either version 2 of the License, or (at\n")
-wxT("your option) any later version.\n\n")
-wxT("This program is distributed in the hope that it will be useful, but\n")
-wxT("WITHOUT ANY WARRANTY; without even the implied warranty of\n")
-wxT("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n")
-wxT("GNU General Public License for more details.\n\n")
-wxT("You should have received a copy of the GNU General Public License along\n")
-wxT("with this program; if not, write to the Free Software Foundation, Inc.,\n")
-wxT("51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.\n");
+    "This program is free software; you can redistribute it and/or modify\n"
+    "it under the terms of the GNU General Public License as published by\n"
+    "the Free Software Foundation; either version 2 of the License, or (at\n"
+    "your option) any later version.\n\n"
+    "This program is distributed in the hope that it will be useful, but\n"
+    "WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+    "GNU General Public License for more details.\n\n"
+    "You should have received a copy of the GNU General Public License along\n"
+    "with this program; if not, write to the Free Software Foundation, Inc.,\n"
+    "51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.\n";
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnAbout(wxCommandEvent &event)
 {
     wxAboutDialogInfo info;
-    info.SetName(wxT("gboy"));
-    info.SetVersion(wxT(GBOY_ID_STR));
-    info.SetDescription(wxT("A portable Nintendo Game Boy emulator."));
-    info.SetCopyright(wxT("(C) 2011 Garrett Smith"));
+    info.SetName("gboy");
+    info.SetVersion(GBOY_ID_STR);
+    info.SetDescription("A portable Nintendo Game Boy emulator.");
+    info.SetCopyright("(C) 2011 Garrett Smith");
     info.SetLicense(License_GPLV2);
-    info.SetWebSite(wxT("http://code.google.com/p/gboy"));
-    info.AddDeveloper(wxT("Garrett Smith <gcs2980@rit.edu>"));
+    info.SetWebSite("http://code.google.com/p/gboy");
+    info.AddDeveloper("Garrett Smith <gcs2980@rit.edu>");
     wxAboutBox(info);
 }
 
 // ----------------------------------------------------------------------------
-void MainFrame::OnGbxVideoSync(wxCommandEvent &event)
+void MainFrame::OnGbxLogMessage(wxThreadEvent &event)
 {
-    m_render->UpdateFramebuffer(m_gbx->Framebuffer());
+    m_console->Write(event.GetString());
 }
 
 // ----------------------------------------------------------------------------
-void MainFrame::OnGbxSpeedChange(wxCommandEvent &event)
+void MainFrame::OnGbxVideoSync(wxThreadEvent &event)
 {
-    log_err("TODO: OnGbxSpeedChange\n");
+    if (m_gbx)
+        m_render->UpdateFramebuffer(m_gbx->Framebuffer());
 }
 
 // ----------------------------------------------------------------------------
-void MainFrame::OnGbxLcdEnabled(wxCommandEvent &event)
+void MainFrame::OnGbxSpeedChange(wxThreadEvent &event)
 {
-    if (event.GetInt() == 0)
+    //log_err("TODO: OnGbxSpeedChange\n");
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::OnGbxLcdEnabled(wxThreadEvent &event)
+{
+    if (m_gbx && event.GetInt() == 0)
         m_render->ClearFramebuffer(0xFF);
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::OnCloseWindow(wxCloseEvent &evt)
+{
+    Shutdown();
+    evt.Skip();
 }
 
 // ----------------------------------------------------------------------------
@@ -605,7 +638,7 @@ void MainFrame::OnPerfTimerTick(wxTimerEvent &event)
     PrecisionTimer::Real mhz = hz / 1000000;
 
     int percent = (int)(0.5 + 100 * hz / CPU_FREQ_DMG);
-    wxString label = wxString::Format(wxT("%.2f MHz / %d%%"), mhz, percent);
+    wxString label = wxString::Format("%.2f MHz / %d%%", mhz, percent);
     SetStatusText(label, 1);
 
     m_lastCycles = curr_cycles;

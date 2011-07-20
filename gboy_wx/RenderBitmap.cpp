@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#include "gbx.h"
 #include <wx/bitmap.h>
 #include <wx/brush.h>
 #include <wx/dcbuffer.h>
@@ -110,7 +111,7 @@ BitmapWidget::BitmapWidget(wxWindow *parent, int width, int height)
     Connect(wxID_ANY, wxEVT_PAINT,
             wxPaintEventHandler(BitmapWidget::OnPaint));
 
-    log_info("Software renderer successfully initialized\n");
+    // log_info("Software renderer successfully initialized\n");
 }
 
 // ----------------------------------------------------------------------------

@@ -18,7 +18,7 @@
 #ifndef GBOY_SOUNDDIALOG__H
 #define GBOY_SOUNDDIALOG__H
 
-#include "resource.h"
+#include "xrc_wrapper.h"
 
 class SoundDialog: public SoundDialog_XRC
 {

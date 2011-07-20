@@ -19,9 +19,10 @@
 #include <cassert>
 #include "gbxThread.h"
 
-DEFINE_EVENT_TYPE(wxEVT_GBX_SYNC)
-DEFINE_EVENT_TYPE(wxEVT_GBX_SPEED)
-DEFINE_EVENT_TYPE(wxEVT_GBX_LCD)
+wxDEFINE_EVENT(wxEVT_GBX_LOG, wxThreadEvent);
+wxDEFINE_EVENT(wxEVT_GBX_SYNC, wxThreadEvent);
+wxDEFINE_EVENT(wxEVT_GBX_SPEED, wxThreadEvent);
+wxDEFINE_EVENT(wxEVT_GBX_LCD, wxThreadEvent);
 
 // ----------------------------------------------------------------------------
 void ext_video_sync(void *data)
@@ -130,9 +131,11 @@ void gbxThread::DynamicSleep()
         PrecisionTimer::Real delay_ms = target_ms - elapsed_ms + m_error;
 
         if (delay_ms > 0) {
-            wxMilliSleep((int)(delay_ms + 0.5));
-            m_error += target_ms - m_timer.ElapsedMS();
+            wxMilliSleep((int)(delay_ms + 0.5f));
+            m_error = delay_ms - m_timer.ElapsedMS();
         }
+        else
+            m_error = 0;
     }
     else if (++m_turboTicks > 50) {
         // sleep every now and then even if cpu throttling is disabled so
@@ -151,8 +154,8 @@ void gbxThread::DynamicSleep()
 void gbxThread::PostVideoSync()
 {
     gbx_get_framebuffer(m_ctx, m_framebuffer);
-    wxCommandEvent event(wxEVT_GBX_SYNC, wxID_ANY);
-    m_parent->AddPendingEvent(event);
+    wxThreadEvent evt(wxEVT_GBX_SYNC, wxID_ANY);
+    wxQueueEvent(m_parent, evt.Clone());
 
     DynamicSleep();
 }
@@ -160,18 +163,20 @@ void gbxThread::PostVideoSync()
 // ----------------------------------------------------------------------------
 void gbxThread::PostSpeedChange(int speed)
 {
-    wxCommandEvent event(wxEVT_GBX_SPEED, wxID_ANY);
-    event.SetInt(speed);
-    m_parent->AddPendingEvent(event);
+    wxThreadEvent evt(wxEVT_GBX_SPEED, wxID_ANY);
+    evt.SetInt(speed);
+    wxQueueEvent(m_parent, evt.Clone());
+
     SetThrottleFrequency(speed ? CPU_FREQ_CGB : CPU_FREQ_DMG);
 }
 
 // ----------------------------------------------------------------------------
 void gbxThread::PostLCDEnabled(int enabled)
 {
-    wxCommandEvent event(wxEVT_GBX_LCD, wxID_ANY);
-    event.SetInt(enabled);
-    m_parent->AddPendingEvent(event);
+    wxThreadEvent evt(wxEVT_GBX_LCD, wxID_ANY);
+    evt.SetInt(enabled);
+    wxQueueEvent(m_parent, evt.Clone());
+
     m_lcdEnabled = (bool)enabled;
 }
 
@@ -260,7 +265,7 @@ bool gbxThread::DebuggerEnabled() const
 // ----------------------------------------------------------------------------
 long gbxThread::CycleCount() const
 {
-    wxCriticalSectionLocker locker(m_cs);
+    // wxCriticalSectionLocker locker(m_cs);
     return gbx_get_cycle_count(m_ctx);
 }
 
@@ -291,5 +296,7 @@ void gbxThread::Terminate()
         m_running = false;
         Wait();
     }
+
+    log_info("gbx thread terminated\n");
 }
 
