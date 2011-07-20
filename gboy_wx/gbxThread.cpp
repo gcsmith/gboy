@@ -131,6 +131,7 @@ void gbxThread::DynamicSleep()
         PrecisionTimer::Real delay_ms = target_ms - elapsed_ms + m_error;
 
         if (delay_ms > 0) {
+            m_timer.Start();
             wxMilliSleep((int)(delay_ms + 0.5f));
             m_error = delay_ms - m_timer.ElapsedMS();
         }

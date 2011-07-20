@@ -39,6 +39,7 @@ void mmu_wr_mbc3_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     // specify a full 7-bit ROM bank index, but 0 always maps to 1
     int bank = set_xrom_bank(ctx, (value & 0x7F) ? (value & 0x7F) : 1);
     log_spew("MBC3 set XROM bank %02X (set bits %02X)\n", bank, value);
+    UNUSED_VARIABLE(bank);
 }
 
 // ----------------------------------------------------------------------------
@@ -48,6 +49,7 @@ void mmu_wr_mbc3_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
         if (ctx->mem.xram_banks) {
             int bank = set_xram_bank(ctx, value & 0x03);
             log_spew("MBC3 set XRAM bank %02X (set bits %02X)\n", bank,  value);
+            UNUSED_VARIABLE(bank);
         }
         else
             log_warn("MBC3 set XRAM bank %02X, but no XRAM present\n", value);

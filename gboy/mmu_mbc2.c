@@ -34,6 +34,7 @@ void mmu_wr_mbc2_romb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     // specify 4-bit ROM bank index, but 0 always maps to 1
     int bank = set_xrom_bank(ctx, (value & 0x0F) ? (value & 0x0F) : 1);
     log_spew("MBC2 set XROM bank %02X (set bits %02X)\n", bank, value);
+    UNUSED_VARIABLE(bank);
 }
 
 // ----------------------------------------------------------------------------

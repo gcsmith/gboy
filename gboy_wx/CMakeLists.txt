@@ -6,9 +6,17 @@
 
 project(gboy_wx)
 
+set(wx_components gl core base adv xrc xml html stc)
+
+# stc seems to be sufficient for Linux, but wxMSW needs explicit linkage
+if(WIN32)
+    list(APPEND wx_components scintilla)
+endif(WIN32)
+
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(wxWidgets REQUIRED COMPONENTS gl core base adv xrc xml html stc scintilla)
+
+find_package(wxWidgets REQUIRED COMPONENTS ${wx_components})
 
 include(${wxWidgets_USE_FILE})
 

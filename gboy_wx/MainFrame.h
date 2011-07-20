@@ -56,6 +56,7 @@ protected:
     void SetStatusBarEnabled(bool enable);
     void SetToolBarEnabled(bool enable);
     void SetEmulatorEnabled(bool enable);
+    void SetConsoleEnabled(bool enable);
     void SetFullscreenEnabled(bool enable);
     void SetVsyncEnabled(bool enable);
 
@@ -103,6 +104,7 @@ protected:
     void OnGbxSpeedChange(wxThreadEvent &event);
     void OnGbxLcdEnabled(wxThreadEvent &event);
 
+    void OnCloseConsole(wxCloseEvent &evt);
     void OnCloseWindow(wxCloseEvent &evt);
     void OnKeyDown(wxKeyEvent &event);
     void OnKeyUp(wxKeyEvent &event);

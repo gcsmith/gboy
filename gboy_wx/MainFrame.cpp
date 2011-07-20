@@ -48,6 +48,9 @@ MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const char *title)
 
     m_console = new ConsoleFrame(this);
     m_console->Show(false);
+
+    m_console->Connect(wxID_ANY, wxEVT_CLOSE_WINDOW,
+            wxCloseEventHandler(MainFrame::OnCloseConsole), NULL, this);
 }
 
 // ----------------------------------------------------------------------------
@@ -311,8 +314,9 @@ void MainFrame::CreateEmulatorContext()
     }
 
     m_gbx = new gbxThread(this, SYSTEM_AUTO);
-    if (wxTHREAD_NO_ERROR != m_gbx->Create())
+    if (wxTHREAD_NO_ERROR != m_gbx->Create()) {
         wxLogError("Failed to create gbx thread!");
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -347,6 +351,13 @@ void MainFrame::SetToolBarEnabled(bool enable)
     if (m_render)
         m_render->Window()->SetSize(GetClientSize());
     GetMenuBar()->Check(XRCID("menu_view_toolbar"), enable);
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::SetConsoleEnabled(bool enable)
+{
+    m_console->Show(enable);
+    GetMenuBar()->Check(XRCID("menu_view_console"), enable);
 }
 
 // ----------------------------------------------------------------------------
@@ -525,7 +536,7 @@ void MainFrame::OnToggleToolbar(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnToggleConsoleWindow(wxCommandEvent &event)
 {
-    m_console->Show(true);
+    SetConsoleEnabled(GetMenuBar()->IsChecked(XRCID("menu_view_console")));
 }
 
 // ----------------------------------------------------------------------------
@@ -597,6 +608,13 @@ void MainFrame::OnGbxLcdEnabled(wxThreadEvent &event)
 {
     if (m_gbx && event.GetInt() == 0)
         m_render->ClearFramebuffer(0xFF);
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::OnCloseConsole(wxCloseEvent &evt)
+{
+    SetConsoleEnabled(false);
+    evt.Skip();
 }
 
 // ----------------------------------------------------------------------------

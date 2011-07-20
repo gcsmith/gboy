@@ -34,6 +34,7 @@ void mmu_wr_mbc5_romb0(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     int bank_lo = value ? value : 1;
     int bank = set_xrom_bank(ctx, (ctx->mem.xrom_bnum & 0x100) | bank_lo);
     log_spew("MBC5 set XROM bank %03X (set lo bits %02X)\n", bank, value);
+    UNUSED_VARIABLE(bank);
 }
 
 // ----------------------------------------------------------------------------
@@ -42,6 +43,7 @@ void mmu_wr_mbc5_romb1(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     int bank_hi = (value & 1) << 8;
     int bank = set_xrom_bank(ctx, (ctx->mem.xrom_bnum & 0xFF) | bank_hi);
     log_spew("MBC5 set XROM bank %03X (set hi bits %02X)\n", bank, value);
+    UNUSED_VARIABLE(bank);
 }
 
 // ----------------------------------------------------------------------------
@@ -50,6 +52,7 @@ void mmu_wr_mbc5_ramb(gbx_context_t *ctx, uint16_t addr, uint8_t value)
     if (ctx->mem.xram_banks) {
         int bank = set_xram_bank(ctx, value & 0x0F);
         log_spew("MBC5 set XRAM bank %02X (set bits %02X)\n", bank,  value);
+        UNUSED_VARIABLE(bank);
     }
     else
         log_warn("MBC5 set XRAM bank %02X, but no XRAM present\n", value);

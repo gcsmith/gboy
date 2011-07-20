@@ -72,9 +72,9 @@ protected:
     void ComputeAspectCorrectDimensions(int cx, int cy);
 
     void OnCloseWindow(wxCloseEvent &evt);
-    void OnSize(wxSizeEvent &event);
-    void OnPaint(wxPaintEvent &event);
-    void OnEraseBackground(wxEraseEvent &event);
+    void OnSize(wxSizeEvent &evt);
+    void OnPaint(wxPaintEvent &evt);
+    void OnEraseBackground(wxEraseEvent &evt);
 
 protected:
     wxGLContext *m_context;
@@ -253,8 +253,9 @@ void GL2Widget::ClearFramebuffer(uint8_t value)
 void GL2Widget::InitGL()
 {
     GLint rc = glewInit();
-    //if (GLEW_OK != rc)
-    //    log_err("failed to initialize GLEW (%s)\n", glewGetErrorString(rc));
+    if (GLEW_OK != rc) {
+        // log_err("failed to initialize GLEW (%s)\n", glewGetErrorString(rc));
+    }
 
     m_pboSize = m_width * m_height * 4;
     m_textureDim = tex_pow2(m_width, m_height);
@@ -370,15 +371,15 @@ void GL2Widget::OnCloseWindow(wxCloseEvent &evt)
 }
 
 // ----------------------------------------------------------------------------
-void GL2Widget::OnSize(wxSizeEvent &event)
+void GL2Widget::OnSize(wxSizeEvent &evt)
 {
-    wxGLCanvas::OnSize(event);
+    evt.Skip();
     UpdateDimensions();
     Refresh(false);
 }
 
 // ----------------------------------------------------------------------------
-void GL2Widget::OnPaint(wxPaintEvent &event)
+void GL2Widget::OnPaint(wxPaintEvent &evt)
 {
     wxPaintDC dc(this);
 
@@ -396,7 +397,7 @@ void GL2Widget::OnPaint(wxPaintEvent &event)
 }
 
 // ----------------------------------------------------------------------------
-void GL2Widget::OnEraseBackground(wxEraseEvent &event)
+void GL2Widget::OnEraseBackground(wxEraseEvent &evt)
 {
     // override EraseBackground to avoid flickering on some platforms
 }

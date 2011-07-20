@@ -29,10 +29,12 @@ ConsoleFrame::ConsoleFrame(wxWindow *parent)
     m_text->SetMarginType(0, wxSTC_MARGIN_NUMBER);
     m_text->SetWrapMode(wxSTC_WRAP_WORD);
 
-    m_text->StyleSetBackground(wxSTC_STYLE_LINENUMBER,
-        wxColour(220, 220, 220));
-    m_text->StyleSetFont(wxSTC_STYLE_DEFAULT,
-        wxSystemSettings::GetFont(wxSYS_ANSI_FIXED_FONT));
+    wxFont monoFont(10,
+            wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+    wxColour bgColor(220, 220, 220);
+
+    m_text->StyleSetBackground(wxSTC_STYLE_LINENUMBER, bgColor);
+    m_text->StyleSetFont(wxSTC_STYLE_DEFAULT, monoFont);
 
     Connect(wxEVT_CLOSE_WINDOW,
             wxCloseEventHandler(ConsoleFrame::OnCloseWindow));
