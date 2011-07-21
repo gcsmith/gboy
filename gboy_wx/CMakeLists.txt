@@ -15,7 +15,6 @@ endif(WIN32)
 
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-
 find_package(wxWidgets REQUIRED COMPONENTS ${wx_components})
 
 include(${wxWidgets_USE_FILE})

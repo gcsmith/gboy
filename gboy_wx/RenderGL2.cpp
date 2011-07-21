@@ -143,14 +143,10 @@ GL2Widget::GL2Widget(wxWindow *parent, wxGLContext *context,
     if (!m_context)
         m_context = new wxGLContext(this);
 
-    Connect(wxEVT_CLOSE_WINDOW,
-            wxCloseEventHandler(GL2Widget::OnCloseWindow));
-    Connect(wxID_ANY, wxEVT_SIZE,
-            wxSizeEventHandler(GL2Widget::OnSize));
-    Connect(wxID_ANY, wxEVT_PAINT,
-            wxPaintEventHandler(GL2Widget::OnPaint));
-    Connect(wxID_ANY, wxEVT_ERASE_BACKGROUND,
-            wxEraseEventHandler(GL2Widget::OnEraseBackground));
+    Bind(wxEVT_CLOSE_WINDOW,     &GL2Widget::OnCloseWindow,     this);
+    Bind(wxEVT_SIZE,             &GL2Widget::OnSize,            this);
+    Bind(wxEVT_PAINT,            &GL2Widget::OnPaint,           this);
+    Bind(wxEVT_ERASE_BACKGROUND, &GL2Widget::OnEraseBackground, this);
 
     m_width  = width;
     m_height = height;

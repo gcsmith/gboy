@@ -106,10 +106,8 @@ BitmapWidget::BitmapWidget(wxWindow *parent, int width, int height)
     SetBackgroundStyle(wxBG_STYLE_CUSTOM);
     SetBackgroundColour(wxColour(0, 0, 0));
 
-    Connect(wxID_ANY, wxEVT_SIZE,
-            wxSizeEventHandler(BitmapWidget::OnSize));
-    Connect(wxID_ANY, wxEVT_PAINT,
-            wxPaintEventHandler(BitmapWidget::OnPaint));
+    Bind(wxEVT_SIZE,  &BitmapWidget::OnSize,  this);
+    Bind(wxEVT_PAINT, &BitmapWidget::OnPaint, this);
 
     // log_info("Software renderer successfully initialized\n");
 }

@@ -24,7 +24,7 @@
 			<label>MyMenuBar</label>
 			<object class="wxMenu" name="menu_file">
 				<label>_File</label>
-				<object class="wxMenuItem" name="menu_file_open">
+				<object class="wxMenuItem" name="wxID_OPEN">
 					<label>_Open...\tCtrl+O</label>
 					<help>Select an image file to load</help>
 				</object>
@@ -40,29 +40,37 @@
 						<checkable>1</checkable>
 					</object>
 				</object>
+				<object class="wxMenuItem" name="wxID_CLOSE">
+					<label>_Close</label>
+					<help>Close the current image</help>
+				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="menu_file_loadstate">
 					<label>_Load State...\tF3</label>
+					<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_MENU"></bitmap>
 					<help>Load machine state from the specified file</help>
 				</object>
 				<object class="wxMenuItem" name="menu_file_savestate">
 					<label>_Save State...\tF4</label>
+					<bitmap stock_id="wxART_FILE_SAVE_AS" stock_client="wxART_MENU"></bitmap>
 					<help>Save machine state to the specified file</help>
 				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="menu_file_quickload">
 					<label>Load Quick State\tF5</label>
+					<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_MENU"></bitmap>
 					<help>Load machine state from current quick slot</help>
 				</object>
 				<object class="wxMenuItem" name="menu_file_quicksave">
 					<label>Save Quick State\tF6</label>
+					<bitmap stock_id="wxART_FILE_SAVE" stock_client="wxART_MENU"></bitmap>
 					<help>Save machine state to current quick slot</help>
 				</object>
 				<object class="wxMenu" name="menu_slot">
 					<label>Select Quick State</label>
 				</object>
 				<object class="separator" />
-				<object class="wxMenuItem" name="menu_file_quit">
+				<object class="wxMenuItem" name="wxID_EXIT">
 					<label>_Quit\tCtrl+Q</label>
 					<help>Quit the application</help>
 				</object>
@@ -71,6 +79,7 @@
 				<label>_Machine</label>
 				<object class="wxMenuItem" name="menu_machine_reset">
 					<label>_Reset\tCtrl+R</label>
+					<bitmap stock_id="wxART_GO_TO_PARENT" stock_client="wxART_MENU"></bitmap>
 					<help>Reset emulator execution</help>
 				</object>
 				<object class="wxMenuItem" name="menu_machine_pause">
@@ -85,6 +94,7 @@
 				</object>
 				<object class="wxMenuItem" name="menu_machine_step">
 					<label>_Frame Step\tCtrl+F</label>
+					<bitmap stock_id="wxART_GO_FORWARD" stock_client="wxART_MENU"></bitmap>
 					<help>Single step through frames</help>
 				</object>
 			</object>
@@ -137,9 +147,10 @@
 				<label>_Help</label>
 				<object class="wxMenuItem" name="menu_help_reportbug">
 					<label>_Report Bug</label>
+					<bitmap stock_id="wxART_HELP_PAGE" stock_client="wxART_MENU"></bitmap>
 					<help>Open browser to issue tracker</help>
 				</object>
-				<object class="wxMenuItem" name="menu_help_about">
+				<object class="wxMenuItem" name="wxID_ABOUT">
 					<label>_About</label>
 					<help>Display gboy about dialog</help>
 				</object>

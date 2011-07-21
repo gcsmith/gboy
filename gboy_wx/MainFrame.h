@@ -35,7 +35,7 @@ class MainFrame: public MainFrame_XRC
     typedef std::map<int, int> KeyMap;
 
 public:
-    MainFrame(wxWindow *parent, wxConfig *config, const char *title);
+    MainFrame(wxWindow *parent, wxConfig *config, const wxString &title);
     virtual ~MainFrame();
 
     void LoadFile(const wxString &path);
@@ -74,6 +74,7 @@ protected:
     }
 
     void OnOpen(wxCommandEvent &event);
+    void OnClose(wxCommandEvent &event);
     void OnLoadState(wxCommandEvent &event);
     void OnSaveState(wxCommandEvent &event);
     void OnQuit(wxCommandEvent &event);
@@ -112,6 +113,7 @@ protected:
     void OnEraseBackground(wxEraseEvent &event);
 
 protected:
+    wxString       m_title;
     wxConfig      *m_config;
     wxFileHistory *m_recent;
     wxTimer       *m_perftimer;

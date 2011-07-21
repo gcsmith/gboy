@@ -24,9 +24,9 @@
 #include "RenderWidget.h"
 
 // ----------------------------------------------------------------------------
-MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const char *title)
-: MainFrame_XRC(parent), m_config(config), m_recent(NULL), m_perftimer(NULL),
-  m_gbx(NULL), m_render(NULL), m_lastCycles(0)
+MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const wxString &title)
+: MainFrame_XRC(parent), m_title(title), m_config(config), m_recent(NULL),
+  m_perftimer(NULL), m_gbx(NULL), m_render(NULL), m_lastCycles(0)
 {
     SetTitle(title);
     SetupStatusBar();
@@ -43,14 +43,11 @@ MainFrame::MainFrame(wxWindow *parent, wxConfig *config, const char *title)
 
     // create a timer firing at one second intervals to report cycles/second
     m_perftimer = new wxTimer(this);
-    Connect(m_perftimer->GetId(), wxEVT_TIMER,
-            wxTimerEventHandler(MainFrame::OnPerfTimerTick));
+    Bind(wxEVT_TIMER, &MainFrame::OnPerfTimerTick, this, m_perftimer->GetId());
 
     m_console = new ConsoleFrame(this);
     m_console->Show(false);
-
-    m_console->Connect(wxID_ANY, wxEVT_CLOSE_WINDOW,
-            wxCloseEventHandler(MainFrame::OnCloseConsole), NULL, this);
+    m_console->Bind(wxEVT_CLOSE_WINDOW, &MainFrame::OnCloseConsole, this);
 }
 
 // ----------------------------------------------------------------------------
@@ -198,24 +195,20 @@ void MainFrame::SetupRecentList()
     m_recent->AddFilesToMenu();
 
     wxWindowID base = m_recent->GetBaseId();
-    Connect(base, base + mru_count, wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(MainFrame::OnRecentOpen));
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &MainFrame::OnRecentOpen, this,
+         base, base + mru_count);
 }
 
 // some helper macros to make the event handler setup more readable
 
 #define xrc_menu_evt(id, fn) \
-    Connect(XRCID(id), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(fn))
-#define gbx_emu_evt(evt, fn) \
-    Connect(wxID_ANY, evt, wxThreadEventHandler(fn))
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &fn, this, XRCID(id))
 
 // ----------------------------------------------------------------------------
 void MainFrame::SetupEventHandlers()
 {
-    xrc_menu_evt("menu_file_open",        MainFrame::OnOpen);
     xrc_menu_evt("menu_file_loadstate",   MainFrame::OnLoadState);
     xrc_menu_evt("menu_file_savestate",   MainFrame::OnSaveState);
-    xrc_menu_evt("menu_file_quit",        MainFrame::OnQuit);
     xrc_menu_evt("menu_recent_clear",     MainFrame::OnRecentClear);
     xrc_menu_evt("menu_machine_reset",    MainFrame::OnMachineReset);
     xrc_menu_evt("menu_machine_pause",    MainFrame::OnMachineTogglePause);
@@ -230,21 +223,27 @@ void MainFrame::SetupEventHandlers()
     xrc_menu_evt("menu_view_toolbar",     MainFrame::OnToggleToolbar);
     xrc_menu_evt("menu_view_console",     MainFrame::OnToggleConsoleWindow);
     xrc_menu_evt("menu_help_reportbug",   MainFrame::OnReportBug);
-    xrc_menu_evt("menu_help_about",       MainFrame::OnAbout);
-    
-    gbx_emu_evt(wxEVT_GBX_LOG,   MainFrame::OnGbxLogMessage);
-    gbx_emu_evt(wxEVT_GBX_SYNC,  MainFrame::OnGbxVideoSync);
-    gbx_emu_evt(wxEVT_GBX_SPEED, MainFrame::OnGbxSpeedChange);
-    gbx_emu_evt(wxEVT_GBX_LCD,   MainFrame::OnGbxLcdEnabled);
 
-    Connect(wxID_ANY, wxEVT_CLOSE_WINDOW,
-            wxCloseEventHandler(MainFrame::OnCloseWindow));
-    Connect(wxID_ANY, wxEVT_KEY_DOWN,
-            wxKeyEventHandler(MainFrame::OnKeyDown));
-    Connect(wxID_ANY, wxEVT_KEY_UP,
-            wxKeyEventHandler(MainFrame::OnKeyUp));
-    Connect(wxID_ANY, wxEVT_ERASE_BACKGROUND,
-            wxEraseEventHandler(MainFrame::OnEraseBackground));
+    // bind standard menu item events
+    
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &MainFrame::OnOpen,  this, wxID_OPEN);
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &MainFrame::OnClose, this, wxID_CLOSE);
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &MainFrame::OnQuit,  this, wxID_EXIT);
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &MainFrame::OnAbout, this, wxID_ABOUT);
+
+    // bind gbx emulator events
+
+    Bind(wxEVT_GBX_LOG,   &MainFrame::OnGbxLogMessage,  this);
+    Bind(wxEVT_GBX_SYNC,  &MainFrame::OnGbxVideoSync,   this);
+    Bind(wxEVT_GBX_SPEED, &MainFrame::OnGbxSpeedChange, this);
+    Bind(wxEVT_GBX_LCD,   &MainFrame::OnGbxLcdEnabled,  this);
+
+    // bind window events
+
+    Bind(wxEVT_CLOSE_WINDOW,     &MainFrame::OnCloseWindow,     this);
+    Bind(wxEVT_KEY_DOWN,         &MainFrame::OnKeyDown,         this);
+    Bind(wxEVT_KEY_UP,           &MainFrame::OnKeyUp,           this);
+    Bind(wxEVT_ERASE_BACKGROUND, &MainFrame::OnEraseBackground, this);
 }
 
 // ----------------------------------------------------------------------------
@@ -296,10 +295,8 @@ void MainFrame::CreateRenderWidget(int type)
     m_render->SetSwapInterval(VsyncEnabled() ? 1 : 0);
 
     // have the main frame handle keyboard events sent to the render panel
-    m_render->Window()->Connect(wxID_ANY, wxEVT_KEY_DOWN,
-            wxKeyEventHandler(MainFrame::OnKeyDown), NULL, this);
-    m_render->Window()->Connect(wxID_ANY, wxEVT_KEY_UP,
-            wxKeyEventHandler(MainFrame::OnKeyUp), NULL, this);
+    m_render->Window()->Bind(wxEVT_KEY_DOWN, &MainFrame::OnKeyDown, this);
+    m_render->Window()->Bind(wxEVT_KEY_UP,   &MainFrame::OnKeyUp,   this);
 
     m_render->Window()->SetSize(GetClientSize());
     m_render->Window()->SetFocus();
@@ -392,6 +389,15 @@ void MainFrame::OnOpen(wxCommandEvent &event)
     if (wxID_OK == fd->ShowModal()) {
         LoadFile(fd->GetPath());
     }
+}
+
+// ----------------------------------------------------------------------------
+void MainFrame::OnClose(wxCommandEvent &event)
+{
+    SetTitle(m_title);
+    CreateEmulatorContext();
+    SetEmulatorEnabled(false);
+    m_render->ClearFramebuffer(0);
 }
 
 // ----------------------------------------------------------------------------

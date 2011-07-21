@@ -71,14 +71,10 @@ void InputDialog::GetKeyMappings(std::map<int, int> &keymap)
 // ----------------------------------------------------------------------------
 void InputDialog::SetupField(wxTextCtrl *field, int input_index)
 {
-    field->Connect(wxID_ANY, wxEVT_KEY_DOWN,
-            wxKeyEventHandler(InputDialog::OnKeyDown), NULL, this);
-    field->Connect(wxID_ANY, wxEVT_KEY_UP,
-            wxKeyEventHandler(InputDialog::OnKeyUp), NULL, this);
-    field->Connect(wxID_ANY, wxEVT_SET_FOCUS,
-            wxFocusEventHandler(InputDialog::OnSetFocus), NULL, this);
-    field->Connect(wxID_ANY, wxEVT_KILL_FOCUS,
-            wxFocusEventHandler(InputDialog::OnKillFocus), NULL, this);
+    field->Bind(wxEVT_KEY_DOWN,   &InputDialog::OnKeyDown,   this);
+    field->Bind(wxEVT_KEY_UP,     &InputDialog::OnKeyUp,     this);
+    field->Bind(wxEVT_SET_FOCUS,  &InputDialog::OnSetFocus,  this);
+    field->Bind(wxEVT_KILL_FOCUS, &InputDialog::OnKillFocus, this);
 
     m_fieldData[input_index].input_index = input_index;
     m_fieldData[input_index].keycode = -1;

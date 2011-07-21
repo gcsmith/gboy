@@ -36,8 +36,7 @@ ConsoleFrame::ConsoleFrame(wxWindow *parent)
     m_text->StyleSetBackground(wxSTC_STYLE_LINENUMBER, bgColor);
     m_text->StyleSetFont(wxSTC_STYLE_DEFAULT, monoFont);
 
-    Connect(wxEVT_CLOSE_WINDOW,
-            wxCloseEventHandler(ConsoleFrame::OnCloseWindow));
+    Bind(wxEVT_CLOSE_WINDOW, &ConsoleFrame::OnCloseWindow, this);
 
     WriteLn("gboy - a portable gameboy emulator");
     WriteLn("version " GBOY_ID_STR);
