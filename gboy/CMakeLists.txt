@@ -25,6 +25,7 @@ set(gboy_src
     debug.c
     gbx.c
     interp.c
+    logging.c
     memory.c
     mmu_mbc1.c
     mmu_mbc2.c

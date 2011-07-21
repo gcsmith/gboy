@@ -21,8 +21,6 @@
 #include <stdarg.h>
 #include "common.h"
 
-extern void ext_log_message(int level, const char *msg);
-
 // log message severity levels
 
 #define LOG_ERROR       0
@@ -34,20 +32,8 @@ extern void ext_log_message(int level, const char *msg);
 
 // logging routines that may be dynamically filtered at runtime
 
-INLINE void log_vprintf(int level, const char *fmt, va_list arg)
-{
-    char buffer[512];
-    vsnprintf(buffer, 512 - 1, fmt, arg);
-    ext_log_message(level, buffer);
-}
-
-INLINE void log_printf(int level, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    log_vprintf(level, fmt, ap);
-    va_end(ap);
-}
+void log_vprintf(int level, const char *fmt, va_list arg);
+void log_printf(int level, const char *fmt, ...);
 
 // logging shortcuts that may be statically disabled at compile time
 
@@ -82,3 +68,4 @@ INLINE void log_printf(int level, const char *fmt, ...)
 #endif
 
 #endif // GBOY_LOGGING__H
+

@@ -95,6 +95,13 @@ static void set_gbx_frequency(gbx_thread_t *gt, int hz)
 }
 
 // ----------------------------------------------------------------------------
+void ext_log_message(int level, const char *msg)
+{
+    FILE *fp = (level == LOG_INFO) ? stdout : stderr;
+    fputs(msg, fp);
+}
+
+// ----------------------------------------------------------------------------
 // Callback fired each time the emulator enters the vertical blank period.
 void ext_video_sync(void *data)
 {

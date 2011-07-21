@@ -18,6 +18,7 @@
 #include "Gb_Apu.h"
 #include "Multi_Buffer.h"
 #include "Sound_Queue.h"
+#include "gbx.h"
 #include "sound.h"
 
 struct blargg_sound {

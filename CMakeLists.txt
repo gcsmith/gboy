@@ -11,7 +11,7 @@ project(gboy)
 # set(CMAKE_BUILD_TYPE Release)
 
 option(BUILD_EGL "Build the gboy-egl frontend" OFF)
-option(BUILD_SDL "Build the gboy-sdl frontend" OFF)
+option(BUILD_SDL "Build the gboy-sdl frontend" ON)
 option(BUILD_WX  "Build the gboy-wx frontend" ON)
 
 option(ENABLE_LOG_INFO      "Enable 'info' level log messages" ON)

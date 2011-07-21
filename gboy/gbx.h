@@ -121,6 +121,7 @@ void gbx_trace_instruction(gbx_context_t *ctx);
 
 // interface to emulator frontend
 
+extern void ext_log_message(int level, const char *msg);
 extern void ext_video_sync(void *data);
 extern void ext_speed_change(void *data, int speed);
 extern void ext_lcd_enabled(void *data, int enabled);
