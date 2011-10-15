@@ -41,13 +41,13 @@ set(GBOY_VER_MAJ "0")
 set(GBOY_VER_MIN "0")
 set(GBOY_VER_REV "1")
 
-find_package(Mercurial)
-if (MERCURIAL_FOUND)
-    MERCURIAL_HG_INFO(${PROJECT_SOURCE_DIR} gboy)
-    set(GBOY_VER_HGID ${gboy_HG_ID})
-else(MERCURIAL_FOUND)
-    set(GBOY_VER_HGID "?hgid?")
-endif(MERCURIAL_FOUND)
+# find_package(Mercurial)
+# if (MERCURIAL_FOUND)
+#     MERCURIAL_HG_INFO(${PROJECT_SOURCE_DIR} gboy)
+#     set(GBOY_VER_HGID ${gboy_HG_ID})
+# else(MERCURIAL_FOUND)
+#     set(GBOY_VER_HGID "?hgid?")
+# endif(MERCURIAL_FOUND)
 
 # perform configuration and generate config.h file
 
