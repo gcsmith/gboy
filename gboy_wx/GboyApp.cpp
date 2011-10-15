@@ -150,9 +150,7 @@ bool GboyApp::OnCmdLineParsed(wxCmdLineParser &parser)
 // ----------------------------------------------------------------------------
 void GboyApp::LogMessage(int level, const wxString &msg)
 {
-    // passing a wxString to AddPendingEvent is not threadsafe so force a copy
-    // ... use wxThreadEvent and QueueEvent when upgrading to wxWidgets >= 2.9
-    wxCommandEvent evt(wxEVT_GBX_LOG, wxID_ANY);
-    evt.SetString(msg.c_str());
+    wxThreadEvent evt(wxEVT_GBX_LOG, wxID_ANY);
+    evt.SetString(msg);
     wxQueueEvent(m_frame, evt.Clone());
 }

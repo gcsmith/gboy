@@ -53,7 +53,10 @@ int gbx_create_context(gbx_context_t **pctx, int system)
 // ----------------------------------------------------------------------------
 void gbx_destroy_context(gbx_context_t *ctx)
 {
-    if (!ctx) return;
+    if (!ctx) {
+        assert(!"gbx_destroy_context: attempting to free NULL ctx\n");
+        return;
+    }
 
     SAFE_FREE(ctx->mem.bios);
     SAFE_FREE(ctx->mem.wram);

@@ -283,7 +283,7 @@ void MainFrame::CreateRenderWidget(int type)
         m_filterEnable = m_render->StretchFilter();
         m_filterType = m_render->FilterType();
         m_scalingType = m_render->ScalingType();
-        delete m_render;
+        SAFE_DELETE(m_render);
     }
 
     m_render = RenderWidget::Allocate(type);
@@ -307,7 +307,7 @@ void MainFrame::CreateEmulatorContext()
 {
     if (m_gbx) {
         m_gbx->Terminate();
-        delete m_gbx;
+        SAFE_DELETE(m_gbx);
     }
 
     m_gbx = new gbxThread(this, SYSTEM_AUTO);
@@ -323,6 +323,7 @@ void MainFrame::SetEmulatorEnabled(bool enable)
     GetMenuBar()->Enable(XRCID("menu_machine_pause"), enable);
     GetMenuBar()->Enable(XRCID("menu_machine_turbo"), enable);
     GetMenuBar()->Enable(XRCID("menu_machine_step"), enable);
+    GetMenuBar()->Enable(wxID_CLOSE, enable);
 
     GetMenuBar()->Check(XRCID("menu_machine_pause"), false);
     GetMenuBar()->Check(XRCID("menu_machine_turbo"), false);
@@ -371,6 +372,7 @@ void MainFrame::SetVsyncEnabled(bool enable)
     //log_info("Vertical sync %s.\n", enable ? "enabled" : "disabled");
     if (m_render)
         m_render->SetSwapInterval(enable ? 1 : 0);
+
     GetMenuBar()->Check(XRCID("menu_settings_vsync"), enable);
 }
 
@@ -394,6 +396,8 @@ void MainFrame::OnOpen(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnClose(wxCommandEvent &event)
 {
+    assert(NULL != m_render);
+
     SetTitle(m_title);
     CreateEmulatorContext();
     SetEmulatorEnabled(false);
@@ -473,8 +477,7 @@ void MainFrame::OnMachineStep(wxCommandEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnInputDialog(wxCommandEvent &event)
 {
-    bool was_paused = m_gbx->SetPaused(true);
-
+    bool oldPauseState = m_gbx->SetPaused(true);
     InputDialog *dialog = new InputDialog(this);
     dialog->SetKeyMappings(m_keymap);
 
@@ -483,27 +486,29 @@ void MainFrame::OnInputDialog(wxCommandEvent &event)
         dialog->GetKeyMappings(m_keymap);
     }
 
-    m_gbx->SetPaused(was_paused);
+    m_gbx->SetPaused(oldPauseState);
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnSoundDialog(wxCommandEvent &event)
 {
-    bool was_paused = m_gbx->SetPaused(true);
-
+    bool oldPauseState = m_gbx->SetPaused(true);
     SoundDialog *dialog = new SoundDialog(this);
 
     if (wxID_OK == dialog->ShowModal()) {
         // commit sound settings
     }
 
-    m_gbx->SetPaused(was_paused);
+    m_gbx->SetPaused(oldPauseState);
 }
 
 // ----------------------------------------------------------------------------
 void MainFrame::OnDisplayDialog(wxCommandEvent &event)
 {
-    bool was_paused = m_gbx->SetPaused(true);
+    assert(NULL != m_gbx);
+    assert(NULL != m_render);
+
+    bool oldPauseState = m_gbx->SetPaused(true);
 
     // create and initialize display dialog based on current settings
     DisplayDialog *dialog = new DisplayDialog(this);
@@ -524,7 +529,7 @@ void MainFrame::OnDisplayDialog(wxCommandEvent &event)
         m_render->SetScalingType(dialog->ScalingType());
     }
 
-    m_gbx->SetPaused(was_paused);
+    m_gbx->SetPaused(oldPauseState);
 }
 
 // ----------------------------------------------------------------------------
@@ -599,8 +604,10 @@ void MainFrame::OnGbxLogMessage(wxThreadEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnGbxVideoSync(wxThreadEvent &event)
 {
-    if (m_gbx)
-        m_render->UpdateFramebuffer(m_gbx->Framebuffer());
+    assert(NULL != m_gbx);
+    assert(NULL != m_render);
+
+    m_render->UpdateFramebuffer(m_gbx->Framebuffer());
 }
 
 // ----------------------------------------------------------------------------
@@ -612,7 +619,9 @@ void MainFrame::OnGbxSpeedChange(wxThreadEvent &event)
 // ----------------------------------------------------------------------------
 void MainFrame::OnGbxLcdEnabled(wxThreadEvent &event)
 {
-    if (m_gbx && event.GetInt() == 0)
+    assert(NULL != m_render);
+
+    if (event.GetInt() == 0)
         m_render->ClearFramebuffer(0xFF);
 }
 

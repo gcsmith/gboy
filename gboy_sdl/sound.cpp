@@ -103,8 +103,8 @@ void sound_shutdown(sound_t *snd)
 {
     blargg_sound *psnd = (blargg_sound *)snd;
     if (snd) {
-        delete[] psnd->out_buf;
-        delete psnd;
+        SAFE_BDELETE(psnd->out_buf);
+        SAFE_DELETE(psnd);
     }
 }
 

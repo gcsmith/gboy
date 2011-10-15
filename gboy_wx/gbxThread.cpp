@@ -298,6 +298,9 @@ void gbxThread::Terminate()
         Wait();
     }
 
+    // XXX: is it really wise to do this here?
+    m_parent->DeletePendingEvents();
+
     log_info("gbx thread terminated\n");
 }
 
