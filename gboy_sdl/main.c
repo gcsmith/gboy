@@ -222,7 +222,7 @@ gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
     }
 
     // create and launch the emulator thread
-    if (NULL == (gt->thread = SDL_CreateThread(gbx_thread_run, gt))) {
+    if (NULL == (gt->thread = SDL_CreateThread(gbx_thread_run, "emu", gt))) {
         log_err("failed to create gbx emulator thread\n");
         SAFE_FREE(gt);
         return NULL;
