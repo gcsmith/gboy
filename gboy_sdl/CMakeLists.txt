@@ -6,9 +6,9 @@
 
 project(gboy_sdl)
 
-find_package(GLEW REQUIRED)
+find_package(GLEW   REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(SDL REQUIRED)
+find_package(SDL2   REQUIRED)
 
 set(SNDLIB ${CMAKE_SOURCE_DIR}/snd_blargg)
 set(SNDLIB_INCLUDE_DIR
@@ -27,7 +27,7 @@ set(blargg_src
 include_directories(
     ${GLEW_INCLUDE_DIR}
     ${OPENGL_INCLUDE_DIR}
-    ${SDL_INCLUDE_DIR}
+    ${SDL2_INCLUDE_DIR}
     ${SNDLIB_INCLUDE_DIR}
 )
 
@@ -49,7 +49,7 @@ set(gboy_sdl_src
 set(gboy_sdl_lib
     ${GLEW_LIBRARIES}
     ${OPENGL_LIBRARIES}
-    ${SDL_LIBRARY}
+    ${SDL2_LIBRARY}
     gboy
 )
 
