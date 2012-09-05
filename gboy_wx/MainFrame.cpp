@@ -588,9 +588,9 @@ void MainFrame::OnAbout(wxCommandEvent &event)
     info.SetName("gboy");
     info.SetVersion(GBOY_ID_STR);
     info.SetDescription("A portable Nintendo Game Boy emulator.");
-    info.SetCopyright("(C) 2011 Garrett Smith");
+    info.SetCopyright("(C) 2011-2012 Garrett Smith");
     info.SetLicense(License_GPLV2);
-    info.SetWebSite("http://code.google.com/p/gboy");
+    info.SetWebSite("http://github.com/gcsmith/gboy");
     info.AddDeveloper("Garrett Smith <gcs2980@rit.edu>");
     wxAboutBox(info);
 }
