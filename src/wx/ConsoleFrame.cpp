@@ -39,7 +39,7 @@ ConsoleFrame::ConsoleFrame(wxWindow *parent)
     Bind(wxEVT_CLOSE_WINDOW, &ConsoleFrame::OnCloseWindow, this);
 
     WriteLn("gboy - a portable gameboy emulator");
-    WriteLn("version " GBOY_ID_STR);
+    WriteLn("version " GBOY_VERSION_STR);
 }
 
 // ----------------------------------------------------------------------------

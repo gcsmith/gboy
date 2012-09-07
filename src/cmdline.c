@@ -63,7 +63,7 @@ void cmdline_display_usage(void)
 // ----------------------------------------------------------------------------
 void cmdline_display_version(void)
 {
-    log_info("gboy %s\n", GBOY_ID_STR);
+    log_info("gboy %s\n", GBOY_VERSION_STR);
     log_info("compiled %s %s\n", __DATE__, __TIME__);
     exit(EXIT_FAILURE);
 }

@@ -20,31 +20,31 @@ option(ENABLE_LOG_DEBUG   "Enable log message level: debug"   OFF)
 option(ENABLE_LOG_VERBOSE "Enable log message level: verbose" OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING
+        "Build type: None Debug Release RelWithDebInfo MinSizeRel" FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 set(GBOY_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 set(CMAKE_MODULE_PATH ${GBOY_MODULE_PATH} ${CMAKE_MODULE_PATH})
-set(GNULIB_DIR "${CMAKE_SOURCE_DIR}/gnulib")
 
 # detect the platform and architecture
 
 include(${GBOY_MODULE_PATH}/DetectPlatform.cmake)
 include(${GBOY_MODULE_PATH}/DetectArchitecture.cmake)
 
-# encode version number as <major>.<minor>.<revision>:<changeset>
+# encode version number as <major>.<minor>.<patch>:<changeset>
 
-set(GBOY_VER_MAJ "0")
-set(GBOY_VER_MIN "0")
-set(GBOY_VER_REV "1")
+set(GBOY_VERSION_MAJOR "0")
+set(GBOY_VERSION_MINOR "0")
+set(GBOY_VERSION_PATCH "1")
 
 find_package(Git)
 if(GIT_FOUND)
     GIT_WC_INFO(${PROJECT_SOURCE_DIR} GBOY)
-    set(GBOY_VER_ID ${GBOY_WC_REVISION_HASH})
+    set(GBOY_VERSION_EXTRA ${GBOY_WC_REVISION_HASH})
 endif(GIT_FOUND)
 
-set(BUILD_VERSION "${GBOY_VER_MAJ}.${GBOY_VER_MIN}.${GBOY_VER_REV}:${GBOY_VER_ID}")
+set(BUILD_VERSION "${GBOY_VERSION_MAJOR}.${GBOY_VERSION_MINOR}.${GBOY_VERSION_PATCH}:${GBOY_VERSION_EXTRA}")
 
 # perform configuration and generate config.h file
 
@@ -57,46 +57,31 @@ include(CheckFunctionExists)
 check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/gboy/config.h.cmake
-    ${CMAKE_BINARY_DIR}/gboy/config.h
+    ${CMAKE_SOURCE_DIR}/src/config.h.in
+    ${CMAKE_BINARY_DIR}/src/config.h
 )
 
 include_directories(
-    "${CMAKE_SOURCE_DIR}/gboy"
-    "${CMAKE_BINARY_DIR}/gboy"
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/src
 )
 
 message(STATUS "--------------------------------------------------------------")
 message(STATUS "CMAKE_BUILD_TYPE:       ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_INSTALL_PREFIX:   ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "CMAKE_VERBOSE_MAKEFILE: ${CMAKE_VERBOSE_MAKEFILE}")
+message(STATUS "BUILD_VERSION:          ${BUILD_VERSION}")
 message(STATUS "BUILD_EGL:              ${BUILD_EGL}")          
 message(STATUS "BUILD_SDL:              ${BUILD_SDL}")
 message(STATUS "BUILD_WX:               ${BUILD_WX}")
-message(STATUS "BUILD_VERSION:          ${BUILD_VERSION}")
+message(STATUS "ENABLE_LOG_INFO:        ${ENABLE_LOG_INFO}")
+message(STATUS "ENABLE_LOG_ERROR:       ${ENABLE_LOG_ERROR}")
+message(STATUS "ENABLE_LOG_WARNING:     ${ENABLE_LOG_WARNING}")
+message(STATUS "ENABLE_LOG_DEBUG:       ${ENABLE_LOG_DEBUG}")
+message(STATUS "ENABLE_LOG_VERBOSE:     ${ENABLE_LOG_VERBOSE}")
 message(STATUS "--------------------------------------------------------------")
 
-set(BUILD_EGL ${BUILD_EGL} CACHE BOOL
-    "Build the gboy-egl frontend" FORCE)
-set(BUILD_SDL ${BUILD_SDL} CACHE BOOL
-    "Build the gboy-sdl frontend" FORCE)
-set(BUILD_WX ${BUILD_WX} CACHE BOOL
-    "Build the gboy-wx frontend" FORCE)
-set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING
-    "Choose type of build: None Debug Release RelWithDebInfo MinSizeRel" FORCE)
+# add each sub-directory
 
-# add each sub-project
-add_subdirectory(gboy)
-
-if(BUILD_EGL)
-    add_subdirectory(gboy_egl)
-endif(BUILD_EGL)
-
-if(BUILD_SDL)
-    add_subdirectory(gboy_sdl)
-endif(BUILD_SDL)
-
-if(BUILD_WX)
-    add_subdirectory(gboy_wx)
-endif(BUILD_WX)
+add_subdirectory(src)
 

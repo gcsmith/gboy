@@ -37,18 +37,31 @@ set(gboy_src
 )
 
 if(WIN32)
-    # use gnulib for windows portability
     list(APPEND gboy_hdr
-        ${GNULIB_DIR}/getopt.h
-        ${GNULIB_DIR}/getopt_int.h
-        ${GNULIB_DIR}/gettext.h
+        gnulib/getopt.h
+        gnulib/getopt_int.h
+        gnulib/gettext.h
     )
     list(APPEND gboy_src
-        ${GNULIB_DIR}/getopt.c
-        ${GNULIB_DIR}/getopt1.c
+        gnulib/getopt.c
+        gnulib/getopt1.c
     )
-    include_directories(${GNULIB_DIR})
-endif()
+    include_directories(gnulib)
+endif(WIN32)
 
 add_library(gboy ${gboy_src} ${gboy_hdr})
+
+# add each sub-directory
+
+if(BUILD_EGL)
+    add_subdirectory(egl)
+endif(BUILD_EGL)
+
+if(BUILD_SDL)
+    add_subdirectory(sdl)
+endif(BUILD_SDL)
+
+if(BUILD_WX)
+    add_subdirectory(wx)
+endif(BUILD_WX)
 

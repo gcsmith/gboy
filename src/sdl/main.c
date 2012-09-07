@@ -25,7 +25,7 @@
 #include "graphics.h"
 #include "sound.h"
 
-#define GBOY_TITLE "gboy " GBOY_VER_STR
+#define GBOY_TITLE "gboy " GBOY_VERSION_STR
 
 #define GBOY_EVENT_SYNC 0
 #define GBOY_EVENT_PERF 1

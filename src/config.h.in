@@ -15,6 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#ifndef CONFIG__H
+#define CONFIG__H
+
 #undef HAVE_INTRIN_H
 #undef HAVE_STDINT_H
 #undef HAVE_CLOCK_GETTIME
@@ -25,6 +28,7 @@
 #cmakedefine ARCH_ARM
 
 #cmakedefine PLATFORM_WIN32
+#cmakedefine PLATFORM_APPLE
 #cmakedefine PLATFORM_UNIX
 
 #cmakedefine HAVE_INTRIN_H
@@ -38,11 +42,10 @@
 #cmakedefine ENABLE_LOG_DEBUG
 #cmakedefine ENABLE_LOG_DEBUGSPEW
 
-#define GBOY_VER_MAJ  @GBOY_VER_MAJ@
-#define GBOY_VER_MIN  @GBOY_VER_MIN@
-#define GBOY_VER_REV  @GBOY_VER_REV@
+#define GBOY_VERSION_MAJOR  @GBOY_VERSION_MAJOR@
+#define GBOY_VERSION_MINOR  @GBOY_VERSION_MINOR@
+#define GBOY_VERSION_PATCH  @GBOY_VERSION_PATCH@
+#define GBOY_VERSION_STR    "@BUILD_VERSION@"
 
-#define GBOY_VER_ID   "@GBOY_VER_ID@"
-#define GBOY_VER_STR  "@GBOY_VER_MAJ@.@GBOY_VER_MIN@.@GBOY_VER_REV@"
-#define GBOY_ID_STR   GBOY_VER_STR ":" GBOY_VER_ID
+#endif // CONFIG__H
 

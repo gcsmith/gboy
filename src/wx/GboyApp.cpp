@@ -85,7 +85,7 @@ bool GboyApp::OnInit()
         config->Write("/window/resolution_y", GBX_LCD_YRES * m_scale);
     }
 
-    MainFrame *frame = new MainFrame(NULL, config, "gboy " GBOY_VER_STR);
+    MainFrame *frame = new MainFrame(NULL, config, "gboy " GBOY_VERSION_STR);
     m_frame = frame;
 
     if (m_romfile.length())
