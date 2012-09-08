@@ -20,7 +20,7 @@ find_package(wxWidgets REQUIRED COMPONENTS ${wx_components})
 include(${wxWidgets_USE_FILE})
 
 include_directories(
-    ${CMAKE_BINARY_DIR}/gboy_wx
+    ${CMAKE_BINARY_DIR}/src/wx
     ${GLEW_INCLUDE_DIR}
     ${OPENGL_INCLUDE_DIR}
 )
