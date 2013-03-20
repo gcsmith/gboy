@@ -152,7 +152,7 @@ void Sync_Audio::write( const sample_t* in, int remain )
 
 void Sync_Audio::fill_buffer( Uint8* out, int byte_count )
 {
-	if ( SDL_SemValue( free_sem ) < buf_count - 1 )
+	if ( SDL_SemValue( free_sem ) < (unsigned int)(buf_count - 1) )
 	{
 		memcpy( out, buf( read_buf ), byte_count );
 		read_buf = (read_buf + 1) % buf_count;
