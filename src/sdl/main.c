@@ -109,21 +109,31 @@ void ext_video_sync(void *data)
     gbx_get_framebuffer(gt->ctx, gt->fb);
     push_user_event(GBOY_EVENT_SYNC, NULL, NULL);
 
-    if (gt->enable_sound)
+    if (gt->enable_sound) {
         sound_render(gt->snd, gt->ctx->frame_cycles);
+    }
 }
 
 // ----------------------------------------------------------------------------
 // Callback fired when the emulator switches between normal/double speed.
 void ext_speed_change(void *data, int speed)
 {
+    gbx_thread_t *gt = (gbx_thread_t *)data;
+    unsigned int hz;
+
     if (speed) {
         log_dbg("changing to double speed mode\n");
-        set_gbx_frequency((gbx_thread_t *)data, CPU_FREQ_CGB);
+        hz = CPU_FREQ_CGB;
     }
     else {
         log_dbg("changing to normal speed mode\n");
-        set_gbx_frequency((gbx_thread_t *)data, CPU_FREQ_DMG);
+        hz = CPU_FREQ_DMG;
+    }
+
+    set_gbx_frequency(gt, hz);
+
+    if (gt->enable_sound) {
+        sound_set_freq(gt->snd, hz);
     }
 }
 
@@ -142,16 +152,18 @@ void ext_lcd_enabled(void *data, int enabled)
 void ext_sound_write(void *data, uint16_t addr, uint8_t value)
 {
     gbx_thread_t *gt = (gbx_thread_t *)data;
-    if (gt->enable_sound)
+    if (gt->enable_sound) {
         sound_write(gt->snd, gt->ctx->frame_cycles, addr, value);
+    }
 }
 
 // ----------------------------------------------------------------------------
 void ext_sound_read(void *data, uint16_t addr, uint8_t *value)
 {
     gbx_thread_t *gt = (gbx_thread_t *)data;
-    if (gt->enable_sound)
+    if (gt->enable_sound) {
         *value = sound_read(gt->snd, gt->ctx->frame_cycles, addr);
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -211,8 +223,9 @@ gbx_thread_t *gbx_thread_create(gbx_context_t *ctx, cmdargs_t *ca)
     gbx_set_userdata(ctx, gt);
     gbx_set_debugger(ctx, gt->debugger);
 
-    if (ca->serial_path)
+    if (ca->serial_path) {
         gbx_set_serial_log(ctx, ca->serial_path);
+    }
 
     // initialize sound library
     if (gt->enable_sound) {
@@ -276,8 +289,9 @@ int create_sdl_window(window_state_t *ws, cmdargs_t *ca)
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    if (ca->fullscreen)
+    if (ca->fullscreen) {
         flags |= SDL_WINDOW_FULLSCREEN;
+    }
 
     // create the application window
     ws->wnd = SDL_CreateWindow(GBOY_TITLE, SDL_WINDOWPOS_UNDEFINED,
@@ -425,8 +439,9 @@ int main(int argc, char *argv[])
     perf_args_t pa = {0};
 
     // process and validate the command line arguments
-    if (cmdline_parse(argc, argv, &ca))
+    if (cmdline_parse(argc, argv, &ca)) {
         cmdline_display_usage();
+    }
 
     // create an emulator context for the given system type (default AUTO)
     if (gbx_create_context(&ctx, ca.system)) {

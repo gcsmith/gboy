@@ -383,9 +383,10 @@ void rom_print_details(rom_header_t *rh)
         log_info("  LicenseeEx:   %02X    %s\n", code,
                  search_table(new_licensee, code));
     }
-    else
+    else {
         log_info("  Licensee:     %02X    %s\n", rh->lic_code,
                  search_table(old_licensee, rh->lic_code));
+    }
 
     // dump the rest of the rom header fields
     log_info("  CGB Flags:    %02X    %s\n", rh->cgb_flag,
@@ -436,7 +437,7 @@ int rom_get_cart_features(int carttype)
     case 0x1D: return CART_MBC_MBC5 | CART_RUMBLE | CART_RAM;
     case 0x1E: return CART_MBC_MBC5 | CART_RUMBLE | CART_RAM | CART_BATTERY;
     case 0x22: return CART_MBC_MBC7;
-    case 0xFC: return CART_MBC_CAMERA;
+    case 0xFC: return CART_MBC_PCAM;
     case 0xFD: return CART_MBC_TAMA5;
     case 0xFE: return CART_MBC_HuC3;
     case 0xFF: return CART_MBC_HuC1 | CART_RAM | CART_BATTERY;
@@ -464,11 +465,11 @@ int xrom_size_to_banks(int rom_size)
 int xram_size_to_banks(int ram_size)
 {
     switch (ram_size) {
-    case 0x00: return 0;
-    case 0x01: return 1;
-    case 0x02: return 1;
-    case 0x03: return 4;
-    case 0x04: return 16;
+    case 0x00: return  0; // no external cartridge ram
+    case 0x01: return  1; //  1 x 8KB banks
+    case 0x02: return  1; //  1 x 8KB banks
+    case 0x03: return  4; //  4 x 8KB banks
+    case 0x04: return 16; // 16 x 8KB banks
     }
     return -1;
 }

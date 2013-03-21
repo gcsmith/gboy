@@ -66,7 +66,7 @@
 #define CART_MBC_MMM01      0x80
 #define CART_MBC_HuC1       0x90
 #define CART_MBC_HuC3       0xA0
-#define CART_MBC_CAMERA     0xB0
+#define CART_MBC_PCAM       0xB0    // pocket camera
 #define CART_MBC_TAMA5      0xC0
 
 typedef struct rom_header {

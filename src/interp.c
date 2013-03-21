@@ -64,8 +64,9 @@ static const int gbx_instruction_cycles_cb[256] = {
 OP_FUNC op_daa(gbx_context_t *ctx)
 {
     uint8_t adjust = (rF & FLAG_C ? 0x60 : 0) | (rF & FLAG_H ? 0x06 : 0);
-    if (rF & FLAG_N)
+    if (rF & FLAG_N) {
         rA -= adjust;
+    }
     else {
         adjust |= ((rA & 0x0F) > 0x09 ? 0x06 : 0) | (rA > 0x99 ? 0x60 : 0);
         rA += adjust;
@@ -1031,18 +1032,21 @@ INLINE void serial_update_cycles(gbx_context_t *ctx, long cycles)
 // ----------------------------------------------------------------------------
 static void perform_cyclic_tasks(gbx_context_t *ctx)
 {
-    if (ctx->dma.active)
+    if (ctx->dma.active) {
         dma_update_cycles(ctx, ctx->cycle_delta);
+    }
 
-    if (ctx->sc_active)
+    if (ctx->sc_active) {
         serial_update_cycles(ctx, ctx->cycle_delta);
+    }
 
     timer_update_cycles(ctx, ctx->cycle_delta);
     video_update_cycles(ctx, ctx->cycle_delta);
 
     // handle interrupts if any are enabled and pending, and IME is set
-    if (ctx->ime == IME_ENABLE)
+    if (ctx->ime == IME_ENABLE) {
         service_interrupts(ctx);
+    }
 
     ctx->int_flags |= ctx->int_flags_delay;
     ctx->int_flags_delay = 0;
@@ -1051,6 +1055,7 @@ static void perform_cyclic_tasks(gbx_context_t *ctx)
         ctx->ei_delay = 0;
         ctx->ime = IME_ENABLE;
     }
+
     if (ctx->di_delay) {
         ctx->di_delay = 0;
         ctx->ime = IME_DISABLE;
@@ -1058,6 +1063,9 @@ static void perform_cyclic_tasks(gbx_context_t *ctx)
 
     ctx->cycles += ctx->cycle_delta;
     ctx->frame_cycles += ctx->cycle_delta;
+
+    log_spew("cycles = %d / %d / %d\n",
+             ctx->cycle_delta, ctx->cycles, ctx->frame_cycles);
 }
 
 #define HALT_CYCLES 12

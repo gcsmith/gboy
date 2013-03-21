@@ -480,13 +480,16 @@ INLINE void transition_to_vblank(gbx_context_t *ctx)
     ctx->video.state = VIDEO_STATE_VBLANK;
     ctx->video.cycle = 0;
 
+//  log_info("sync\n");
+
     ext_video_sync(ctx->userdata);
     gbx_req_interrupt(ctx, INT_VBLANK);
 
     // check for VBLANK STAT interrupt
     set_stat_mode(ctx, MODE_VBLANK);
-    if (ctx->video.stat & STAT_INT_VBLANK)
+    if (ctx->video.stat & STAT_INT_VBLANK) {
         gbx_req_interrupt(ctx, INT_LCDSTAT);
+    }
 
     ctx->frame_cycles = 0;
 }
@@ -497,11 +500,13 @@ void video_update_cycles(gbx_context_t *ctx, long cycles)
     long i;
 
     // if in double speed mode, halve the number of LCD clock cycles
-    if (ctx->key1 & KEY1_SPEED)
+    if (ctx->key1 & KEY1_SPEED) {
         cycles >>= 1;
+    }
 
-    if (!(ctx->video.lcdc & LCDC_LCD_EN))
+    if (!(ctx->video.lcdc & LCDC_LCD_EN)) {
         return;
+    }
 
     // drive the LCD for each cycle elapsed, inefficient but accurate
     for (i = 0; i < cycles; i++) {

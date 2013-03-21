@@ -32,6 +32,7 @@ set(gboy_src
     mmu_mbc3.c
     mmu_mbc5.c
     mmu_mbc7.c
+    mmu_pcam.c
     romfile.c
     video.c
 )
@@ -64,4 +65,6 @@ endif(BUILD_SDL)
 if(BUILD_WX)
     add_subdirectory(wx)
 endif(BUILD_WX)
+
+add_subdirectory(tests)
 

@@ -584,10 +584,14 @@ void mmu_map_pages(gbx_context_t *ctx)
     mmu_map_rw(ctx, 0x80, 0x20, mmu_rd_vram_bank, mmu_wr_vram_bank);
 
     // map the external RAM handlers only if RAM present, unmapped otherwise
-    if (ctx->mem.xram_banks)
+    if (ctx->mem.xram_banks) {
+        log_info("mapping external ram banks\n");
         mmu_map_rw(ctx, 0xA0, 0x20, mmu_rd_xram_bank, mmu_wr_xram_bank);
-    else
+    }
+    else {
+        log_info("no external ram banks\n");
         mmu_map_rw(ctx, 0xA0, 0x20, mmu_rd_invalid, mmu_wr_invalid);
+    }
 
     // set RW handlers for WRAM, WRAM mirror, OAM, IO ports, and HRAM
     mmu_map_rw(ctx, 0xC0, 0x10, mmu_rd_wram, mmu_wr_wram);
@@ -599,20 +603,23 @@ void mmu_map_pages(gbx_context_t *ctx)
 
     // configure memory bank controller specific mappings
     switch (ctx->cart_features & CART_MBC) {
-    default:
-        // shouldn't ever get here... but fall through just in case
-        assert(!"unknown memory bank controller in mmu_map_pages");
     case CART_MBC_ROM: break;
     case CART_MBC_MBC1: mmu_map_mbc1(ctx); break;
     case CART_MBC_MBC2: mmu_map_mbc2(ctx); break;
     case CART_MBC_MBC3: mmu_map_mbc3(ctx); break;
     case CART_MBC_MBC5: mmu_map_mbc5(ctx); break;
     case CART_MBC_MBC7: mmu_map_mbc7(ctx); break;
+    case CART_MBC_PCAM: mmu_map_pcam(ctx); break;
+    default:
+        log_err("unsupported memory bank controller: %d\n", ctx->cart_features);
+        assert(!"unsupported memory bank controller in mmu_map_pages");
+        break;
     }
 
     // if a bios ROM image is available, patch it into the memory map
-    if (ctx->bios_enabled)
+    if (ctx->bios_enabled) {
         mmu_map_bios(ctx, BIOS_MAP);
+    }
 }
 
 // ----------------------------------------------------------------------------

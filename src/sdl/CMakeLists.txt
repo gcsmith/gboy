@@ -19,8 +19,7 @@ set(blargg_src
     ../blargg/gb_apu/Gb_Apu.cpp
     ../blargg/gb_apu/Gb_Oscs.cpp
     ../blargg/gb_apu/Multi_Buffer.cpp
-    ../blargg/Basic_Gb_Apu.cpp
-    ../blargg/Sound_Queue.cpp
+    ../blargg/Sync_Audio.cpp
 )
 
 include_directories(

@@ -17,13 +17,13 @@
 
 #include "Gb_Apu.h"
 #include "Multi_Buffer.h"
-#include "Sound_Queue.h"
+#include "Sync_Audio.h"
 #include "gbx.h"
 #include "sound.h"
 
 struct blargg_sound {
     Gb_Apu apu;
-    Sound_Queue queue;
+    Sync_Audio queue;
     Stereo_Buffer buf;
     blip_sample_t *out_buf;
     int out_size;
@@ -38,14 +38,19 @@ sound_t *sound_init(int sample_rate, int buff_size)
     psnd->out_size = buff_size;
     psnd->sample_rate = sample_rate;
 
-    const char *err;
-    if (NULL != (err = psnd->buf.set_sample_rate(sample_rate)))
-        log_err("error in APU: %s\n", err);
+    const char *rate_err = psnd->buf.set_sample_rate(sample_rate);
+    if (rate_err) {
+        log_err("error in APU: %s\n", rate_err);
+        return NULL;
+    }
 
     psnd->apu.output(psnd->buf.center(), psnd->buf.left(), psnd->buf.right());
 
-    if (NULL != (err = psnd->queue.start(sample_rate, 2)))
-        log_err("error in APU: %s\n", err);
+    const char *start_err = psnd->queue.start(sample_rate, 2);
+    if (start_err) {
+        log_err("error in APU: %s\n", start_err);
+        return NULL;
+    }
 
     return (sound_t *)psnd;
 }
@@ -86,8 +91,10 @@ void sound_render(sound_t *snd, int cycle)
 {
     blargg_sound *psnd = (blargg_sound *)snd;
 
-    bool stereo = psnd->apu.end_frame(cycle);
-    psnd->buf.end_frame(cycle, stereo);
+//  log_info("sound_render end_frame: cycle=%d\n", cycle);
+
+    psnd->apu.end_frame(cycle);
+    psnd->buf.end_frame(cycle);
 
     while (psnd->buf.samples_avail() >= psnd->out_size) {
         size_t count = psnd->buf.read_samples(psnd->out_buf, psnd->out_size);

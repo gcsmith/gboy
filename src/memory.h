@@ -67,6 +67,7 @@ void mmu_map_mbc2(gbx_context_t *ctx);
 void mmu_map_mbc3(gbx_context_t *ctx);
 void mmu_map_mbc5(gbx_context_t *ctx);
 void mmu_map_mbc7(gbx_context_t *ctx);
+void mmu_map_pcam(gbx_context_t *ctx);
 
 void mmu_map_pages(gbx_context_t *ctx);
 void mmu_map_rw(gbx_context_t *ctx, int beg, int n, mmu_rd_fn rf, mmu_wr_fn wf);

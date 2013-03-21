@@ -1,12 +1,13 @@
 
-// Gb_Snd_Emu 0.1.4. http://www.slack.net/~ant/
+// Blip_Buffer 0.4.0. http://www.slack.net/~ant/
 
-#include "Sound_Queue.h"
+#include "Sync_Audio.h"
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
-/* Copyright (C) 2005 by Shay Green. Permission is hereby granted, free of
+/* Copyright (C) 2005-2006 by Shay Green. Permission is hereby granted, free of
 charge, to any person obtaining a copy of this software module and associated
 documentation files (the "Software"), to deal in the Software without
 restriction, including without limitation the rights to use, copy, modify,
@@ -30,30 +31,36 @@ static const char* sdl_error( const char* str )
 	return str;
 }
 
-Sound_Queue::Sound_Queue()
+Sync_Audio::Sync_Audio()
 {
-	bufs = NULL;
-	free_sem = NULL;
-	sound_open = false;
+	buf_count = 2;
+	bufs = 0;
+	free_sem = 0;
+	sound_open = 0;
+	set_gain( 1.0 );
 }
 
-Sound_Queue::~Sound_Queue()
+Sync_Audio::~Sync_Audio()
 {
 	stop();
 }
 
-const char* Sound_Queue::start( long sample_rate, int chan_count )
+const char* Sync_Audio::start( long sample_rate, int chan_count, int latency )
 {
-	assert( !bufs ); // can only be initialized once
+	stop();
 	
 	write_buf = 0;
 	write_pos = 0;
 	read_buf = 0;
 	
-	bufs = new sample_t [(long) buf_size * buf_count];
+	long sample_latency = latency * sample_rate * chan_count / 1000;
+	buf_count = sample_latency / buf_size;
+	if ( buf_count < 2 )
+		buf_count = 2;
+	
+	bufs = (sample_t*) malloc( (long) buf_size * buf_count * sizeof *bufs );
 	if ( !bufs )
 		return "Out of memory";
-	currently_playing_ = bufs;
 	
 	free_sem = SDL_CreateSemaphore( buf_count - 1 );
 	if ( !free_sem )
@@ -68,57 +75,71 @@ const char* Sound_Queue::start( long sample_rate, int chan_count )
 	as.size = 0;
 	as.callback = fill_buffer_;
 	as.userdata = this;
-	if ( SDL_OpenAudio( &as, NULL ) < 0 )
+	if ( SDL_OpenAudio( &as, 0 ) < 0 )
 		return sdl_error( "Couldn't open SDL audio" );
-	SDL_PauseAudio( false );
-	sound_open = true;
+	SDL_PauseAudio( 0 );
+	sound_open = 1;
 	
-	return NULL;
+	return 0; // success
 }
 
-void Sound_Queue::stop()
+void Sync_Audio::stop()
 {
 	if ( sound_open )
 	{
-		sound_open = false;
-		SDL_PauseAudio( true );
+		sound_open = 0;
+		SDL_PauseAudio( 1 );
 		SDL_CloseAudio();
 	}
 	
 	if ( free_sem )
 	{
 		SDL_DestroySemaphore( free_sem );
-		free_sem = NULL;
+		free_sem = 0;
 	}
 	
-	delete [] bufs;
-	bufs = NULL;
+	free( bufs );
+	bufs = 0;
 }
 
-int Sound_Queue::sample_count() const
+int Sync_Audio::sample_count() const
 {
+	if ( !free_sem )
+		return 0;
+	
 	int buf_free = SDL_SemValue( free_sem ) * buf_size + (buf_size - write_pos);
 	return buf_size * buf_count - buf_free;
 }
 
-inline Sound_Queue::sample_t* Sound_Queue::buf( int index )
+inline Sync_Audio::sample_t* Sync_Audio::buf( int index )
 {
 	assert( (unsigned) index < buf_count );
 	return bufs + (long) index * buf_size;
 }
 
-void Sound_Queue::write( const sample_t* in, int count )
+void Sync_Audio::write( const sample_t* in, int remain )
 {
-	while ( count )
+	while ( remain )
 	{
-		int n = buf_size - write_pos;
-		if ( n > count )
-			n = count;
+		int count = buf_size - write_pos;
+		if ( count > remain )
+			count = remain;
 		
-		memcpy( buf( write_buf ) + write_pos, in, n * sizeof (sample_t) );
-		in += n;
-		write_pos += n;
-		count -= n;
+		sample_t* out = buf( write_buf ) + write_pos;
+		if ( gain != (1L << gain_bits) )
+		{
+			register long gain = this->gain;
+			for ( int n = count; n--; )
+				*out++ = (*in++ * gain) >> gain_bits;
+		}
+		else
+		{
+			memcpy( out, in, count * sizeof (sample_t) );
+			in += count;
+		}
+		
+		write_pos += count;
+		remain -= count;
 		
 		if ( write_pos >= buf_size )
 		{
@@ -129,23 +150,22 @@ void Sound_Queue::write( const sample_t* in, int count )
 	}
 }
 
-void Sound_Queue::fill_buffer( Uint8* out, int count )
+void Sync_Audio::fill_buffer( Uint8* out, int byte_count )
 {
 	if ( SDL_SemValue( free_sem ) < buf_count - 1 )
 	{
-		currently_playing_ = buf( read_buf );
-		memcpy( out, buf( read_buf ), count );
+		memcpy( out, buf( read_buf ), byte_count );
 		read_buf = (read_buf + 1) % buf_count;
 		SDL_SemPost( free_sem );
 	}
 	else
 	{
-		memset( out, 0, count );
+		memset( out, 0, byte_count );
 	}
 }
 
-void Sound_Queue::fill_buffer_( void* user_data, Uint8* out, int count )
+void Sync_Audio::fill_buffer_( void* user_data, Uint8* out, int byte_count )
 {
-	((Sound_Queue*) user_data)->fill_buffer( out, count );
+	((Sync_Audio*) user_data)->fill_buffer( out, byte_count );
 }
 
