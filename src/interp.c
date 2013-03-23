@@ -1064,6 +1064,11 @@ static void perform_cyclic_tasks(gbx_context_t *ctx)
     ctx->cycles += ctx->cycle_delta;
     ctx->frame_cycles += ctx->cycle_delta;
 
+    while (ctx->frame_cycles >= (20000 * 8)) {
+        ctx->frame_cycles -= (20000 * 8);
+        ext_sound_frame(ctx->userdata);
+    }
+
     log_spew("cycles = %d / %d / %d\n",
              ctx->cycle_delta, ctx->cycles, ctx->frame_cycles);
 }

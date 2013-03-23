@@ -127,6 +127,7 @@ extern void ext_speed_change(void *data, int speed);
 extern void ext_lcd_enabled(void *data, int enabled);
 extern void ext_sound_write(void *data, uint16_t addr, uint8_t value);
 extern void ext_sound_read(void *data, uint16_t addr, uint8_t *value);
+extern void ext_sound_frame(void *data);
 
 #ifdef __cplusplus
 }

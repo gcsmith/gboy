@@ -108,10 +108,6 @@ void ext_video_sync(void *data)
     gbx_thread_t *gt = (gbx_thread_t *)data;
     gbx_get_framebuffer(gt->ctx, gt->fb);
     push_user_event(GBOY_EVENT_SYNC, NULL, NULL);
-
-    if (gt->enable_sound) {
-        sound_render(gt->snd, gt->ctx->frame_cycles);
-    }
 }
 
 // ----------------------------------------------------------------------------
@@ -163,6 +159,15 @@ void ext_sound_read(void *data, uint16_t addr, uint8_t *value)
     gbx_thread_t *gt = (gbx_thread_t *)data;
     if (gt->enable_sound) {
         *value = sound_read(gt->snd, gt->ctx->frame_cycles, addr);
+    }
+}
+
+// ----------------------------------------------------------------------------
+void ext_sound_frame(void *data)
+{
+    gbx_thread_t *gt = (gbx_thread_t *)data;
+    if (gt->enable_sound) {
+        sound_render(gt->snd, 20000 * 8);
     }
 }
 
