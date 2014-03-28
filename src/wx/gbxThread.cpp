@@ -53,6 +53,11 @@ void ext_sound_read(void *data, uint16_t addr, uint8_t *value)
 }
 
 // ----------------------------------------------------------------------------
+void ext_sound_frame(void *data)
+{
+}
+
+// ----------------------------------------------------------------------------
 gbxThread::gbxThread(wxEvtHandler *parent, int system)
 : wxThread(wxTHREAD_JOINABLE), m_parent(parent), m_pauseCond(m_pauseLock),
   m_ctx(NULL), m_running(false), m_paused(false), m_throttle(true),
